@@ -1,0 +1,66 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Klant Bewerken</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="bedrijfsnaam" class="form-label">Bedrijfsnaam</label>
+                            <input type="text" class="form-control" id="bedrijfsnaam" name="bedrijfsnaam" value="{{ klant.bedrijfsnaam }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="voornaam" class="form-label">Voornaam</label>
+                            <input type="text" class="form-control" id="voornaam" name="voornaam" value="{{ klant.voornaam }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="tussenvoegsel" class="form-label">Tussenvoegsel</label>
+                            <input type="text" class="form-control" id="tussenvoegsel" name="tussenvoegsel" value="{{ klant.tussenvoegsel or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="achternaam" class="form-label">Achternaam</label>
+                            <input type="text" class="form-control" id="achternaam" name="achternaam" value="{{ klant.achternaam }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="functie" class="form-label">Functie</label>
+                            <input type="text" class="form-control" id="functie" name="functie" value="{{ klant.functie or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ klant.email }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="telefoonnummer" class="form-label">Telefoonnummer</label>
+                            <input type="text" class="form-control" id="telefoonnummer" name="telefoonnummer" value="{{ klant.telefoonnummer or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="adres" class="form-label">Adres</label>
+                            <input type="text" class="form-control" id="adres" name="adres" value="{{ klant.adres or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('klanten') }}" class="btn btn-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">Wijzigingen Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

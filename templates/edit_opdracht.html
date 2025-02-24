@@ -1,0 +1,53 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Opdracht Bewerken</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="klant_id" class="form-label">Klant</label>
+                        <select class="form-select" id="klant_id" name="klant_id" required>
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}" {% if klant.id == opdracht.klant_id %}selected{% endif %}>
+                                {{ klant.bedrijfsnaam }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="titel" class="form-label">Titel</label>
+                        <input type="text" class="form-control" id="titel" name="titel" value="{{ opdracht.titel }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="omschrijving" class="form-label">Omschrijving</label>
+                        <textarea class="form-control" id="omschrijving" name="omschrijving" rows="3" required>{{ opdracht.omschrijving }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="aanvraagdatum" class="form-label">Aanvraagdatum</label>
+                        <input type="date" class="form-control" id="aanvraagdatum" name="aanvraagdatum" value="{{ opdracht.aanvraagdatum.strftime('%Y-%m-%d') }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="benodigde_kennis" class="form-label">Benodigde Kennis</label>
+                        <input type="text" class="form-control" id="benodigde_kennis" name="benodigde_kennis" value="{{ opdracht.benodigde_kennis or '' }}">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('opdrachten') }}" class="btn btn-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">Wijzigingen Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

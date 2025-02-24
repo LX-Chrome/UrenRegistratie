@@ -236,6 +236,82 @@ def logout():
     return redirect(url_for('login'))
 
 # Klanten routes
+@app.route('/klanten/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_klant(id):
+    klant = Klant.query.get_or_404(id)
+    if request.method == 'POST':
+        klant.bedrijfsnaam = request.form['bedrijfsnaam']
+        klant.voornaam = request.form['voornaam']
+        klant.tussenvoegsel = request.form.get('tussenvoegsel')
+        klant.achternaam = request.form['achternaam']
+        klant.functie = request.form.get('functie')
+        klant.email = request.form['email']
+        klant.telefoonnummer = request.form.get('telefoonnummer')
+        klant.adres = request.form.get('adres')
+        
+        try:
+            db.session.commit()
+            flash('Klant succesvol bijgewerkt')
+            return redirect(url_for('klanten'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij bijwerken klant')
+            app.logger.error(f"Error updating klant: {str(e)}")
+            
+    return render_template('edit_klant.html', klant=klant)
+
+@app.route('/klanten/<int:id>/delete')
+@login_required
+def delete_klant(id):
+    klant = Klant.query.get_or_404(id)
+    try:
+        db.session.delete(klant)
+        db.session.commit()
+        flash('Klant succesvol verwijderd')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error bij verwijderen klant')
+        app.logger.error(f"Error deleting klant: {str(e)}")
+    return redirect(url_for('klanten'))
+
+@app.route('/opdrachten/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_opdracht(id):
+    opdracht = Opdracht.query.get_or_404(id)
+    if request.method == 'POST':
+        opdracht.klant_id = request.form['klant_id']
+        opdracht.titel = request.form['titel']
+        opdracht.omschrijving = request.form['omschrijving']
+        opdracht.aanvraagdatum = datetime.strptime(request.form['aanvraagdatum'], '%Y-%m-%d')
+        opdracht.benodigde_kennis = request.form.get('benodigde_kennis')
+        
+        try:
+            db.session.commit()
+            flash('Opdracht succesvol bijgewerkt')
+            return redirect(url_for('opdrachten'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij bijwerken opdracht')
+            app.logger.error(f"Error updating opdracht: {str(e)}")
+            
+    klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
+    return render_template('edit_opdracht.html', opdracht=opdracht, klanten=klanten)
+
+@app.route('/opdrachten/<int:id>/delete')
+@login_required
+def delete_opdracht(id):
+    opdracht = Opdracht.query.get_or_404(id)
+    try:
+        db.session.delete(opdracht)
+        db.session.commit()
+        flash('Opdracht succesvol verwijderd')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error bij verwijderen opdracht')
+        app.logger.error(f"Error deleting opdracht: {str(e)}")
+    return redirect(url_for('opdrachten'))
+
 @app.route('/klanten')
 @login_required
 def klanten():
