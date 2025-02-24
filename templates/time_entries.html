@@ -9,16 +9,30 @@
                     <h5 class="mb-0">Time Entries</h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
-                        <a href="{{ url_for('export_pdf') }}" class="btn btn-secondary">Export PDF</a>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i data-feather="download"></i> Exporteren
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='pdf') }}">
+                                    <i data-feather="file-text"></i> PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='excel') }}">
+                                    <i data-feather="file"></i> Excel
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='csv') }}">
+                                    <i data-feather="file"></i> CSV
+                                </a></li>
+                            </ul>
+                        </div>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
-                            Add Entry
+                            <i data-feather="plus"></i> Add Entry
                         </button>
                     </div>
                     {% endif %}
                 </div>
             </div>
             <div class="card-body">
-                {% if not export_mode %}
                 <form class="mb-4" method="GET">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" placeholder="Search entries..." 
@@ -26,8 +40,6 @@
                         <button class="btn btn-outline-secondary" type="submit">Search</button>
                     </div>
                 </form>
-                {% endif %}
-                
                 <div class="table-responsive">
                     <table class="table">
                         <thead>

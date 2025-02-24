@@ -1,12 +1,14 @@
 import pdfkit
 import json
 from datetime import datetime
-from flask import render_template, redirect, url_for, request, flash, make_response, jsonify
+from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
 from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid
 import pdfkit
 from datetime import datetime
+from services.export_service import ExportService
+import io
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -75,18 +77,88 @@ def time_entries():
     entries = entries.order_by(TimeEntry.date.desc()).all()
     return render_template('time_entries.html', entries=entries, search=search)
 
-@app.route('/export-pdf')
+@app.route('/export/<entity>/<format>')
 @login_required
-def export_pdf():
-    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).all()
-    html = render_template('time_entries.html', entries=entries, export_mode=True)
-    pdf = pdfkit.from_string(html, False)
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=time-entries.pdf'
-    return response
+def export_data(entity, format):
+    export_service = ExportService()
 
-# New API endpoints for external clients (like PHP)
+    if entity == 'time-entries':
+        entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).all()
+        if format == 'pdf':
+            data = {'entries': entries}
+            content, filename, mimetype = export_service.to_pdf('time_entries.html', data, 'time_entries')
+        else:
+            headers = ['Datum', 'Project', 'Uren', 'Omschrijving']
+            rows = [[e.date.strftime('%Y-%m-%d'), e.project, e.hours, e.description] for e in entries]
+            if format == 'excel':
+                content, filename, mimetype = export_service.to_excel(rows, headers, 'time_entries')
+            else:  # csv
+                content, filename, mimetype = export_service.to_csv(rows, headers, 'time_entries')
+
+    elif entity == 'klanten':
+        klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
+        if format == 'pdf':
+            data = {'klanten': klanten}
+            content, filename, mimetype = export_service.to_pdf('klanten.html', data, 'klanten')
+        else:
+            headers = ['Bedrijfsnaam', 'Naam', 'Email', 'Telefoon', 'Functie']
+            rows = [[
+                k.bedrijfsnaam,
+                f"{k.voornaam} {k.tussenvoegsel + ' ' if k.tussenvoegsel else ''}{k.achternaam}".strip(),
+                k.email,
+                k.telefoonnummer or '-',
+                k.functie or '-'
+            ] for k in klanten]
+            if format == 'excel':
+                content, filename, mimetype = export_service.to_excel(rows, headers, 'klanten')
+            else:  # csv
+                content, filename, mimetype = export_service.to_csv(rows, headers, 'klanten')
+
+    elif entity == 'medewerkers':
+        medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
+        if format == 'pdf':
+            data = {'medewerkers': medewerkers}
+            content, filename, mimetype = export_service.to_pdf('medewerkers.html', data, 'medewerkers')
+        else:
+            headers = ['Naam', 'Functie', 'Werkmail', 'Kantoorruimte', 'Geboortedatum']
+            rows = [[
+                f"{m.voornaam} {m.tussenvoegsel + ' ' if m.tussenvoegsel else ''}{m.achternaam}".strip(),
+                m.functie or '-',
+                m.werkmail,
+                m.kantoorruimte or '-',
+                m.geboortedatum.strftime('%Y-%m-%d')
+            ] for m in medewerkers]
+            if format == 'excel':
+                content, filename, mimetype = export_service.to_excel(rows, headers, 'medewerkers')
+            else:  # csv
+                content, filename, mimetype = export_service.to_csv(rows, headers, 'medewerkers')
+
+    elif entity == 'opdrachten':
+        opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
+        if format == 'pdf':
+            data = {'opdrachten': opdrachten}
+            content, filename, mimetype = export_service.to_pdf('opdrachten.html', data, 'opdrachten')
+        else:
+            headers = ['Datum', 'Klant', 'Titel', 'Omschrijving', 'Benodigde Kennis']
+            rows = [[
+                o.aanvraagdatum.strftime('%Y-%m-%d'),
+                o.klant.bedrijfsnaam,
+                o.titel,
+                o.omschrijving,
+                o.benodigde_kennis or '-'
+            ] for o in opdrachten]
+            if format == 'excel':
+                content, filename, mimetype = export_service.to_excel(rows, headers, 'opdrachten')
+            else:  # csv
+                content, filename, mimetype = export_service.to_csv(rows, headers, 'opdrachten')
+
+    return send_file(
+        io.BytesIO(content),
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=filename
+    )
+
 @app.route('/api/time-entries', methods=['GET'])
 def api_get_time_entries():
     if not request.headers.get('X-API-Key') == app.config.get('API_KEY'):
@@ -134,16 +206,6 @@ def klanten():
     klanten = query.order_by(Klant.bedrijfsnaam).all()
     return render_template('klanten.html', klanten=klanten, search=search)
 
-@app.route('/klanten/export-pdf')
-@login_required
-def export_klanten_pdf():
-    klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
-    html = render_template('klanten.html', klanten=klanten, export_mode=True)
-    pdf = pdfkit.from_string(html, False)
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=klanten.pdf'
-    return response
 
 @app.route('/klanten/add', methods=['GET', 'POST'])
 @login_required
@@ -187,17 +249,6 @@ def medewerkers():
     medewerkers = query.order_by(Medewerker.achternaam).all()
     return render_template('medewerkers.html', medewerkers=medewerkers, search=search)
 
-@app.route('/medewerkers/export-pdf')
-@login_required
-def export_medewerkers_pdf():
-    medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
-    html = render_template('medewerkers.html', medewerkers=medewerkers, export_mode=True)
-    pdf = pdfkit.from_string(html, False)
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=medewerkers.pdf'
-    return response
-
 @app.route('/medewerkers/add', methods=['GET', 'POST'])
 @login_required
 def add_medewerker():
@@ -237,17 +288,6 @@ def opdrachten():
         )
     opdrachten = query.order_by(Opdracht.aanvraagdatum.desc()).all()
     return render_template('opdrachten.html', opdrachten=opdrachten, search=search)
-
-@app.route('/opdrachten/export-pdf')
-@login_required
-def export_opdrachten_pdf():
-    opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
-    html = render_template('opdrachten.html', opdrachten=opdrachten, export_mode=True)
-    pdf = pdfkit.from_string(html, False)
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=opdrachten.pdf'
-    return response
 
 @app.route('/opdrachten/add', methods=['GET', 'POST'])
 @login_required
