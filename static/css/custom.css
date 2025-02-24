@@ -85,6 +85,20 @@
     color: var(--gilde-primary) !important;
 }
 
+:root[data-bs-theme="light"] {
+    --gilde-primary: #0d6efd;
+    --gilde-secondary: #6c757d;
+    --gilde-text: #212529;
+    --gilde-bg: #ffffff;
+}
+
+:root[data-bs-theme="dark"] {
+    --gilde-primary: #0d6efd;
+    --gilde-secondary: #6c757d;
+    --gilde-text: #f8f9fa;
+    --gilde-bg: #212529;
+}
+
 /* Button enhancements */
 .btn-primary {
     background-color: var(--gilde-primary) !important;
