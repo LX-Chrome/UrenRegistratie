@@ -4,7 +4,9 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
-from models import User, TimeEntry
+from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid
+import pdfkit
+from datetime import datetime
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -114,3 +116,57 @@ def api_get_projects():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+# Klanten routes
+@app.route('/klanten')
+@login_required
+def klanten():
+    search = request.args.get('search', '')
+    query = Klant.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Klant.bedrijfsnaam.ilike(f'%{search}%'),
+                Klant.email.ilike(f'%{search}%'),
+                Klant.achternaam.ilike(f'%{search}%')
+            )
+        )
+    klanten = query.order_by(Klant.bedrijfsnaam).all()
+    return render_template('klanten.html', klanten=klanten, search=search)
+
+@app.route('/klanten/export-pdf')
+@login_required
+def export_klanten_pdf():
+    klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
+    html = render_template('klanten.html', klanten=klanten, export_mode=True)
+    pdf = pdfkit.from_string(html, False)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=klanten.pdf'
+    return response
+
+@app.route('/klanten/add', methods=['GET', 'POST'])
+@login_required
+def add_klant():
+    if request.method == 'POST':
+        klant = Klant(
+            bedrijfsnaam=request.form['bedrijfsnaam'],
+            voornaam=request.form['voornaam'],
+            tussenvoegsel=request.form.get('tussenvoegsel'),
+            achternaam=request.form['achternaam'],
+            functie=request.form.get('functie'),
+            email=request.form['email'],
+            telefoonnummer=request.form.get('telefoonnummer'),
+            adres=request.form.get('adres')
+        )
+        db.session.add(klant)
+        try:
+            db.session.commit()
+            flash('Klant succesvol toegevoegd')
+            return redirect(url_for('klanten'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij toevoegen klant: mogelijk bestaat deze email al')
+            app.logger.error(f"Error adding klant: {str(e)}")
+
+    return render_template('add_klant.html')
