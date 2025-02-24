@@ -295,6 +295,44 @@ def medewerkers():
     medewerkers = query.order_by(Medewerker.achternaam).all()
     return render_template('medewerkers.html', medewerkers=medewerkers, search=search)
 
+@app.route('/medewerkers/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_medewerker(id):
+    medewerker = Medewerker.query.get_or_404(id)
+    if request.method == 'POST':
+        medewerker.voornaam = request.form['voornaam']
+        medewerker.tussenvoegsel = request.form.get('tussenvoegsel')
+        medewerker.achternaam = request.form['achternaam']
+        medewerker.geboortedatum = datetime.strptime(request.form['geboortedatum'], '%Y-%m-%d')
+        medewerker.functie = request.form.get('functie')
+        medewerker.werkmail = request.form['werkmail']
+        medewerker.kantoorruimte = request.form.get('kantoorruimte')
+        
+        try:
+            db.session.commit()
+            flash('Medewerker succesvol bijgewerkt')
+            return redirect(url_for('medewerkers'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij bijwerken medewerker')
+            app.logger.error(f"Error updating medewerker: {str(e)}")
+            
+    return render_template('edit_medewerker.html', medewerker=medewerker)
+
+@app.route('/medewerkers/<int:id>/delete')
+@login_required
+def delete_medewerker(id):
+    medewerker = Medewerker.query.get_or_404(id)
+    try:
+        db.session.delete(medewerker)
+        db.session.commit()
+        flash('Medewerker succesvol verwijderd')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error bij verwijderen medewerker')
+        app.logger.error(f"Error deleting medewerker: {str(e)}")
+    return redirect(url_for('medewerkers'))
+
 @app.route('/medewerkers/add', methods=['GET', 'POST'])
 @login_required
 def add_medewerker():
