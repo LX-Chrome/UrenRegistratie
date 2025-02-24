@@ -1,39 +1,30 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
-    if (typeof feather !== 'undefined') {
-        feather.replace();
-    }
+    feather.replace();
 
     // Theme toggle functionality
     const themeToggle = document.getElementById('themeToggle');
-    const htmlElement = document.documentElement;
+    const themeIcon = themeToggle.querySelector('i');
+    const html = document.documentElement;
 
-    // Load saved theme preference
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    htmlElement.setAttribute('data-bs-theme', savedTheme);
+    // Check for saved theme preference or use system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+    html.setAttribute('data-bs-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            const currentTheme = htmlElement.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-            htmlElement.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-        });
-    }
+        html.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+    });
 
     function updateThemeIcon(theme) {
-        if (themeToggle) {
-            const icon = themeToggle.querySelector('i');
-            if (icon) {
-                icon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
-            }
-        }
+        themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+        feather.replace();
     }
 
     // Set default date to today for the date input
