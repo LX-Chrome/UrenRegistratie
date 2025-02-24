@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
+import secrets
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -21,6 +22,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+app.config["API_KEY"] = os.environ.get("API_KEY", secrets.token_urlsafe(32))
 
 # Initialize extensions
 db.init_app(app)

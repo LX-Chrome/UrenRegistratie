@@ -1,6 +1,7 @@
 import pdfkit
+import json
 from datetime import datetime
-from flask import render_template, redirect, url_for, request, flash, make_response
+from flask import render_template, redirect, url_for, request, flash, make_response, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
 from models import User, TimeEntry
@@ -82,6 +83,31 @@ def export_pdf():
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'attachment; filename=time-entries.pdf'
     return response
+
+# New API endpoints for external clients (like PHP)
+@app.route('/api/time-entries', methods=['GET'])
+def api_get_time_entries():
+    if not request.headers.get('X-API-Key') == app.config.get('API_KEY'):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    entries = TimeEntry.query.order_by(TimeEntry.date.desc()).all()
+    return jsonify([{
+        'id': entry.id,
+        'date': entry.date.strftime('%Y-%m-%d'),
+        'hours': entry.hours,
+        'description': entry.description,
+        'project': entry.project,
+        'user_id': entry.user_id,
+        'created_at': entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    } for entry in entries])
+
+@app.route('/api/projects', methods=['GET'])
+def api_get_projects():
+    if not request.headers.get('X-API-Key') == app.config.get('API_KEY'):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    projects = db.session.query(TimeEntry.project).distinct().all()
+    return jsonify([project[0] for project in projects])
 
 @app.route('/logout')
 @login_required
