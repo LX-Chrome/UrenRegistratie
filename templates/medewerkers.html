@@ -9,9 +9,22 @@
                     <h5 class="mb-0">Medewerkers Overzicht</h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
-                        <a href="{{ url_for('export_data', entity='medewerkers', format='pdf') }}" class="btn btn-secondary">
-                            <i data-feather="file-text"></i> Export PDF
-                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i data-feather="download"></i> Exporteren
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='pdf') }}">
+                                    <i data-feather="file-text"></i> PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='excel') }}">
+                                    <i data-feather="file"></i> Excel
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='csv') }}">
+                                    <i data-feather="file"></i> CSV
+                                </a></li>
+                            </ul>
+                        </div>
                         <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary">
                             <i data-feather="plus"></i> Nieuwe Medewerker
                         </a>
@@ -26,7 +39,9 @@
                         <input type="text" class="form-control" name="search" 
                                placeholder="Zoek op naam, email..." 
                                value="{{ search }}">
-                        <button class="btn btn-outline-secondary" type="submit">Zoeken</button>
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i data-feather="search"></i> Zoeken
+                        </button>
                     </div>
                 </form>
                 {% endif %}

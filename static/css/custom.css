@@ -1,34 +1,117 @@
 /* Custom styles to complement Bootstrap dark theme */
-.card {
-    margin-bottom: 1.5rem;
+:root {
+    --animation-duration: 0.3s;
 }
 
+/* Card styles */
+.card {
+    margin-bottom: 1.5rem;
+    transition: transform var(--animation-duration), box-shadow var(--animation-duration);
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.animate-card {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Table styles */
 .table {
     margin-bottom: 0;
 }
 
+.hoverable-row {
+    transition: background-color var(--animation-duration);
+}
+
+.hoverable-row:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Modal styles */
 .modal-content {
     border-radius: 0.5rem;
+    animation: slideIn 0.3s ease-out;
 }
 
+/* Alert styles */
 .alert {
     margin-bottom: 1.5rem;
+    animation: slideInDown 0.3s ease-out;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .container {
-        padding-left: 1rem;
-        padding-right: 1rem;
+/* Icon animations */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+.feather-sm {
+    width: 18px;
+    height: 18px;
+    vertical-align: text-bottom;
+    margin-right: 4px;
+}
+
+/* Navbar refinements */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    transition: color var(--animation-duration);
+}
+
+.nav-link:hover {
+    color: var(--bs-primary) !important;
+}
+
+/* Button enhancements */
+.btn {
+    transition: all var(--animation-duration);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
-    
-    .card-header {
-        flex-direction: column;
-        gap: 1rem;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
-    
-    .card-header .btn {
-        width: 100%;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
     }
 }
 
@@ -40,17 +123,35 @@
     .alert {
         display: none !important;
     }
-    
+
     .card {
         border: none;
+        box-shadow: none;
     }
-    
+
     .card-header {
         background: none;
         border-bottom: 2px solid #dee2e6;
     }
-    
+
     .table {
         width: 100% !important;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .card-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .card-header .btn {
+        width: 100%;
     }
 }
