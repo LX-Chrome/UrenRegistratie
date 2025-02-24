@@ -9,7 +9,7 @@
                     <h5 class="mb-0">Medewerkers Overzicht</h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
-                        <a href="{{ url_for('export_medewerkers_pdf') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('export_data', entity='medewerkers', format='pdf') }}" class="btn btn-secondary">
                             <i data-feather="file-text"></i> Export PDF
                         </a>
                         <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary">
@@ -30,7 +30,7 @@
                     </div>
                 </form>
                 {% endif %}
-                
+
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
