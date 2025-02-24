@@ -82,6 +82,47 @@ def time_entries():
     entries = entries.order_by(TimeEntry.date.desc()).all()
     return render_template('time_entries.html', entries=entries, search=search)
 
+@app.route('/time-entries/<int:entry_id>/edit', methods=['POST'])
+@login_required
+def edit_time_entry(entry_id):
+    entry = TimeEntry.query.get_or_404(entry_id)
+    if entry.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('time_entries'))
+
+    try:
+        entry.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        entry.hours = float(request.form['hours'])
+        entry.description = request.form['description']
+        entry.project = request.form['project']
+        db.session.commit()
+        flash('Time entry updated successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating time entry')
+        app.logger.error(f"Error updating time entry: {str(e)}")
+
+    return redirect(url_for('time_entries'))
+
+@app.route('/time-entries/<int:entry_id>/delete')
+@login_required
+def delete_time_entry(entry_id):
+    entry = TimeEntry.query.get_or_404(entry_id)
+    if entry.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('time_entries'))
+
+    try:
+        db.session.delete(entry)
+        db.session.commit()
+        flash('Time entry deleted successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting time entry')
+        app.logger.error(f"Error deleting time entry: {str(e)}")
+
+    return redirect(url_for('time_entries'))
+
 @app.route('/export/<entity>/<format>')
 @login_required
 def export_data(entity, format):

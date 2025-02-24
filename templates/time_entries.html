@@ -48,6 +48,9 @@
                                 <th>Project</th>
                                 <th>Hours</th>
                                 <th>Description</th>
+                                {% if not export_mode %}
+                                <th>Actions</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -57,6 +60,21 @@
                                 <td>{{ entry.project }}</td>
                                 <td>{{ entry.hours }}</td>
                                 <td>{{ entry.description }}</td>
+                                {% if not export_mode %}
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editEntryModal{{ entry.id }}">
+                                            <i data-feather="edit-2"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ url_for('delete_time_entry', entry_id=entry.id) }}')">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -102,4 +120,72 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Entry Modals -->
+{% for entry in entries %}
+<div class="modal fade" id="editEntryModal{{ entry.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Time Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_time_entry', entry_id=entry.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="date{{ entry.id }}" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date{{ entry.id }}" name="date" 
+                               value="{{ entry.date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="project{{ entry.id }}" class="form-label">Project</label>
+                        <input type="text" class="form-control" id="project{{ entry.id }}" name="project" 
+                               value="{{ entry.project }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hours{{ entry.id }}" class="form-label">Hours</label>
+                        <input type="number" step="0.5" class="form-control" id="hours{{ entry.id }}" name="hours" 
+                               value="{{ entry.hours }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description{{ entry.id }}" class="form-label">Description</label>
+                        <textarea class="form-control" id="description{{ entry.id }}" name="description" required>{{ entry.description }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this entry? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(deleteUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    modal.show();
+}
+</script>
 {% endblock %}
