@@ -1,0 +1,56 @@
+/* Custom styles to complement Bootstrap dark theme */
+.card {
+    margin-bottom: 1.5rem;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.alert {
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .card-header .btn {
+        width: 100%;
+    }
+}
+
+/* Print styles for PDF export */
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        border: none;
+    }
+    
+    .card-header {
+        background: none;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .table {
+        width: 100% !important;
+    }
+}
