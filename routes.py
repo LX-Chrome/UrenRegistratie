@@ -303,6 +303,9 @@ def edit_opdracht(id):
 def delete_opdracht(id):
     opdracht = Opdracht.query.get_or_404(id)
     try:
+        # Eerst verwijder alle gekoppelde werkzaamheden
+        Werkzaamheid.query.filter_by(opdracht_id=id).delete()
+        # Dan de opdracht zelf
         db.session.delete(opdracht)
         db.session.commit()
         flash('Opdracht succesvol verwijderd')
@@ -400,6 +403,9 @@ def edit_medewerker(id):
 def delete_medewerker(id):
     medewerker = Medewerker.query.get_or_404(id)
     try:
+        # Eerst verwijder alle gekoppelde werkzaamheden
+        Werkzaamheid.query.filter_by(medewerker_id=id).delete()
+        # Dan de medewerker zelf
         db.session.delete(medewerker)
         db.session.commit()
         flash('Medewerker succesvol verwijderd')
