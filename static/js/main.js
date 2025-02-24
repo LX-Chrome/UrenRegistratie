@@ -7,8 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeIcon = themeToggle.querySelector('i');
     const html = document.documentElement;
 
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    // Check for saved theme preference or use system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
     html.setAttribute('data-bs-theme', savedTheme);
     updateThemeIcon(savedTheme);
 

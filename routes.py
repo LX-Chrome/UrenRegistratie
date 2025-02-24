@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
-from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid
+from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid, CheckIn # Added CheckIn import
 import pdfkit
 from datetime import datetime
 from services.export_service import ExportService
@@ -51,7 +51,12 @@ def register():
 @login_required
 def dashboard():
     entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5)
-    return render_template('dashboard.html', entries=entries)
+    check_ins = CheckIn.query.filter_by(
+        user_id=current_user.id,
+        check_in_time=datetime.utcnow().date()
+    ).order_by(CheckIn.check_in_time.desc()).limit(5)
+
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins)
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
@@ -73,7 +78,7 @@ def time_entries():
     entries = TimeEntry.query.filter_by(user_id=current_user.id)
     if search:
         entries = entries.filter(TimeEntry.description.contains(search) | 
-                               TimeEntry.project.contains(search))
+                                  TimeEntry.project.contains(search))
     entries = entries.order_by(TimeEntry.date.desc()).all()
     return render_template('time_entries.html', entries=entries, search=search)
 
@@ -312,3 +317,22 @@ def add_opdracht():
 
     klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
     return render_template('add_opdracht.html', klanten=klanten)
+
+@app.route('/check-in', methods=['POST'])
+@login_required
+def check_in():
+    check_in = CheckIn(
+        user_id=current_user.id,
+        status=request.form['status'],
+        note=request.form.get('note')
+    )
+    db.session.add(check_in)
+    try:
+        db.session.commit()
+        flash('Status succesvol bijgewerkt')
+    except Exception as e:
+        db.session.rollback()
+        flash('Er is een fout opgetreden bij het bijwerken van je status')
+        app.logger.error(f"Error during check-in: {str(e)}")
+
+    return redirect(url_for('dashboard'))

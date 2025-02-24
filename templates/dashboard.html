@@ -2,28 +2,81 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-12 mb-4">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Welcome, {{ current_user.username }}</h5>
-                <a href="{{ url_for('time_entries') }}" class="btn btn-primary">Add Time Entry</a>
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="sun" class="feather-sm"></i>
+                    Goedendag, {{ current_user.username }}!
+                </h5>
             </div>
             <div class="card-body">
-                <h6>Recent Time Entries</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <form method="POST" action="{{ url_for('check_in') }}" class="mb-3">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="working">Aan het werk</option>
+                                    <option value="break">Pauze</option>
+                                    <option value="done">Klaar voor vandaag</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="note" class="form-label">Notitie</label>
+                                <input type="text" class="form-control" id="note" name="note" placeholder="Waar ben je mee bezig?">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="clock" class="feather-sm"></i> Check In
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Recente Check-ins</h6>
+                        <div class="list-group">
+                            {% for check_in in check_ins %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ check_in.status|title }}</h6>
+                                    <small>{{ check_in.check_in_time.strftime('%H:%M') }}</small>
+                                </div>
+                                {% if check_in.note %}
+                                <p class="mb-1">{{ check_in.note }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recente Urenregistraties</h5>
+                    <a href="{{ url_for('time_entries') }}" class="btn btn-primary">
+                        <i data-feather="plus"></i> Nieuwe Registratie
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Date</th>
+                                <th>Datum</th>
                                 <th>Project</th>
-                                <th>Hours</th>
-                                <th>Description</th>
+                                <th>Uren</th>
+                                <th>Omschrijving</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for entry in entries %}
                             <tr>
-                                <td>{{ entry.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ entry.date.strftime('%d-%m-%Y') }}</td>
                                 <td>{{ entry.project }}</td>
                                 <td>{{ entry.hours }}</td>
                                 <td>{{ entry.description }}</td>

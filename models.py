@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     time_entries = db.relationship('TimeEntry', backref='user', lazy=True, cascade='all, delete-orphan')
+    check_ins = db.relationship('CheckIn', backref='user', lazy=True, cascade='all, delete-orphan')
 
     __table_args__ = (
         Index('idx_user_email', 'email'),
@@ -24,6 +25,19 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class CheckIn(db.Model):
+    __tablename__ = 'check_in'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    check_in_time = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50), nullable=False)  # 'working', 'break', 'done'
+    note = db.Column(db.String(200))
+
+    __table_args__ = (
+        Index('idx_check_in_user_date', 'user_id', 'check_in_time'),
+    )
 
 class Klant(db.Model):
     __tablename__ = 'klant'
