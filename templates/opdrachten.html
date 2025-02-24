@@ -63,6 +63,16 @@
                                 <td>{{ opdracht.titel }}</td>
                                 <td>{{ opdracht.omschrijving }}</td>
                                 <td>{{ opdracht.benodigde_kennis or '-' }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('edit_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-warning">
+                                            <i data-feather="edit-2"></i> Bewerken
+                                        </a>
+                                        <a href="{{ url_for('delete_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Weet je zeker dat je deze opdracht wilt verwijderen?')">
+                                            <i data-feather="trash-2"></i> Verwijderen
+                                        </a>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
