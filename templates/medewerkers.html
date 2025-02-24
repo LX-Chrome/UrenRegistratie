@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Medewerkers Overzicht</h5>
+                    {% if not export_mode %}
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('export_medewerkers_pdf') }}" class="btn btn-secondary">
+                            <i data-feather="file-text"></i> Export PDF
+                        </a>
+                        <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary">
+                            <i data-feather="plus"></i> Nieuwe Medewerker
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if not export_mode %}
+                <form class="mb-4" method="GET">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Zoek op naam, email..." 
+                               value="{{ search }}">
+                        <button class="btn btn-outline-secondary" type="submit">Zoeken</button>
+                    </div>
+                </form>
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Naam</th>
+                                <th>Functie</th>
+                                <th>Werkmail</th>
+                                <th>Kantoorruimte</th>
+                                <th>Geboortedatum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medewerker in medewerkers %}
+                            <tr>
+                                <td>
+                                    {{ medewerker.voornaam }}
+                                    {% if medewerker.tussenvoegsel %}
+                                        {{ medewerker.tussenvoegsel }}
+                                    {% endif %}
+                                    {{ medewerker.achternaam }}
+                                </td>
+                                <td>{{ medewerker.functie or '-' }}</td>
+                                <td>{{ medewerker.werkmail }}</td>
+                                <td>{{ medewerker.kantoorruimte or '-' }}</td>
+                                <td>{{ medewerker.geboortedatum.strftime('%d-%m-%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

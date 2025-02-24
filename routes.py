@@ -170,3 +170,105 @@ def add_klant():
             app.logger.error(f"Error adding klant: {str(e)}")
 
     return render_template('add_klant.html')
+
+@app.route('/medewerkers')
+@login_required
+def medewerkers():
+    search = request.args.get('search', '')
+    query = Medewerker.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Medewerker.voornaam.ilike(f'%{search}%'),
+                Medewerker.werkmail.ilike(f'%{search}%'),
+                Medewerker.achternaam.ilike(f'%{search}%')
+            )
+        )
+    medewerkers = query.order_by(Medewerker.achternaam).all()
+    return render_template('medewerkers.html', medewerkers=medewerkers, search=search)
+
+@app.route('/medewerkers/export-pdf')
+@login_required
+def export_medewerkers_pdf():
+    medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
+    html = render_template('medewerkers.html', medewerkers=medewerkers, export_mode=True)
+    pdf = pdfkit.from_string(html, False)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=medewerkers.pdf'
+    return response
+
+@app.route('/medewerkers/add', methods=['GET', 'POST'])
+@login_required
+def add_medewerker():
+    if request.method == 'POST':
+        medewerker = Medewerker(
+            voornaam=request.form['voornaam'],
+            tussenvoegsel=request.form.get('tussenvoegsel'),
+            achternaam=request.form['achternaam'],
+            geboortedatum=datetime.strptime(request.form['geboortedatum'], '%Y-%m-%d'),
+            functie=request.form.get('functie'),
+            werkmail=request.form['werkmail'],
+            kantoorruimte=request.form.get('kantoorruimte')
+        )
+        db.session.add(medewerker)
+        try:
+            db.session.commit()
+            flash('Medewerker succesvol toegevoegd')
+            return redirect(url_for('medewerkers'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij toevoegen medewerker: mogelijk bestaat deze werkmail al')
+            app.logger.error(f"Error adding medewerker: {str(e)}")
+
+    return render_template('add_medewerker.html')
+
+@app.route('/opdrachten')
+@login_required
+def opdrachten():
+    search = request.args.get('search', '')
+    query = Opdracht.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Opdracht.titel.ilike(f'%{search}%'),
+                Opdracht.omschrijving.ilike(f'%{search}%')
+            )
+        )
+    opdrachten = query.order_by(Opdracht.aanvraagdatum.desc()).all()
+    return render_template('opdrachten.html', opdrachten=opdrachten, search=search)
+
+@app.route('/opdrachten/export-pdf')
+@login_required
+def export_opdrachten_pdf():
+    opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
+    html = render_template('opdrachten.html', opdrachten=opdrachten, export_mode=True)
+    pdf = pdfkit.from_string(html, False)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=opdrachten.pdf'
+    return response
+
+@app.route('/opdrachten/add', methods=['GET', 'POST'])
+@login_required
+def add_opdracht():
+    if request.method == 'POST':
+        opdracht = Opdracht(
+            klant_id=request.form['klant_id'],
+            titel=request.form['titel'],
+            omschrijving=request.form['omschrijving'],
+            aanvraagdatum=datetime.strptime(request.form['aanvraagdatum'], '%Y-%m-%d'),
+            benodigde_kennis=request.form.get('benodigde_kennis')
+        )
+        db.session.add(opdracht)
+        try:
+            db.session.commit()
+            flash('Opdracht succesvol toegevoegd')
+            return redirect(url_for('opdrachten'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error bij toevoegen opdracht')
+            app.logger.error(f"Error adding opdracht: {str(e)}")
+
+    klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
+    return render_template('add_opdracht.html', klanten=klanten)

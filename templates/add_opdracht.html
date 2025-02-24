@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Nieuwe Opdracht Toevoegen</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="klant_id" class="form-label">Klant</label>
+                        <select class="form-select" id="klant_id" name="klant_id" required>
+                            <option value="">Selecteer een klant...</option>
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.bedrijfsnaam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="titel" class="form-label">Titel</label>
+                        <input type="text" class="form-control" id="titel" name="titel" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="omschrijving" class="form-label">Omschrijving</label>
+                        <textarea class="form-control" id="omschrijving" name="omschrijving" rows="3" required></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="aanvraagdatum" class="form-label">Aanvraagdatum</label>
+                            <input type="date" class="form-control" id="aanvraagdatum" name="aanvraagdatum" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="benodigde_kennis" class="form-label">Benodigde Kennis</label>
+                            <input type="text" class="form-control" id="benodigde_kennis" name="benodigde_kennis">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('opdrachten') }}" class="btn btn-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">Opdracht Toevoegen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

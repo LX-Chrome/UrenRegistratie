@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Nieuwe Medewerker Toevoegen</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="voornaam" class="form-label">Voornaam</label>
+                            <input type="text" class="form-control" id="voornaam" name="voornaam" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="tussenvoegsel" class="form-label">Tussenvoegsel</label>
+                            <input type="text" class="form-control" id="tussenvoegsel" name="tussenvoegsel">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="achternaam" class="form-label">Achternaam</label>
+                            <input type="text" class="form-control" id="achternaam" name="achternaam" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="geboortedatum" class="form-label">Geboortedatum</label>
+                            <input type="date" class="form-control" id="geboortedatum" name="geboortedatum" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="functie" class="form-label">Functie</label>
+                            <input type="text" class="form-control" id="functie" name="functie">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="werkmail" class="form-label">Werkmail</label>
+                        <input type="email" class="form-control" id="werkmail" name="werkmail" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="kantoorruimte" class="form-label">Kantoorruimte</label>
+                        <input type="text" class="form-control" id="kantoorruimte" name="kantoorruimte">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('medewerkers') }}" class="btn btn-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">Medewerker Toevoegen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
