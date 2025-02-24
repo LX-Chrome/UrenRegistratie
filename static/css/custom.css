@@ -1,6 +1,9 @@
 /* Custom styles to complement Bootstrap dark theme */
 :root {
     --animation-duration: 0.3s;
+    --gilde-primary: #E6007E;
+    --gilde-secondary: #1B3B6F;
+    --gilde-text: #ffffff;
 }
 
 /* Card styles */
@@ -9,6 +12,11 @@
     transition: transform var(--animation-duration), box-shadow var(--animation-duration);
     border: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: var(--gilde-secondary) !important;
+    color: var(--gilde-text);
 }
 
 .animate-card {
@@ -26,13 +34,18 @@
 }
 
 .hoverable-row:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    background-color: rgba(230, 0, 126, 0.1);
 }
 
 /* Modal styles */
 .modal-content {
     border-radius: 0.5rem;
     animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+    background-color: var(--gilde-secondary);
+    color: var(--gilde-text);
 }
 
 /* Alert styles */
@@ -55,18 +68,34 @@
 
 /* Navbar refinements */
 .navbar {
+    background-color: var(--gilde-secondary) !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    color: var(--gilde-text) !important;
 }
 
 .nav-link {
     transition: color var(--animation-duration);
+    color: var(--gilde-text) !important;
 }
 
 .nav-link:hover {
-    color: var(--bs-primary) !important;
+    color: var(--gilde-primary) !important;
 }
 
 /* Button enhancements */
+.btn-primary {
+    background-color: var(--gilde-primary) !important;
+    border-color: var(--gilde-primary) !important;
+}
+
+.btn-secondary {
+    background-color: var(--gilde-secondary) !important;
+    border-color: var(--gilde-secondary) !important;
+}
+
 .btn {
     transition: all var(--animation-duration);
 }
@@ -130,8 +159,9 @@
     }
 
     .card-header {
-        background: none;
-        border-bottom: 2px solid #dee2e6;
+        background: none !important;
+        color: #000 !important;
+        border-bottom: 2px solid var(--gilde-secondary);
     }
 
     .table {
