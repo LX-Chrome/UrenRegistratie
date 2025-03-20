@@ -70,7 +70,7 @@ For a quick installation, follow these steps:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/time-registrator.git
+git clone https://github.com/LX-Chrome/UrenRegistratie.git
 cd time-registrator
 
 # Set up virtual environment
