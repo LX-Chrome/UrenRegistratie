@@ -1,10 +1,14 @@
 import os
 import logging
+import secrets
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
-import secrets
+from dotenv import load_dotenv  # Load environment variables from .env
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -16,13 +20,17 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 
 # Configuration
-app.secret_key = os.environ.get("SESSION_SECRET")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.secret_key = os.environ.get("SESSION_SECRET", secrets.token_urlsafe(32))  # Generate a default secret key if missing
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///database.db")  # Default to SQLite
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
-app.config["API_KEY"] = os.environ.get("API_KEY", secrets.token_urlsafe(32))
+app.config["API_KEY"] = os.environ.get("API_KEY", secrets.token_urlsafe(32))  # Generate if missing
+
+# Debug prints
+print("Database URI:", app.config["SQLALCHEMY_DATABASE_URI"])
+print("API Key:", app.config["API_KEY"])
 
 # Initialize extensions
 db.init_app(app)

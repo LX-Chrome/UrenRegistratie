@@ -1,14 +1,16 @@
-import pdfkit
 import json
 from datetime import datetime
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
 from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid, CheckIn # Added CheckIn import
-import pdfkit
-from datetime import datetime
 from services.export_service import ExportService
 import io
+import pandas as pd
+import csv
+from werkzeug.utils import secure_filename
+import os
+from sqlalchemy import func
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -50,11 +52,16 @@ def register():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5)
-    check_ins = CheckIn.query.filter_by(
-        user_id=current_user.id,
-        check_in_time=datetime.utcnow().date()
-    ).order_by(CheckIn.check_in_time.desc()).limit(5)
+    # Get the most recent time entries for the user
+    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
+    
+    # Get today's date for proper comparison
+    today = datetime.utcnow().date()
+    
+    # Use date comparison for check-ins (using imported func for SQL date extraction)
+    check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
+        func.date(CheckIn.check_in_time) == today
+    ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
 
     return render_template('dashboard.html', entries=entries, check_ins=check_ins)
 
@@ -62,32 +69,59 @@ def dashboard():
 @login_required
 def time_entries():
     if request.method == 'POST':
-        entry = TimeEntry(
-            date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
-            hours=float(request.form['hours']),
-            description=request.form['description'],
-            project=request.form['project'],
-            user_id=current_user.id
-        )
-        db.session.add(entry)
-        db.session.commit()
-        flash('Time entry added successfully')
-        return redirect(url_for('time_entries'))
+        try:
+            entry = TimeEntry(
+                date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
+                hours=float(request.form['hours']),
+                description=request.form['description'],
+                project=request.form['project'],
+                user_id=current_user.id
+            )
+            db.session.add(entry)
+            db.session.commit()
+            flash('Time entry added successfully', 'success')
+            
+            # Redirect to dashboard to see the entry in the recent list
+            if request.form.get('redirect_to_dashboard') == 'true':
+                return redirect(url_for('dashboard'))
+            return redirect(url_for('time_entries'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding time entry: {str(e)}', 'danger')
+            app.logger.error(f"Error adding time entry: {str(e)}")
 
     search = request.args.get('search', '')
-    entries = TimeEntry.query.filter_by(user_id=current_user.id)
+    entries_query = TimeEntry.query.filter_by(user_id=current_user.id)
     if search:
-        entries = entries.filter(TimeEntry.description.contains(search) | 
+        entries_query = entries_query.filter(TimeEntry.description.contains(search) | 
                                   TimeEntry.project.contains(search))
-    entries = entries.order_by(TimeEntry.date.desc()).all()
-    return render_template('time_entries.html', entries=entries, search=search)
+    entries = entries_query.order_by(TimeEntry.date.desc()).all()
+    
+    # Debug logging
+    app.logger.debug(f"Found {len(entries)} time entries for user {current_user.id}")
+    
+    # Check if user came from dashboard
+    from_dashboard = request.args.get('from_dashboard') == 'true'
+    
+    # Check if we need to edit a specific entry
+    edit_entry_id = request.args.get('edit')
+    show_edit_modal = None
+    if edit_entry_id:
+        try:
+            show_edit_modal = int(edit_entry_id)
+        except ValueError:
+            pass
+    
+    return render_template('time_entries.html', entries=entries, search=search, 
+                          from_dashboard=from_dashboard, datetime=datetime,
+                          show_edit_modal=show_edit_modal)
 
 @app.route('/time-entries/<int:entry_id>/edit', methods=['POST'])
 @login_required
 def edit_time_entry(entry_id):
     entry = TimeEntry.query.get_or_404(entry_id)
     if entry.user_id != current_user.id:
-        flash('Unauthorized access')
+        flash('Unauthorized access', 'danger')
         return redirect(url_for('time_entries'))
 
     try:
@@ -96,12 +130,16 @@ def edit_time_entry(entry_id):
         entry.description = request.form['description']
         entry.project = request.form['project']
         db.session.commit()
-        flash('Time entry updated successfully')
+        flash('Time entry updated successfully', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error updating time entry')
+        flash('Error updating time entry: ' + str(e), 'danger')
         app.logger.error(f"Error updating time entry: {str(e)}")
 
+    # Redirect to dashboard if requested
+    if request.form.get('redirect_to_dashboard') == 'true':
+        return redirect(url_for('dashboard'))
+    
     return redirect(url_for('time_entries'))
 
 @app.route('/time-entries/<int:entry_id>/delete')
@@ -109,16 +147,16 @@ def edit_time_entry(entry_id):
 def delete_time_entry(entry_id):
     entry = TimeEntry.query.get_or_404(entry_id)
     if entry.user_id != current_user.id:
-        flash('Unauthorized access')
+        flash('Unauthorized access', 'danger')
         return redirect(url_for('time_entries'))
 
     try:
         db.session.delete(entry)
         db.session.commit()
-        flash('Time entry deleted successfully')
+        flash('Time entry deleted successfully', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error deleting time entry')
+        flash('Error deleting time entry: ' + str(e), 'danger')
         app.logger.error(f"Error deleting time entry: {str(e)}")
 
     return redirect(url_for('time_entries'))
@@ -497,3 +535,145 @@ def check_in():
         app.logger.error(f"Error during check-in: {str(e)}")
 
     return redirect(url_for('dashboard'))
+
+@app.route('/check-in/<int:checkin_id>/delete')
+@login_required
+def delete_check_in(checkin_id):
+    check_in = CheckIn.query.get_or_404(checkin_id)
+    if check_in.user_id != current_user.id:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        db.session.delete(check_in)
+        db.session.commit()
+        flash('Check-in deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting check-in: ' + str(e), 'danger')
+        app.logger.error(f"Error deleting check-in: {str(e)}")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/check-in/<int:checkin_id>/edit', methods=['POST'])
+@login_required
+def edit_check_in(checkin_id):
+    check_in = CheckIn.query.get_or_404(checkin_id)
+    if check_in.user_id != current_user.id:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        check_in.status = request.form['status']
+        check_in.note = request.form.get('note', '')
+        db.session.commit()
+        flash('Check-in updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating check-in: ' + str(e), 'danger')
+        app.logger.error(f"Error updating check-in: {str(e)}")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/pdf-export-guide')
+def pdf_export_guide():
+    """Serve the PDF export guide page to help users set up wkhtmltopdf"""
+    return app.send_static_file('pdf_export_guide.html')
+
+@app.route('/import_time_entries', methods=['POST'])
+@login_required
+def import_time_entries():
+    if 'import_file' not in request.files:
+        flash('No file uploaded', 'danger')
+        return redirect(url_for('time_entries'))
+    
+    file = request.files['import_file']
+    if file.filename == '':
+        flash('No file selected', 'danger')
+        return redirect(url_for('time_entries'))
+    
+    # Check file extension
+    filename = secure_filename(file.filename)
+    file_ext = os.path.splitext(filename)[1].lower()
+    
+    entries_added = 0
+    entries_failed = 0
+    
+    try:
+        # Process CSV file
+        if file_ext == '.csv':
+            # Convert CSV to DataFrame
+            df = pd.read_csv(file)
+            
+        # Process Excel file
+        elif file_ext in ['.xlsx', '.xls']:
+            df = pd.read_excel(file)
+        else:
+            flash('Unsupported file format. Please upload a CSV or Excel file.', 'danger')
+            return redirect(url_for('time_entries'))
+        
+        # Normalize column names (remove spaces, case-insensitive)
+        df.columns = [col.lower().strip() for col in df.columns]
+        
+        # Check for required columns (case insensitive)
+        required_columns = ['date', 'project', 'hours', 'description']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            flash(f"Missing required columns: {', '.join(missing_columns)}", 'danger')
+            return redirect(url_for('time_entries'))
+        
+        # Process each row and add to database
+        for _, row in df.iterrows():
+            try:
+                # Parse the date - support multiple formats
+                try:
+                    # Try to parse as YYYY-MM-DD first
+                    date_val = datetime.strptime(str(row['date']), '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        # Try DD-MM-YYYY format
+                        date_val = datetime.strptime(str(row['date']), '%d-%m-%Y').date()
+                    except ValueError:
+                        # Try MM/DD/YYYY format
+                        date_val = datetime.strptime(str(row['date']), '%m/%d/%Y').date()
+                
+                hours = float(row['hours'])
+                project = str(row['project'])
+                description = str(row['description'])
+                
+                # Create new time entry
+                entry = TimeEntry(
+                    date=date_val,
+                    hours=hours,
+                    project=project,
+                    description=description,
+                    user_id=current_user.id
+                )
+                
+                db.session.add(entry)
+                entries_added += 1
+                
+            except Exception as e:
+                app.logger.error(f"Error importing row: {e}")
+                entries_failed += 1
+                continue
+        
+        # Commit all successful entries
+        db.session.commit()
+        
+        if entries_failed > 0:
+            flash(f'Import completed: {entries_added} entries added, {entries_failed} entries failed.', 'warning')
+        else:
+            flash(f'Successfully imported {entries_added} time entries.', 'success')
+            
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error importing file: {e}")
+        flash(f'Error importing file: {str(e)}', 'danger')
+    
+    # Redirect back to dashboard if requested
+    if request.form.get('redirect_to_dashboard') == 'true':
+        return redirect(url_for('dashboard'))
+        
+    return redirect(url_for('time_entries'))

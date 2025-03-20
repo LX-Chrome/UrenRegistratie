@@ -6,12 +6,12 @@
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Opdrachten Overzicht</h5>
+                    <h5 class="mb-0" data-translate="Opdrachten Overzicht">Opdrachten Overzicht</h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
                         <div class="dropdown">
                             <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i data-feather="download"></i> Exporteren
+                                <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
                             </button>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{ url_for('export_data', entity='opdrachten', format='pdf') }}">
@@ -26,7 +26,7 @@
                             </ul>
                         </div>
                         <a href="{{ url_for('add_opdracht') }}" class="btn btn-primary">
-                            <i data-feather="plus"></i> Nieuwe Opdracht
+                            <i data-feather="plus"></i> <span data-translate="Nieuwe Opdracht">Nieuwe Opdracht</span>
                         </a>
                     </div>
                     {% endif %}
@@ -36,10 +36,11 @@
                 {% if not export_mode %}
                 <form class="mb-4" method="GET">
                     <div class="input-group">
-                        <input type="text" class="form-control" name="search" 
+                        <input type="text" class="form-control" name="search"
+                               data-placeholder="Zoek op titel of omschrijving..."
                                placeholder="Zoek op titel of omschrijving..." 
                                value="{{ search }}">
-                        <button class="btn btn-outline-secondary" type="submit">Zoeken</button>
+                        <button class="btn btn-outline-secondary" type="submit" data-translate="Zoeken">Zoeken</button>
                     </div>
                 </form>
                 {% endif %}
@@ -48,11 +49,11 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Datum</th>
-                                <th>Klant</th>
-                                <th>Titel</th>
-                                <th>Omschrijving</th>
-                                <th>Benodigde Kennis</th>
+                                <th data-translate="Datum">Datum</th>
+                                <th data-translate="Klant">Klant</th>
+                                <th data-translate="Titel">Titel</th>
+                                <th data-translate="Omschrijving">Omschrijving</th>
+                                <th data-translate="Benodigde Kennis">Benodigde Kennis</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -65,11 +66,11 @@
                                 <td>{{ opdracht.benodigde_kennis or '-' }}</td>
                                 <td class="text-end">
                                     <a href="{{ url_for('edit_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-primary">
-                                        <i data-feather="edit-2"></i> Bewerken
+                                        <i data-feather="edit-2"></i> <span data-translate="Bewerken">Bewerken</span>
                                     </a>
                                     <a href="{{ url_for('delete_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-danger" 
                                        onclick="return confirm('Weet je zeker dat je deze opdracht wilt verwijderen?')">
-                                        <i data-feather="trash-2"></i> Verwijderen
+                                        <i data-feather="trash-2"></i> <span data-translate="Verwijderen">Verwijderen</span>
                                     </a>
                                 </td>
                             </tr>

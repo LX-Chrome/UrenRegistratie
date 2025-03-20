@@ -1,9 +1,21 @@
-/* Custom styles to complement Bootstrap dark theme */
+/* Custom styles to complement Bootstrap themes */
 :root {
     --animation-duration: 0.3s;
     --gilde-primary: #E6007E;
     --gilde-secondary: #1B3B6F;
     --gilde-text: #ffffff;
+}
+
+[data-bs-theme="light"] {
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-navbar-color: var(--gilde-text);
+}
+
+[data-bs-theme="dark"] {
+    --bs-body-bg: #212529;
+    --bs-body-color: #ffffff;
+    --bs-navbar-color: var(--gilde-text);
 }
 
 /* Card styles */
@@ -184,4 +196,71 @@
     .card-header .btn {
         width: 100%;
     }
+}
+
+/* Language toggle switch */
+.language-toggle {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    margin: 0;
+}
+
+.language-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.language-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5px;
+}
+
+.language-toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.language-toggle-slider .lang-label {
+    color: var(--gilde-text);
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.language-toggle-slider .lang-nl {
+    margin-left: 2px;
+}
+
+.language-toggle-slider .lang-en {
+    margin-right: 2px;
+}
+
+.language-toggle.active .language-toggle-slider {
+    background-color: var(--gilde-primary);
+}
+
+.language-toggle.active .language-toggle-slider::before {
+    transform: translateX(30px);
 }

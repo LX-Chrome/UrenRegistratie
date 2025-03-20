@@ -1,73 +1,67 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
     feather.replace();
-
+    
     // Theme toggle functionality
     const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = themeToggle.querySelector('i');
-    const html = document.documentElement;
+    if (themeToggle) {
+        const themeIcon = themeToggle.querySelector('i');
+        const html = document.documentElement;
 
-    // Check for saved theme preference or use system preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const savedTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
-    html.setAttribute('data-bs-theme', savedTheme);
-    updateThemeIcon(savedTheme);
+        // Check for saved theme preference or use system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+        setTheme(savedTheme);
 
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = html.getAttribute('data-bs-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
 
-        html.setAttribute('data-bs-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
-    });
-
-    function updateThemeIcon(theme) {
-        themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
-        feather.replace();
+        function setTheme(theme) {
+            html.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            if (themeIcon) {
+                themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+                feather.replace();
+            }
+        }
     }
 
-    // Set default date to today for the date input
-    const dateInput = document.getElementById('date');
-    if (dateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
-    }
-
-    // Initialize all tooltips
+    // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
 
-    // Add animation to cards
-    document.querySelectorAll('.card').forEach(card => {
-        card.classList.add('animate-card');
-    });
-
-    // Add hover effect to table rows
-    document.querySelectorAll('.table tbody tr').forEach(row => {
-        row.classList.add('hoverable-row');
-    });
-
-    // Auto-dismiss alerts
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 5000);
-    });
-
-    // Add loading animation for export buttons
-    document.querySelectorAll('[href*="export"]').forEach(link => {
-        link.addEventListener('click', function() {
-            const icon = this.querySelector('i');
-            if (icon) {
-                icon.setAttribute('data-feather', 'loader');
-                feather.replace();
-                icon.classList.add('spin');
-            }
+    // Set default date
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+    
+    // Set up language toggle
+    const languageToggle = document.getElementById('languageToggle');
+    const languageCheckbox = document.getElementById('languageCheckbox');
+    
+    if (languageToggle && languageCheckbox && typeof toggleLanguage === 'function') {
+        // Set initial state based on current language
+        const currentLanguage = localStorage.getItem('language') || 'nl';
+        if (currentLanguage === 'en') {
+            languageCheckbox.checked = true;
+            languageToggle.classList.add('active');
+        } else {
+            languageCheckbox.checked = false;
+            languageToggle.classList.remove('active');
+        }
+        
+        // Add event listener for the checkbox
+        languageCheckbox.addEventListener('change', function() {
+            toggleLanguage();
         });
-    });
+        
+        console.log('Language toggle initialized');
+    }
 });

@@ -12,7 +12,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i data-feather="code" class="me-2"></i>gildeDevOps Solutions
+                <i data-feather="code" class="me-2"></i><span data-translate="gildeDevOps Solutions">gildeDevOps Solutions</span>
             </a>
             {% if current_user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -22,27 +22,27 @@
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i data-feather="home" class="feather-sm"></i> Dashboard
+                            <i data-feather="home" class="feather-sm"></i> <span data-translate="Dashboard">Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('time_entries') }}">
-                            <i data-feather="clock" class="feather-sm"></i> Uren
+                            <i data-feather="clock" class="feather-sm"></i> <span data-translate="Uren">Uren</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('klanten') }}">
-                            <i data-feather="users" class="feather-sm"></i> Klanten
+                            <i data-feather="users" class="feather-sm"></i> <span data-translate="Klanten">Klanten</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('medewerkers') }}">
-                            <i data-feather="user" class="feather-sm"></i> Medewerkers
+                            <i data-feather="user" class="feather-sm"></i> <span data-translate="Medewerkers">Medewerkers</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('opdrachten') }}">
-                            <i data-feather="briefcase" class="feather-sm"></i> Opdrachten
+                            <i data-feather="briefcase" class="feather-sm"></i> <span data-translate="Opdrachten">Opdrachten</span>
                         </a>
                     </li>
                 </ul>
@@ -54,13 +54,17 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i data-feather="log-out" class="feather-sm"></i> Uitloggen
+                            <i data-feather="log-out" class="feather-sm"></i> <span data-translate="Uitloggen">Uitloggen</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <button class="btn btn-outline-light ms-2" onclick="toggleLanguage()">
-                            <i data-feather="globe"></i> NL/EN
-                        </button>
+                        <label class="language-toggle ms-2" id="languageToggle">
+                            <input type="checkbox" id="languageCheckbox">
+                            <span class="language-toggle-slider">
+                                <span class="lang-label lang-nl">NL</span>
+                                <span class="lang-label lang-en">EN</span>
+                            </span>
+                        </label>
                     </li>
                 </ul>
             </div>
@@ -69,10 +73,10 @@
     </nav>
 
     <main class="container mt-4">
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category not in ('message', 'default') else 'info' }} alert-dismissible fade show">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -85,12 +89,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="{{ url_for('static', filename='js/translations.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-        function toggleLanguage() {
-            // Placeholder:  Replace with actual language switching logic
-            alert('Language toggle clicked!');
-        }
-    </script>
 </body>
 </html>

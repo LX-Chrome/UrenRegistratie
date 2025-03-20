@@ -4,14 +4,68 @@ from datetime import datetime
 import pdfkit
 import xlsxwriter
 from flask import render_template
+import os
 
 class ExportService:
     @staticmethod
     def to_pdf(template_name, data, title):
         """Generate PDF from template"""
-        html = render_template(template_name, **data, export_mode=True)
-        pdf = pdfkit.from_string(html, False)
-        return pdf, f"{title}_{datetime.now().strftime('%Y%m%d')}.pdf", 'application/pdf'
+        try:
+            # Add the current datetime to the template data
+            data['now'] = datetime.now()
+            
+            # Use a PDF-specific template
+            pdf_template = f"pdf_{template_name}"
+            
+            # Check if PDF template exists, otherwise use the regular template
+            html = render_template(pdf_template, **data)
+            
+            # Configure pdfkit options
+            options = {
+                'page-size': 'A4',
+                'margin-top': '0.75in',
+                'margin-right': '0.75in',
+                'margin-bottom': '0.75in',
+                'margin-left': '0.75in',
+                'encoding': 'UTF-8',
+                'no-outline': None,
+                'quiet': ''
+            }
+            
+            # Check if wkhtmltopdf is installed in system path or in the expected location for Windows
+            wkhtmltopdf_path = None
+            if os.name == 'nt':  # Windows
+                possible_paths = [
+                    r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe',
+                    r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        wkhtmltopdf_path = path
+                        break
+            
+            # Generate PDF with configuration if path found, otherwise use default
+            if wkhtmltopdf_path:
+                config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+                pdf = pdfkit.from_string(html, False, options=options, configuration=config)
+            else:
+                pdf = pdfkit.from_string(html, False, options=options)
+                
+            return pdf, f"{title}_{datetime.now().strftime('%Y%m%d')}.pdf", 'application/pdf'
+            
+        except Exception as e:
+            # If PDF generation fails, return an error page
+            html = f"""
+            <html>
+            <body>
+                <h1>Error Generating PDF</h1>
+                <p>There was an error generating the PDF: {str(e)}</p>
+                <p>Please check if wkhtmltopdf is installed on the server.</p>
+                <p><a href="/pdf-export-guide">View PDF Export Setup Guide</a></p>
+            </body>
+            </html>
+            """
+            return html.encode('utf-8'), f"error_{datetime.now().strftime('%Y%m%d')}.html", 'text/html'
 
     @staticmethod
     def to_excel(data, headers, title):
