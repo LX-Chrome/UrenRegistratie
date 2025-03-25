@@ -13,3 +13,4 @@ twilio>=9.4.6
 xlsxwriter>=3.2.2
 openpyxl>=3.1.5
 python-dotenv>=1.0.0 
+pandas>=1.17.0
