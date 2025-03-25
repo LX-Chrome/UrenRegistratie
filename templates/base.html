@@ -12,7 +12,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i data-feather="code" class="me-2"></i><img src="logo.webp" height="50px" width="100px"><span data-translate="gildeDevOps Solutions">gildeDevOps Solutions</span>
+                <picture><source type="image/webp" srcSet="/logo.webp"><img src="logo.webp" height="50px" width="200px"></picture><span data-translate="gildeDevOps Solutions">gildeDevOps Solutions</span>
             </a>
             {% if current_user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
