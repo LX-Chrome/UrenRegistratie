@@ -47,6 +47,29 @@
                                             <i data-feather="trash-2" class="feather-sm"></i>
                                         </a>
                                     </div>
+                                    
+                                    <!-- Modal for Editing Check-in Time -->
+                                    <div class="modal fade" id="editCheckinModal{{ check_in.id }}" tabindex="-1" aria-labelledby="editCheckinModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editCheckinModalLabel">Edit Check-in Time</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}" method="POST">
+                                                    <div class="modal-body">
+                                                        <label for="checkinTime{{ check_in.id }}" class="form-label">New Check-in Time:</label>
+                                                        <input type="time" class="form-control" id="checkinTime{{ check_in.id }}" name="checkin_time" value="{{ check_in.check_in_time.strftime('%H:%M') }}" required>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                 </div>
                                 {% if check_in.note %}
                                 <p class="mb-1">{{ check_in.note }}</p>
