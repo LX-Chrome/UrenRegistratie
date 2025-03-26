@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logo Generator</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #logo-container {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4a86e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2c5aa0;
+        }
+    </style>
+</head>
+<body>
+    <div id="logo-container">
+        <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Main circular background -->
+            <circle cx="100" cy="100" r="90" fill="#4a86e8" />
+            
+            <!-- Inner circle -->
+            <circle cx="100" cy="100" r="75" fill="#ffffff" />
+            
+            <!-- Clock face design -->
+            <circle cx="100" cy="100" r="70" fill="#f5f5f5" stroke="#4a86e8" stroke-width="2" />
+            
+            <!-- Clock hands -->
+            <line x1="100" y1="100" x2="100" y2="50" stroke="#2c5aa0" stroke-width="4" stroke-linecap="round" />
+            <line x1="100" y1="100" x2="135" y2="120" stroke="#2c5aa0" stroke-width="4" stroke-linecap="round" />
+            
+            <!-- Center point -->
+            <circle cx="100" cy="100" r="5" fill="#2c5aa0" />
+            
+            <!-- Hour marks -->
+            <line x1="100" y1="40" x2="100" y2="50" stroke="#4a86e8" stroke-width="3" />
+            <line x1="160" y1="100" x2="150" y2="100" stroke="#4a86e8" stroke-width="3" />
+            <line x1="100" y1="160" x2="100" y2="150" stroke="#4a86e8" stroke-width="3" />
+            <line x1="40" y1="100" x2="50" y2="100" stroke="#4a86e8" stroke-width="3" />
+            
+            <!-- Text elements -->
+            <text x="100" y="85" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c5aa0">UREN</text>
+            <text x="100" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c5aa0">REGISTRATIE</text>
+            
+            <!-- Check mark symbol -->
+            <path d="M75,120 L90,135 L125,100" fill="none" stroke="#4CAF50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </div>
+    
+    <button id="download-btn">Download as PNG</button>
+
+    <script>
+        document.getElementById('download-btn').addEventListener('click', function() {
+            const svgData = document.querySelector('svg').outerHTML;
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                
+                const pngUrl = canvas.toDataURL('image/png');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = pngUrl;
+                downloadLink.download = 'logo.png';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            };
+            
+            img.src = url;
+        });
+    </script>
+</body>
+</html> 
