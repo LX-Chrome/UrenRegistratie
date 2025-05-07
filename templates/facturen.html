@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i data-feather="file-text" class="feather-lg me-2"></i> <span data-translate="Facturen">Facturen</span></h1>
+        {% if current_user.can_create_invoices() %}
+        <a href="{{ url_for('nieuwe_factuur') }}" class="btn btn-primary">
+            <i data-feather="plus" class="feather-sm"></i> <span data-translate="Nieuwe factuur">Nieuwe factuur</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><span data-translate="Zoeken">Zoeken</span></h5>
+            <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#searchCollapse">
+                <i data-feather="search"></i>
+            </button>
+        </div>
+        <div class="collapse show" id="searchCollapse">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('facturen') }}" class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label for="search" class="form-label"><span data-translate="Zoekterm">Zoekterm</span></label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Factuur nummer of klantnaam">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i data-feather="search" class="feather-sm"></i> <span data-translate="Zoeken">Zoeken</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <span data-translate="Facturen overzicht">Facturen overzicht</span>
+                <span class="badge bg-primary ms-2">{{ facturen|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th><span data-translate="Nummer">Nummer</span></th>
+                            <th><span data-translate="Datum">Datum</span></th>
+                            <th><span data-translate="Klant">Klant</span></th>
+                            <th><span data-translate="Bedrag">Bedrag</span></th>
+                            <th><span data-translate="Status">Status</span></th>
+                            <th><span data-translate="Acties">Acties</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if facturen %}
+                            {% for factuur in facturen %}
+                            <tr>
+                                <td>{{ factuur.factuur_nummer }}</td>
+                                <td>{{ factuur.datum.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ factuur.klant.bedrijfsnaam }}</td>
+                                <td>€ {{ "%.2f"|format(factuur.totaal) }}</td>
+                                <td>
+                                    {% if factuur.betaald %}
+                                    <span class="badge bg-success"><span data-translate="Betaald">Betaald</span></span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <span data-translate="Onbetaald">Onbetaald</span>
+                                        {% if factuur.vervaldatum < today %}
+                                        <span class="badge bg-danger ms-1"><span data-translate="Te laat">Te laat</span></span>
+                                        {% endif %}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('bekijk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i data-feather="eye" class="feather-xs"></i>
+                                        </a>
+                                        {% if current_user.can_edit_all() and not factuur.betaald %}
+                                        <a href="{{ url_for('bewerk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-secondary">
+                                            <i data-feather="edit" class="feather-xs"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('factuur_pdf', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                                            <i data-feather="file-text" class="feather-xs"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <p class="mb-0 text-muted"><span data-translate="Geen facturen gevonden">Geen facturen gevonden</span></p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i data-feather="clock" class="feather-lg me-2"></i> <span data-translate="Uren per jaar">Uren per jaar</span></h1>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{ selected_year }}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
+                    {% for year in years %}
+                    <li><a class="dropdown-item {% if year == selected_year %}active{% endif %}" href="{{ url_for('report_hours_per_year', year=year) }}">{{ year }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="feather-sm"></i> <span data-translate="Terug">Terug</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><span data-translate="Totaaloverzicht">Totaaloverzicht</span> {{ selected_year }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h2 class="display-4 mb-2">{{ "%.1f"|format(total_hours) }}</h2>
+                            <p class="text-muted"><span data-translate="Totaal aantal uren">Totaal aantal uren</span></p>
+                        </div>
+                        <div class="col-md-8">
+                            <canvas id="monthlyHoursChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Uren per medewerker">Uren per medewerker</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="employeeHoursChart" height="300"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th><span data-translate="Medewerker">Medewerker</span></th>
+                                            <th class="text-end"><span data-translate="Uren">Uren</span></th>
+                                            <th class="text-end"><span data-translate="Percentage">Percentage</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if employee_hours %}
+                                            {% for employee in employee_hours %}
+                                            <tr>
+                                                <td>{{ employee.voornaam }} {{ employee.achternaam }}</td>
+                                                <td class="text-end">{{ "%.1f"|format(employee.aantal_uren) }}</td>
+                                                <td class="text-end">
+                                                    {% if total_hours > 0 %}
+                                                    {{ "%.1f"|format((employee.aantal_uren / total_hours) * 100) }}%
+                                                    {% else %}
+                                                    0.0%
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="3" class="text-center py-4">
+                                                    <p class="mb-0 text-muted"><span data-translate="Geen gegevens beschikbaar">Geen gegevens beschikbaar</span></p>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Export opties">Export opties</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='hours', format='pdf', year=selected_year) }}" class="btn btn-danger w-100" target="_blank">
+                                <i data-feather="file-text" class="feather-sm me-2"></i> <span data-translate="Exporteer als PDF">Exporteer als PDF</span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='hours', format='excel', year=selected_year) }}" class="btn btn-success w-100">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span data-translate="Exporteer als Excel">Exporteer als Excel</span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='hours', format='csv', year=selected_year) }}" class="btn btn-primary w-100">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span data-translate="Exporteer als CSV">Exporteer als CSV</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Define chart colors
+        const chartColors = [
+            '#0d6efd', // primary
+            '#198754', // success
+            '#dc3545', // danger
+            '#ffc107', // warning
+            '#0dcaf0', // info
+            '#6f42c1', // purple
+            '#fd7e14', // orange
+            '#20c997', // teal
+            '#6610f2', // indigo
+            '#d63384', // pink
+        ];
+        
+        // Month labels for charts
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        
+        // Create monthly hours chart
+        const hoursCtx = document.getElementById('monthlyHoursChart').getContext('2d');
+        const hoursChart = new Chart(hoursCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Uren per maand',
+                    data: {{ monthly_hours|tojson }},
+                    backgroundColor: chartColors[0],
+                    borderColor: chartColors[0],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: false
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Uren'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Maand'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Prepare data for employee hours chart
+        {% if employee_hours %}
+        const employeeNames = [{% for employee in employee_hours %}'{{ employee.voornaam }} {{ employee.achternaam }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        const employeeHours = [{% for employee in employee_hours %}{{ employee.aantal_uren }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        const employeeColors = chartColors.slice(0, {{ employee_hours|length }});
+        
+        // Create employee hours chart
+        const employeeCtx = document.getElementById('employeeHoursChart').getContext('2d');
+        const employeeChart = new Chart(employeeCtx, {
+            type: 'pie',
+            data: {
+                labels: employeeNames,
+                datasets: [{
+                    data: employeeHours,
+                    backgroundColor: employeeColors,
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value.toFixed(1)} uren (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

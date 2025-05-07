@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i data-feather="briefcase" class="feather-lg me-2"></i> <span data-translate="Opdrachten per klant">Opdrachten per klant</span></h1>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{ selected_year }}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
+                    {% for year in years %}
+                    <li><a class="dropdown-item {% if year == selected_year %}active{% endif %}" href="{{ url_for('report_assignments_per_client', year=year) }}">{{ year }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="feather-sm"></i> <span data-translate="Terug">Terug</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><span data-translate="Opdrachten">Opdrachten</span> {{ selected_year }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h2 class="display-4 mb-2">{{ total_assignments }}</h2>
+                            <p class="text-muted"><span data-translate="Totaal aantal opdrachten">Totaal aantal opdrachten</span></p>
+                        </div>
+                        <div class="col-md-8">
+                            <canvas id="monthlyAssignmentsChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Opdrachten per klant">Opdrachten per klant</span></h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="clientAssignmentsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Opdrachtstatus verdeling">Opdrachtstatus verdeling</span></h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Opdrachtdetails per klant">Opdrachtdetails per klant</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><span data-translate="Klant">Klant</span></th>
+                                    <th class="text-center"><span data-translate="Aantal opdrachten">Aantal opdrachten</span></th>
+                                    <th class="text-center"><span data-translate="Open">Open</span></th>
+                                    <th class="text-center"><span data-translate="In uitvoering">In uitvoering</span></th>
+                                    <th class="text-center"><span data-translate="Afgerond">Afgerond</span></th>
+                                    <th class="text-center"><span data-translate="Gemiddeld uurtarief">Gemiddeld uurtarief</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if assignments_per_client %}
+                                    {% for client in assignments_per_client %}
+                                    <tr>
+                                        <td>{{ client.bedrijfsnaam }}</td>
+                                        <td class="text-center">{{ client.assignment_count }}</td>
+                                        <td class="text-center">{{ client.open_count }}</td>
+                                        <td class="text-center">{{ client.in_progress_count }}</td>
+                                        <td class="text-center">{{ client.completed_count }}</td>
+                                        <td class="text-center">€ {{ "%.2f"|format(client.average_hourly_rate) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <p class="mb-0 text-muted"><span data-translate="Geen gegevens beschikbaar">Geen gegevens beschikbaar</span></p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Export opties">Export opties</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='assignments', format='pdf', year=selected_year) }}" class="btn btn-danger w-100" target="_blank">
+                                <i data-feather="file-text" class="feather-sm me-2"></i> <span data-translate="Exporteer als PDF">Exporteer als PDF</span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='assignments', format='excel', year=selected_year) }}" class="btn btn-success w-100">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span data-translate="Exporteer als Excel">Exporteer als Excel</span>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('export_data', entity='assignments', format='csv', year=selected_year) }}" class="btn btn-primary w-100">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span data-translate="Exporteer als CSV">Exporteer als CSV</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Define chart colors
+        const chartColors = [
+            '#0d6efd', // primary
+            '#dc3545', // danger
+            '#198754', // success
+            '#ffc107', // warning
+            '#0dcaf0', // info
+            '#6f42c1', // purple
+            '#fd7e14', // orange
+            '#20c997', // teal
+            '#6610f2', // indigo
+            '#d63384', // pink
+        ];
+        
+        // Define status colors
+        const statusColors = {
+            'open': '#ffc107',      // warning for open
+            'in-progress': '#0d6efd', // primary for in-progress
+            'completed': '#198754',   // success for completed
+            'cancelled': '#dc3545'    // danger for cancelled
+        };
+        
+        // Helper function to get color from status (JavaScript equivalent of Python's .get())
+        function getStatusColor(status, defaultColor) {
+            return statusColors[status] || defaultColor;
+        }
+        
+        // Month labels for charts
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        
+        // Create monthly assignments chart
+        const monthlyCtx = document.getElementById('monthlyAssignmentsChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Aantal opdrachten per maand',
+                    data: {{ monthly_assignments|tojson }},
+                    backgroundColor: '#0d6efd',
+                    borderColor: '#0d6efd',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Aantal opdrachten'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Maand'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Prepare data for client assignments chart
+        {% if assignments_per_client %}
+        const clientNames = [{% for client in assignments_per_client %}'{{ client.bedrijfsnaam }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        const clientAssignments = [{% for client in assignments_per_client %}{{ client.assignment_count }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        const clientColors = chartColors.slice(0, {{ assignments_per_client|length }});
+        
+        // Create client assignments chart
+        const clientCtx = document.getElementById('clientAssignmentsChart').getContext('2d');
+        const clientChart = new Chart(clientCtx, {
+            type: 'bar',
+            data: {
+                labels: clientNames,
+                datasets: [{
+                    label: 'Aantal opdrachten',
+                    data: clientAssignments,
+                    backgroundColor: clientColors,
+                    borderColor: clientColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Aantal opdrachten'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+        
+        // Prepare data for status chart
+        {% if assignments_by_status %}
+        const statusLabels = [{% for status, count in assignments_by_status %}'{{ status }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        const statusCounts = [{% for status, count in assignments_by_status %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        const statusColorArray = [{% for status, count in assignments_by_status %}getStatusColor('{{ status }}', '#6c757d'){% if not loop.last %}, {% endif %}{% endfor %}];
+        
+        // Create status chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusChart = new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: statusColorArray,
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
