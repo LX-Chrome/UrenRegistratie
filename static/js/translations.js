@@ -80,7 +80,7 @@ const translations = {
         
         // Search placeholders
         "Zoek op naam, email...": "Search by name, email...",
-        "Zoek op bedrijfsnaam, email of achternaam...": "Search by company name, email or last name...",
+        "Zoek op bedrijfsnaam, email of achternaam...": "Search by company name, email or surname...",
         "Zoek op titel of omschrijving...": "Search by title or description...",
         
         // Confirmation messages

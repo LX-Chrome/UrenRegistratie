@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i data-feather="file-text" class="feather-lg me-2"></i> 
+            <span data-translate="Factuur">Factuur</span> {{ factuur.factuur_nummer }}
+        </h1>
+        <div class="btn-group">
+            <a href="{{ url_for('facturen') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="feather-sm"></i> <span data-translate="Terug">Terug</span>
+            </a>
+            <a href="{{ url_for('factuur_pdf', factuur_id=factuur.id) }}" class="btn btn-outline-danger" target="_blank">
+                <i data-feather="file-text" class="feather-sm"></i> <span data-translate="PDF">PDF</span>
+            </a>
+            {% if current_user.can_edit_all() and not factuur.betaald %}
+            <a href="{{ url_for('bewerk_factuur', factuur_id=factuur.id) }}" class="btn btn-outline-primary">
+                <i data-feather="edit" class="feather-sm"></i> <span data-translate="Bewerken">Bewerken</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Factuurgegevens">Factuurgegevens</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6><span data-translate="Factuurnummer">Factuurnummer</span></h6>
+                            <p class="text-muted">{{ factuur.factuur_nummer }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><span data-translate="Datum">Datum</span></h6>
+                            <p class="text-muted">{{ factuur.datum.strftime('%d-%m-%Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6><span data-translate="Vervaldatum">Vervaldatum</span></h6>
+                            <p class="text-muted">{{ factuur.vervaldatum.strftime('%d-%m-%Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><span data-translate="Betalingsvoorwaarden">Betalingsvoorwaarden</span></h6>
+                            <p class="text-muted">{{ factuur.betalingsvoorwaarden }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6><span data-translate="Klant">Klant</span></h6>
+                            <p class="mb-1"><strong>{{ factuur.klant.bedrijfsnaam }}</strong></p>
+                            <p class="mb-1">{{ factuur.klant.get_fullname() }}</p>
+                            <p class="mb-1">{{ factuur.klant.adres }}</p>
+                            <p class="mb-1">{{ factuur.klant.postcode }} {{ factuur.klant.plaats }}</p>
+                            <p class="mb-0">BTW: {{ factuur.klant.btw_nummer or 'Niet gespecificeerd' }}</p>
+                            <p class="mb-0">KVK: {{ factuur.klant.kvk_nummer or 'Niet gespecificeerd' }}</p>
+                        </div>
+                    </div>
+                    {% if factuur.opdracht %}
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6><span data-translate="Opdracht">Opdracht</span></h6>
+                            <p class="text-muted">{{ factuur.opdracht.titel }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if factuur.notities %}
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6><span data-translate="Notities">Notities</span></h6>
+                            <p class="text-muted">{{ factuur.notities }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Specificatie">Specificatie</span></h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if factuur.werkzaamheden or factuur.time_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><span data-translate="Omschrijving">Omschrijving</span></th>
+                                    <th><span data-translate="Datum">Datum</span></th>
+                                    <th class="text-end"><span data-translate="Uren">Uren</span></th>
+                                    <th class="text-end"><span data-translate="Tarief">Tarief</span></th>
+                                    <th class="text-end"><span data-translate="Bedrag">Bedrag</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for werkzaamheid in factuur.werkzaamheden %}
+                                <tr>
+                                    <td>{{ werkzaamheid.omschrijving }}</td>
+                                    <td>{{ werkzaamheid.datum.strftime('%d-%m-%Y') }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(werkzaamheid.aantal_uren) }}</td>
+                                    <td class="text-end">
+                                        {% if werkzaamheid.uurtarief_override %}
+                                        € {{ "%.2f"|format(werkzaamheid.uurtarief_override) }}
+                                        {% elif werkzaamheid.opdracht.uurtarief %}
+                                        € {{ "%.2f"|format(werkzaamheid.opdracht.uurtarief) }}
+                                        {% else %}
+                                        € --,--
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if werkzaamheid.uurtarief_override %}
+                                        € {{ "%.2f"|format(werkzaamheid.aantal_uren * werkzaamheid.uurtarief_override) }}
+                                        {% elif werkzaamheid.opdracht.uurtarief %}
+                                        € {{ "%.2f"|format(werkzaamheid.aantal_uren * werkzaamheid.opdracht.uurtarief) }}
+                                        {% else %}
+                                        € --,--
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% for entry in factuur.time_entries %}
+                                <tr>
+                                    <td>{{ entry.description }} ({{ entry.project }})</td>
+                                    <td>{{ entry.date.strftime('%d-%m-%Y') }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(entry.hours) }}</td>
+                                    <td class="text-end">
+                                        {% if entry.hourly_rate %}
+                                        € {{ "%.2f"|format(entry.hourly_rate) }}
+                                        {% else %}
+                                        € --,--
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if entry.hourly_rate %}
+                                        € {{ "%.2f"|format(entry.hours * entry.hourly_rate) }}
+                                        {% else %}
+                                        € --,--
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="mb-0 text-muted"><span data-translate="Geen gespecificeerde items">Geen gespecificeerde items</span></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Totalen">Totalen</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h6><span data-translate="Subtotaal">Subtotaal</span></h6>
+                        <p class="mb-0">€ {{ "%.2f"|format(factuur.subtotaal) }}</p>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <h6><span data-translate="BTW">BTW</span> ({{ "%.1f"|format(factuur.btw_percentage) }}%)</h6>
+                        <p class="mb-0">€ {{ "%.2f"|format(factuur.btw_bedrag) }}</p>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h5><span data-translate="Totaal">Totaal</span></h5>
+                        <h5>€ {{ "%.2f"|format(factuur.totaal) }}</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Status">Status</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {% if factuur.betaald %}
+                        <div class="alert alert-success">
+                            <i data-feather="check-circle" class="feather-sm me-2"></i>
+                            <span data-translate="Betaald op">Betaald op</span> 
+                            {% if factuur.betaaldatum %}
+                                {{ factuur.betaaldatum.strftime('%d-%m-%Y') }}
+                            {% else %}
+                                <span data-translate="Datum onbekend">Datum onbekend</span>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i data-feather="alert-circle" class="feather-sm me-2"></i>
+                            <span data-translate="Onbetaald">Onbetaald</span>
+                            {% if factuur.vervaldatum < today %}
+                            <span class="badge bg-danger ms-2"><span data-translate="Te laat">Te laat</span></span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if not factuur.betaald and current_user.can_edit_all() %}
+                    <form action="{{ url_for('mark_invoice_paid', factuur_id=factuur.id) }}" method="POST">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i data-feather="check" class="feather-sm me-2"></i>
+                            <span data-translate="Markeer als betaald">Markeer als betaald</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Acties">Acties</span></h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('factuur_pdf', factuur_id=factuur.id) }}" class="btn btn-outline-danger w-100 mb-2" target="_blank">
+                        <i data-feather="file-text" class="feather-sm me-2"></i>
+                        <span data-translate="Download PDF">Download PDF</span>
+                    </a>
+
+                    {% if current_user.can_edit_all() and not factuur.betaald %}
+                    <a href="{{ url_for('bewerk_factuur', factuur_id=factuur.id) }}" class="btn btn-outline-primary w-100 mb-2">
+                        <i data-feather="edit" class="feather-sm me-2"></i>
+                        <span data-translate="Bewerk factuur">Bewerk factuur</span>
+                    </a>
+
+                    <form action="{{ url_for('delete_factuur', factuur_id=factuur.id) }}" method="POST" class="mb-0" onsubmit="return confirm('Weet je zeker dat je deze factuur wilt verwijderen?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i data-feather="trash-2" class="feather-sm me-2"></i>
+                            <span data-translate="Verwijder factuur">Verwijder factuur</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+    });
+</script>
+{% endblock %}

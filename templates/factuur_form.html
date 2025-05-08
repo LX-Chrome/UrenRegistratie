@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i data-feather="file-text" class="feather-lg me-2"></i> 
+            {% if factuur %}
+            <span data-translate="Bewerk factuur">Bewerk factuur</span> {{ factuur.factuur_nummer }}
+            {% else %}
+            <span data-translate="Nieuwe factuur">Nieuwe factuur</span>
+            {% endif %}
+        </h1>
+        <a href="{{ url_for('facturen') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="feather-sm"></i> <span data-translate="Terug">Terug</span>
+        </a>
+    </div>
+
+    <form method="POST" id="factuurForm" class="needs-validation" novalidate>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><span data-translate="Factuurgegevens">Factuurgegevens</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="datum" class="form-label"><span data-translate="Factuurdatum">Factuurdatum</span> *</label>
+                                <input type="date" class="form-control" id="datum" name="datum" 
+                                       value="{{ factuur.datum.strftime('%Y-%m-%d') if factuur else today.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="payment_terms_days" class="form-label"><span data-translate="Betalingstermijn (dagen)">Betalingstermijn (dagen)</span></label>
+                                <input type="number" class="form-control" id="payment_terms_days" name="payment_terms_days" 
+                                       value="30" min="1" max="90">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="klant_id" class="form-label"><span data-translate="Klant">Klant</span> *</label>
+                                <select class="form-select" id="klant_id" name="klant_id" required 
+                                        {% if factuur %}disabled{% endif %}>
+                                    <option value="" disabled selected>Selecteer een klant</option>
+                                    {% for klant in klanten %}
+                                    <option value="{{ klant.id }}" 
+                                            {% if factuur and factuur.klant_id == klant.id %}selected{% endif %}>
+                                        {{ klant.bedrijfsnaam }} ({{ klant.get_fullname() }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if factuur %}
+                                <input type="hidden" name="klant_id" value="{{ factuur.klant_id }}">
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="opdracht_id" class="form-label"><span data-translate="Opdracht">Opdracht</span></label>
+                                <select class="form-select" id="opdracht_id" name="opdracht_id"
+                                        {% if factuur %}disabled{% endif %}>
+                                    <option value="">Geen specifieke opdracht</option>
+                                    {% for opdracht in opdrachten %}
+                                    <option value="{{ opdracht.id }}"
+                                            {% if factuur and factuur.opdracht_id == opdracht.id %}selected{% endif %}>
+                                        {{ opdracht.titel }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if factuur %}
+                                <input type="hidden" name="opdracht_id" value="{{ factuur.opdracht_id or '' }}">
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="betalingsvoorwaarden" class="form-label"><span data-translate="Betalingsvoorwaarden">Betalingsvoorwaarden</span></label>
+                                <input type="text" class="form-control" id="betalingsvoorwaarden" name="betalingsvoorwaarden" 
+                                       value="{{ factuur.betalingsvoorwaarden if factuur else 'Betaling binnen 30 dagen' }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="notities" class="form-label"><span data-translate="Notities">Notities</span></label>
+                                <textarea class="form-control" id="notities" name="notities" rows="3">{{ factuur.notities if factuur else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><span data-translate="Factuuritems">Factuuritems</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Werkzaamheden tab -->
+                        <div class="mb-4">
+                            <h6><span data-translate="Werkzaamheden">Werkzaamheden</span></h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover" id="werkzaamhedenTable">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%"></th>
+                                            <th><span data-translate="Omschrijving">Omschrijving</span></th>
+                                            <th><span data-translate="Medewerker">Medewerker</span></th>
+                                            <th><span data-translate="Datum">Datum</span></th>
+                                            <th class="text-end"><span data-translate="Uren">Uren</span></th>
+                                            <th class="text-end"><span data-translate="Tarief">Tarief</span></th>
+                                            <th class="text-end"><span data-translate="Bedrag">Bedrag</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for w in werkzaamheden %}
+                                        <tr>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input werkzaamheid-check" type="checkbox" 
+                                                           name="werkzaamheid_ids" value="{{ w.id }}" id="werkzaamheid_{{ w.id }}"
+                                                           {% if factuur and w.factuur_id == factuur.id %}checked{% endif %}
+                                                           data-uren="{{ w.aantal_uren }}"
+                                                           data-tarief="{{ w.uurtarief_override or w.opdracht.uurtarief or 0 }}">
+                                                </div>
+                                            </td>
+                                            <td>{{ w.omschrijving }}</td>
+                                            <td>{{ w.medewerker.voornaam }} {{ w.medewerker.achternaam }}</td>
+                                            <td>{{ w.datum.strftime('%d-%m-%Y') }}</td>
+                                            <td class="text-end">{{ "%.2f"|format(w.aantal_uren) }}</td>
+                                            <td class="text-end">
+                                                {% if w.uurtarief_override %}
+                                                € {{ "%.2f"|format(w.uurtarief_override) }}
+                                                {% elif w.opdracht.uurtarief %}
+                                                € {{ "%.2f"|format(w.opdracht.uurtarief) }}
+                                                {% else %}
+                                                € --,--
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if w.uurtarief_override %}
+                                                € {{ "%.2f"|format(w.aantal_uren * w.uurtarief_override) }}
+                                                {% elif w.opdracht.uurtarief %}
+                                                € {{ "%.2f"|format(w.aantal_uren * w.opdracht.uurtarief) }}
+                                                {% else %}
+                                                € --,--
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% if not werkzaamheden %}
+                                        <tr>
+                                            <td colspan="7" class="text-center py-3">
+                                                <span class="text-muted"><span data-translate="Geen declarabele werkzaamheden beschikbaar">Geen declarabele werkzaamheden beschikbaar</span></span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Time entries tab -->
+                        <div>
+                            <h6><span data-translate="Tijdsregistraties">Tijdsregistraties</span></h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover" id="timeEntriesTable">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%"></th>
+                                            <th><span data-translate="Omschrijving">Omschrijving</span></th>
+                                            <th><span data-translate="Project">Project</span></th>
+                                            <th><span data-translate="Datum">Datum</span></th>
+                                            <th class="text-end"><span data-translate="Uren">Uren</span></th>
+                                            <th class="text-end"><span data-translate="Tarief">Tarief</span></th>
+                                            <th class="text-end"><span data-translate="Bedrag">Bedrag</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for te in time_entries %}
+                                        <tr>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input time-entry-check" type="checkbox" 
+                                                           name="time_entry_ids" value="{{ te.id }}" id="time_entry_{{ te.id }}"
+                                                           {% if factuur and te.invoice_id == factuur.id %}checked{% endif %}
+                                                           data-uren="{{ te.hours }}"
+                                                           data-tarief="{{ te.hourly_rate or 0 }}">
+                                                </div>
+                                            </td>
+                                            <td>{{ te.description }}</td>
+                                            <td>{{ te.project }}</td>
+                                            <td>{{ te.date.strftime('%d-%m-%Y') }}</td>
+                                            <td class="text-end">{{ "%.2f"|format(te.hours) }}</td>
+                                            <td class="text-end">
+                                                {% if te.hourly_rate %}
+                                                € {{ "%.2f"|format(te.hourly_rate) }}
+                                                {% else %}
+                                                € --,--
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if te.hourly_rate %}
+                                                € {{ "%.2f"|format(te.hours * te.hourly_rate) }}
+                                                {% else %}
+                                                € --,--
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% if not time_entries %}
+                                        <tr>
+                                            <td colspan="7" class="text-center py-3">
+                                                <span class="text-muted"><span data-translate="Geen declarabele tijdsregistraties beschikbaar">Geen declarabele tijdsregistraties beschikbaar</span></span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><span data-translate="Totalen">Totalen</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="subtotaal" class="form-label"><span data-translate="Subtotaal">Subtotaal</span> *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="subtotaal" name="subtotaal" 
+                                       value="{{ "%.2f"|format(factuur.subtotaal) if factuur else '0.00' }}" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="btw_percentage" class="form-label"><span data-translate="BTW percentage">BTW percentage</span> *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="btw_percentage" name="btw_percentage" 
+                                       value="{{ "%.1f"|format(factuur.btw_percentage) if factuur else '21.0' }}" 
+                                       step="0.1" min="0" max="100" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="btw_bedrag" class="form-label"><span data-translate="BTW bedrag">BTW bedrag</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="btw_bedrag" 
+                                       value="{{ "%.2f"|format(factuur.btw_bedrag) if factuur else '0.00' }}" 
+                                       step="0.01" min="0" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="totaal" class="form-label"><span data-translate="Totaal">Totaal</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="totaal" 
+                                       value="{{ "%.2f"|format(factuur.totaal) if factuur else '0.00' }}" 
+                                       step="0.01" min="0" readonly>
+                            </div>
+                        </div>
+
+                        {% if factuur %}
+                        <div class="mb-3">
+                            <label for="betaald" class="form-label"><span data-translate="Betaalstatus">Betaalstatus</span></label>
+                            <select class="form-select" id="betaald" name="betaald">
+                                <option value="false" {% if not factuur.betaald %}selected{% endif %}>Onbetaald</option>
+                                <option value="true" {% if factuur.betaald %}selected{% endif %}>Betaald</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i data-feather="save" class="feather-sm"></i>
+                            {% if factuur %}
+                            <span data-translate="Factuur bijwerken">Factuur bijwerken</span>
+                            {% else %}
+                            <span data-translate="Factuur aanmaken">Factuur aanmaken</span>
+                            {% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Calculate function
+        function calculateTotals() {
+            let subtotal = 0;
+            
+            // Calculate from werkzaamheden
+            document.querySelectorAll('.werkzaamheid-check:checked').forEach(function(checkbox) {
+                const uren = parseFloat(checkbox.dataset.uren);
+                const tarief = parseFloat(checkbox.dataset.tarief);
+                if (!isNaN(uren) && !isNaN(tarief)) {
+                    subtotal += uren * tarief;
+                }
+            });
+            
+            // Calculate from time entries
+            document.querySelectorAll('.time-entry-check:checked').forEach(function(checkbox) {
+                const uren = parseFloat(checkbox.dataset.uren);
+                const tarief = parseFloat(checkbox.dataset.tarief);
+                if (!isNaN(uren) && !isNaN(tarief)) {
+                    subtotal += uren * tarief;
+                }
+            });
+            
+            // Set subtotal
+            document.getElementById('subtotaal').value = subtotal.toFixed(2);
+            
+            // Calculate BTW and total
+            const btwPercentage = parseFloat(document.getElementById('btw_percentage').value);
+            if (!isNaN(btwPercentage)) {
+                const btwBedrag = subtotal * (btwPercentage / 100);
+                document.getElementById('btw_bedrag').value = btwBedrag.toFixed(2);
+                document.getElementById('totaal').value = (subtotal + btwBedrag).toFixed(2);
+            }
+        }
+        
+        // Add event listeners
+        document.querySelectorAll('.werkzaamheid-check, .time-entry-check').forEach(function(checkbox) {
+            checkbox.addEventListener('change', calculateTotals);
+        });
+        
+        document.getElementById('btw_percentage').addEventListener('input', calculateTotals);
+        document.getElementById('subtotaal').addEventListener('input', calculateTotals);
+        
+        // Calculate on load
+        calculateTotals();
+        
+        // Form validation
+        const form = document.getElementById('factuurForm');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

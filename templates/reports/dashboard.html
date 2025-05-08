@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i data-feather="bar-chart-2" class="feather-lg me-2"></i> <span data-translate="Rapportages">Rapportages</span></h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i data-feather="clock" class="feather-sm me-2"></i> <span data-translate="Uren per jaar">Uren per jaar</span></h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><span data-translate="Overzicht van alle geregistreerde uren per jaar, uitgesplitst per maand en medewerker.">Overzicht van alle geregistreerde uren per jaar, uitgesplitst per maand en medewerker.</span></p>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('report_hours_per_year') }}" class="btn btn-primary w-100">
+                        <i data-feather="eye" class="feather-sm me-2"></i> <span data-translate="Bekijken">Bekijken</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i data-feather="briefcase" class="feather-sm me-2"></i> <span data-translate="Opdrachten per klant">Opdrachten per klant</span></h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><span data-translate="Overzicht van het aantal binnengekomen opdrachten per klant, inclusief status en verloop.">Overzicht van het aantal binnengekomen opdrachten per klant, inclusief status en verloop.</span></p>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('report_assignments_per_client') }}" class="btn btn-success w-100">
+                        <i data-feather="eye" class="feather-sm me-2"></i> <span data-translate="Bekijken">Bekijken</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i data-feather="dollar-sign" class="feather-sm me-2"></i> <span data-translate="Jaaropbrengst">Jaaropbrengst</span></h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><span data-translate="Financieel overzicht van de jaaropbrengst, gefactureerde bedragen en betalingsstatus.">Financieel overzicht van de jaaropbrengst, gefactureerde bedragen en betalingsstatus.</span></p>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('report_annual_revenue') }}" class="btn btn-danger w-100">
+                        <i data-feather="eye" class="feather-sm me-2"></i> <span data-translate="Bekijken">Bekijken</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i data-feather="pie-chart" class="feather-sm me-2"></i> <span data-translate="Bedrijfsprestaties">Bedrijfsprestaties</span> {{ current_year }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h2 id="total-hours" class="mb-2">...</h2>
+                                    <p class="text-muted mb-0"><span data-translate="Geregistreerde uren">Geregistreerde uren</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h2 id="total-revenue" class="mb-2">...</h2>
+                                    <p class="text-muted mb-0"><span data-translate="Omzet">Omzet</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h2 id="total-assignments" class="mb-2">...</h2>
+                                    <p class="text-muted mb-0"><span data-translate="Opdrachten">Opdrachten</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h2 id="total-clients" class="mb-2">...</h2>
+                                    <p class="text-muted mb-0"><span data-translate="Actieve klanten">Actieve klanten</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="monthlyHoursChart" height="300"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <canvas id="monthlyRevenueChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Define chart colors
+        const chartColors = {
+            primary: '#0d6efd',
+            success: '#198754',
+            danger: '#dc3545',
+            warning: '#ffc107',
+            info: '#0dcaf0',
+            dark: '#212529',
+            light: '#f8f9fa'
+        };
+        
+        // Month labels for charts
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        
+        // Fetch dashboard stats
+        fetch('/api/reports/dashboard-stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update the dashboard stats
+                document.getElementById('total-hours').textContent = data.total_hours.toFixed(1);
+                document.getElementById('total-revenue').textContent = '€ ' + data.total_revenue.toFixed(2);
+                document.getElementById('total-assignments').textContent = data.total_assignments;
+                document.getElementById('total-clients').textContent = data.total_clients;
+                
+                // Create monthly hours chart
+                const hoursCtx = document.getElementById('monthlyHoursChart').getContext('2d');
+                const hoursChart = new Chart(hoursCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Uren per maand',
+                            data: data.monthly_hours || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: chartColors.primary,
+                            borderColor: chartColors.primary,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Uren per maand'
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard stats:', error);
+            });
+            
+        // Fetch invoice stats for revenue chart
+        fetch('/api/facturen/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Create monthly revenue chart
+                const revenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+                const revenueChart = new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Omzet per maand',
+                            data: data.monthly_revenue || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                            borderColor: chartColors.danger,
+                            borderWidth: 2,
+                            tension: 0.2,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Omzet per maand'
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€ ' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching invoice stats:', error);
+            });
+    });
+</script>
+{% endblock %}
