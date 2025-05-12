@@ -27,13 +27,14 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
     logger.warning("ReportLab is NOT available - please run: pip install reportlab")
 
-# Import WeasyPrint if available
-try:
-    from weasyprint import HTML, CSS
-    from weasyprint.text.fonts import FontConfiguration
-    WEASYPRINT_AVAILABLE = True
-    logger.info("WeasyPrint is available for PDF generation")
-except ImportError:
+# Import WeasyPrint if available - DISABLED due to GTK dependencies issues
+# try:
+#     from weasyprint import HTML, CSS
+#     from weasyprint.text.fonts import FontConfiguration
+#     WEASYPRINT_AVAILABLE = True
+#     logger.info("WeasyPrint is available for PDF generation")
+# except ImportError:
+if True:  # Force the exception branch
     WEASYPRINT_AVAILABLE = False
     logger.warning("WeasyPrint is NOT available")
 
