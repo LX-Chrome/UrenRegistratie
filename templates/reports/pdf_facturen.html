@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+    <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #2C3E50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #2C3E50;
+            color: white;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .status-paid {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-unpaid {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .status-overdue {
+            background-color: #ffe6e6;
+        }
+        .amount {
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+    
+    <div class="summary">
+        <h2>Samenvatting</h2>
+        <div class="summary-item">
+            <span class="summary-label">Totaal aantal facturen:</span>
+            <span>{{ facturen|length }}</span>
+        </div>
+        
+        {% set total_amount = 0 %}
+        {% set paid_amount = 0 %}
+        {% set unpaid_amount = 0 %}
+        {% set paid_count = 0 %}
+        {% set unpaid_count = 0 %}
+        
+        {% for factuur in facturen %}
+            {% set total_amount = total_amount + factuur.totaal %}
+            {% if factuur.betaald %}
+                {% set paid_amount = paid_amount + factuur.totaal %}
+                {% set paid_count = paid_count + 1 %}
+            {% else %}
+                {% set unpaid_amount = unpaid_amount + factuur.totaal %}
+                {% set unpaid_count = unpaid_count + 1 %}
+            {% endif %}
+        {% endfor %}
+        
+        <div class="summary-item">
+            <span class="summary-label">Totaal bedrag:</span>
+            <span>€ {{ "%.2f"|format(total_amount) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Betaald bedrag:</span>
+            <span>€ {{ "%.2f"|format(paid_amount) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Openstaand bedrag:</span>
+            <span>€ {{ "%.2f"|format(unpaid_amount) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Aantal betaalde facturen:</span>
+            <span>{{ paid_count }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Aantal openstaande facturen:</span>
+            <span>{{ unpaid_count }}</span>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Factuurnummer</th>
+                <th>Datum</th>
+                <th>Vervaldatum</th>
+                <th>Klant</th>
+                <th>Beschrijving</th>
+                <th class="amount">Bedrag</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for factuur in facturen %}
+            <tr{% if not factuur.betaald and factuur.vervaldatum < now.date() %} class="status-overdue"{% endif %}>
+                <td>{{ factuur.factuur_nummer }}</td>
+                <td>{{ factuur.datum.strftime('%d-%m-%Y') }}</td>
+                <td>{{ factuur.vervaldatum.strftime('%d-%m-%Y') }}</td>
+                <td>{{ factuur.klant.bedrijfsnaam }}</td>
+                <td>
+                    {% if factuur.opdracht %}
+                        {{ factuur.opdracht.titel }}
+                    {% else %}
+                        Diverse werkzaamheden
+                    {% endif %}
+                </td>
+                <td class="amount">€ {{ "%.2f"|format(factuur.totaal) }}</td>
+                <td>
+                    {% if factuur.betaald %}
+                        <span class="status-paid">Betaald</span>
+                        {% if factuur.betaaldatum %}
+                            ({{ factuur.betaaldatum.strftime('%d-%m-%Y') }})
+                        {% endif %}
+                    {% else %}
+                        <span class="status-unpaid">
+                            Onbetaald
+                            {% if factuur.vervaldatum < now.date() %}
+                                (Te laat)
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>UrenRegistratie Facturen Overzicht</p>
+        <p>Gegenereerd op {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
+        {% if year %}
+        <p>Gefilterd op jaar: {{ year }}</p>
+        {% endif %}
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Adres: Bredeweg 235, 6042 GE Roermond | Telefoon: 088 468 2000 | Provincie: Limburg</p>
+        <p>Openingstijden: Maandag-Vrijdag 8:00–17:00 | Zaterdag-Zondag Gesloten</p>
+    </div>
+</body>
+</html> 

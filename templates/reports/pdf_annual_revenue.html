@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jaaropbrengst {{ selected_year }}</title>
+    <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #2C3E50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #2C3E50;
+            color: white;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .amount {
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 30px;
+        }
+        .monthly-chart {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .monthly-revenue {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .month-item {
+            width: 23%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .month-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jaaropbrengst {{ selected_year }}</h1>
+    
+    <div class="summary">
+        <h2>Samenvatting</h2>
+        <div class="summary-item">
+            <span class="summary-label">Totale opbrengst:</span>
+            <span>€ {{ "%.2f"|format(total_revenue) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Aantal klanten:</span>
+            <span>{{ revenue_per_client|length }}</span>
+        </div>
+        
+        {% set avg_monthly_revenue = total_revenue / 12 if total_revenue > 0 else 0 %}
+        <div class="summary-item">
+            <span class="summary-label">Gemiddelde maandelijkse opbrengst:</span>
+            <span>€ {{ "%.2f"|format(avg_monthly_revenue) }}</span>
+        </div>
+    </div>
+    
+    <div class="monthly-chart">
+        <h2>Maandelijkse opbrengst</h2>
+        <div class="monthly-revenue">
+            {% set months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'] %}
+            {% for month in range(12) %}
+            <div class="month-item">
+                <div class="month-name">{{ months[month] }}</div>
+                <div>€ {{ "%.2f"|format(monthly_revenue[month]) }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <h2>Opbrengst per klant</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Klant</th>
+                <th class="amount">Aantal werkzaamheden</th>
+                <th class="amount">Totaal uren</th>
+                <th class="amount">Totaal opbrengst</th>
+                <th class="amount">Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if revenue_per_client %}
+                {% for client in revenue_per_client %}
+                <tr>
+                    <td>{{ client.klant_naam }}</td>
+                    <td class="amount">{{ client.aantal_werkzaamheden }}</td>
+                    <td class="amount">{{ "%.1f"|format(client.totaal_uren) }}</td>
+                    <td class="amount">€ {{ "%.2f"|format(client.totaal_opbrengst) }}</td>
+                    <td class="amount">
+                        {% if total_revenue > 0 %}
+                        {{ "%.1f"|format((client.totaal_opbrengst / total_revenue) * 100) }}%
+                        {% else %}
+                        0.0%
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">Geen gegevens beschikbaar</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>UrenRegistratie Jaaropbrengst Overzicht</p>
+        <p>Gegenereerd op {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
+        <p>Jaar: {{ selected_year }}</p>
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Adres: Bredeweg 235, 6042 GE Roermond | Telefoon: 088 468 2000 | Provincie: Limburg</p>
+        <p>Openingstijden: Maandag-Vrijdag 8:00–17:00 | Zaterdag-Zondag Gesloten</p>
+    </div>
+</body>
+</html> 

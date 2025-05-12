@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Time Entries</title>
+    <title>Uren Overzicht {{ year }}</title>
     <style>
         @page {
             size: 21cm 29.7cm;
@@ -55,58 +55,57 @@
     </style>
 </head>
 <body>
-    <h1>Time Entries Overview</h1>
+    <h1>Uren Overzicht {{ year }}</h1>
     
     <div class="summary">
-        <h2>Summary</h2>
-        {% set total_hours = 0 %}
-        {% set billable_hours = 0 %}
-        {% set non_billable_hours = 0 %}
-        
-        {% for entry in entries %}
-            {% set total_hours = total_hours + entry.hours %}
-            {% if entry.is_billable %}
-                {% set billable_hours = billable_hours + entry.hours %}
-            {% else %}
-                {% set non_billable_hours = non_billable_hours + entry.hours %}
-            {% endif %}
-        {% endfor %}
-        
-        <p><strong>Total Hours:</strong> {{ total_hours }}</p>
-        <p><strong>Billable Hours:</strong> {{ billable_hours }}</p>
-        <p><strong>Non-Billable Hours:</strong> {{ non_billable_hours }}</p>
-        <p><strong>Total Entries:</strong> {{ entries|length }}</p>
+        <h2>Samenvatting</h2>
+        <p><strong>Totaal aantal uren:</strong> {{ time_entries|sum(attribute='hours') + werkzaamheden|sum(attribute='aantal_uren') }}</p>
+        <p><strong>Aantal entries:</strong> {{ time_entries|length + werkzaamheden|length }}</p>
     </div>
     
     <table>
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Project</th>
-                <th>Hours</th>
-                <th>Description</th>
-                <th>Billable</th>
+                <th>Datum</th>
+                <th>Type</th>
+                <th>Project/Opdracht</th>
+                <th>Uren</th>
+                <th>Omschrijving</th>
+                <th>Declarabel</th>
             </tr>
         </thead>
         <tbody>
-            {% for entry in entries %}
+            {% for entry in time_entries %}
             <tr>
                 <td>{{ entry.date.strftime('%d-%m-%Y') }}</td>
+                <td>Timesheet</td>
                 <td>{{ entry.project }}</td>
                 <td>{{ entry.hours }}</td>
                 <td>{{ entry.description }}</td>
-                <td>{{ 'Yes' if entry.is_billable else 'No' }}</td>
+                <td>{{ 'Ja' if entry.is_billable else 'Nee' }}</td>
+            </tr>
+            {% endfor %}
+            
+            {% for werk in werkzaamheden %}
+            <tr>
+                <td>{{ werk.datum.strftime('%d-%m-%Y') }}</td>
+                <td>Werkzaamheid</td>
+                <td>{{ werk.opdracht.titel if werk.opdracht else '-' }}</td>
+                <td>{{ werk.aantal_uren }}</td>
+                <td>{{ werk.omschrijving }}</td>
+                <td>{{ 'Ja' if werk.is_declarabel else 'Nee' }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     
     <div class="footer">
-        <p>UrenRegistratie Time Entries</p>
-        <p>Generated on {% if now %}{{ now.strftime('%d-%m-%Y %H:%M') }}{% else %}{{ datetime.now().strftime('%d-%m-%Y %H:%M') }}{% endif %}</p>
+        <p>UrenRegistratie Uren Overzicht</p>
+        <p>Gegenereerd op {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
+        <p>Jaar: {{ year }}</p>
         <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
-        <p>Address: Bredeweg 235, 6042 GE Roermond | Phone: 088 468 2000 | Province: Limburg</p>
-        <p>Hours: Monday-Friday 8 am–5 pm | Saturday-Sunday Closed</p>
+        <p>Adres: Bredeweg 235, 6042 GE Roermond | Telefoon: 088 468 2000 | Provincie: Limburg</p>
+        <p>Openingstijden: Maandag-Vrijdag 8:00–17:00 | Zaterdag-Zondag Gesloten</p>
     </div>
 </body>
 </html> 

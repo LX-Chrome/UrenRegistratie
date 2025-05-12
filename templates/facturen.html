@@ -4,11 +4,24 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i data-feather="file-text" class="feather-lg me-2"></i> <span data-translate="Facturen">Facturen</span></h1>
-        {% if current_user.can_create_invoices() %}
-        <a href="{{ url_for('nieuwe_factuur') }}" class="btn btn-primary">
-            <i data-feather="plus" class="feather-sm"></i> <span data-translate="Nieuwe factuur">Nieuwe factuur</span>
-        </a>
-        {% endif %}
+        <div>
+            <div class="btn-group me-2">
+                <a href="{{ url_for('export_facturen', format='pdf') }}" class="btn btn-outline-danger">
+                    <i data-feather="file-text" class="feather-sm"></i> Export PDF
+                </a>
+                <a href="{{ url_for('export_facturen', format='excel') }}" class="btn btn-outline-success">
+                    <i data-feather="file" class="feather-sm"></i> Export Excel
+                </a>
+                <a href="{{ url_for('export_facturen', format='csv') }}" class="btn btn-outline-secondary">
+                    <i data-feather="file-text" class="feather-sm"></i> Export CSV
+                </a>
+            </div>
+            {% if current_user.can_create_invoices() %}
+            <a href="{{ url_for('nieuwe_factuur') }}" class="btn btn-primary">
+                <i data-feather="plus" class="feather-sm"></i> <span data-translate="Nieuwe factuur">Nieuwe factuur</span>
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="card shadow mb-4">
@@ -77,15 +90,15 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ url_for('bekijk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ url_for('bekijk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-primary" title="Bekijk">
                                             <i data-feather="eye" class="feather-xs"></i>
                                         </a>
                                         {% if current_user.can_edit_all() and not factuur.betaald %}
-                                        <a href="{{ url_for('bewerk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-secondary">
+                                        <a href="{{ url_for('bewerk_factuur', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-secondary" title="Bewerk">
                                             <i data-feather="edit" class="feather-xs"></i>
                                         </a>
                                         {% endif %}
-                                        <a href="{{ url_for('factuur_pdf', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                                        <a href="{{ url_for('factuur_pdf', factuur_id=factuur.id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="PDF">
                                             <i data-feather="file-text" class="feather-xs"></i>
                                         </a>
                                     </div>

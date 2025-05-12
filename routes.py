@@ -3,14 +3,17 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
-from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid, CheckIn # Added CheckIn import
+from models import User, TimeEntry, Klant, Medewerker, Opdracht, Werkzaamheid, CheckIn, Factuur, Role, RoleEnum
 from services.export_service import ExportService
+# Import our direct PDF generation function
+from routes_invoices import generate_pdf_from_template
 import io
 import pandas as pd
 import csv
 from werkzeug.utils import secure_filename
 import os
-from sqlalchemy import func
+from sqlalchemy import func, extract
+from auth_helpers import admin_required
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -165,12 +168,18 @@ def delete_time_entry(entry_id):
 @login_required
 def export_data(entity, format):
     export_service = ExportService()
+    year = request.args.get('year', datetime.now().year, type=int)
 
     if entity == 'time-entries':
         entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).all()
         if format == 'pdf':
             data = {'entries': entries}
-            content, filename, mimetype = export_service.to_pdf('time_entries.html', data, 'time_entries')
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template('pdf_time_entries.html', data, 'time_entries')
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('time_entries'))
         else:
             headers = ['Datum', 'Project', 'Uren', 'Omschrijving']
             rows = [[e.date.strftime('%Y-%m-%d'), e.project, e.hours, e.description] for e in entries]
@@ -183,7 +192,12 @@ def export_data(entity, format):
         klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
         if format == 'pdf':
             data = {'klanten': klanten}
-            content, filename, mimetype = export_service.to_pdf('klanten.html', data, 'klanten')
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template('pdf_klanten.html', data, 'klanten')
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('klanten'))
         else:
             headers = ['Bedrijfsnaam', 'Naam', 'Email', 'Telefoon', 'Functie']
             rows = [[
@@ -202,7 +216,12 @@ def export_data(entity, format):
         medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
         if format == 'pdf':
             data = {'medewerkers': medewerkers}
-            content, filename, mimetype = export_service.to_pdf('medewerkers.html', data, 'medewerkers')
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template('pdf_medewerkers.html', data, 'medewerkers')
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('medewerkers'))
         else:
             headers = ['Naam', 'Functie', 'Werkmail', 'Kantoorruimte', 'Geboortedatum']
             rows = [[
@@ -221,7 +240,12 @@ def export_data(entity, format):
         opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
         if format == 'pdf':
             data = {'opdrachten': opdrachten}
-            content, filename, mimetype = export_service.to_pdf('opdrachten.html', data, 'opdrachten')
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template('pdf_opdrachten.html', data, 'opdrachten')
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('opdrachten'))
         else:
             headers = ['Datum', 'Klant', 'Titel', 'Omschrijving', 'Benodigde Kennis']
             rows = [[
@@ -235,6 +259,209 @@ def export_data(entity, format):
                 content, filename, mimetype = export_service.to_excel(rows, headers, 'opdrachten')
             else:  # csv
                 content, filename, mimetype = export_service.to_csv(rows, headers, 'opdrachten')
+
+    # Report exports
+    elif entity == 'hours':
+        # Get hours by sources for the selected year
+        try:
+            # From Werkzaamheid
+            werkzaamheid_hours = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
+                .filter(func.extract('year', Werkzaamheid.datum) == year) \
+                .scalar() or 0
+            
+            # From TimeEntry
+            time_entry_hours = db.session.query(func.sum(TimeEntry.hours)) \
+                .filter(func.extract('year', TimeEntry.date) == year) \
+                .scalar() or 0
+            
+            total_hours = time_entry_hours + werkzaamheid_hours
+            
+            # Get hours per month for the selected year
+            monthly_hours_time_entries = db.session.query(
+                extract('month', TimeEntry.date).label('month'),
+                func.sum(TimeEntry.hours).label('hours')
+            ).filter(
+                extract('year', TimeEntry.date) == year
+            ).group_by('month').all()
+            
+            monthly_hours_werkzaamheden = db.session.query(
+                extract('month', Werkzaamheid.datum).label('month'),
+                func.sum(Werkzaamheid.aantal_uren).label('hours')
+            ).filter(
+                extract('year', Werkzaamheid.datum) == year
+            ).group_by('month').all()
+            
+            # Combine both sources into a single monthly view
+            monthly_hours = [0] * 12  # Initialize with zeros
+            
+            for month, hours in monthly_hours_time_entries:
+                monthly_hours[int(month)-1] += float(hours)
+                
+            for month, hours in monthly_hours_werkzaamheden:
+                monthly_hours[int(month)-1] += float(hours)
+            
+            # Get hours per employee
+            employee_hours = Werkzaamheid.get_uren_per_medewerker(year)
+            
+            if format == 'pdf':
+                data = {
+                    'selected_year': year,
+                    'total_hours': total_hours,
+                    'monthly_hours': monthly_hours,
+                    'employee_hours': employee_hours
+                }
+                content, filename, mimetype = generate_pdf_from_template('reports/pdf_hours_per_year.html', data, f'uren_per_jaar_{year}')
+                if not content:
+                    flash('Fout bij genereren PDF.', 'danger')
+                    return redirect(url_for('report_hours_per_year', year=year))
+            else:
+                headers = ['Maand', 'Aantal Uren']
+                months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
+                rows = [[months[i], monthly_hours[i]] for i in range(12)]
+                if format == 'excel':
+                    content, filename, mimetype = export_service.to_excel(rows, headers, f'uren_per_jaar_{year}')
+                else:  # csv
+                    content, filename, mimetype = export_service.to_csv(rows, headers, f'uren_per_jaar_{year}')
+        except Exception as e:
+            app.logger.error(f"Error generating hours report: {str(e)}")
+            flash('Fout bij genereren rapport.', 'danger')
+            return redirect(url_for('report_hours_per_year', year=year))
+
+    elif entity == 'assignments':
+        try:
+            # Get assignments per client for the selected year
+            assignments_per_client = Opdracht.get_assignments_per_client(year)
+            
+            # Get total assignments for the selected year
+            total_assignments = db.session.query(
+                func.count(Opdracht.id)
+            ).filter(
+                func.extract('year', Opdracht.aanvraagdatum) == year
+            ).scalar() or 0
+            
+            # Get assignments by status
+            assignments_by_status = db.session.query(
+                Opdracht.status,
+                func.count(Opdracht.id).label('count')
+            ).filter(
+                func.extract('year', Opdracht.aanvraagdatum) == year
+            ).group_by(Opdracht.status).all()
+            
+            # Get assignments per month for the selected year
+            monthly_assignments = db.session.query(
+                func.extract('month', Opdracht.aanvraagdatum).label('month'),
+                func.count(Opdracht.id).label('count')
+            ).filter(
+                func.extract('year', Opdracht.aanvraagdatum) == year
+            ).group_by('month').all()
+            
+            # Format for chart display
+            months_data = [0] * 12  # Initialize with zeros
+            for month, count in monthly_assignments:
+                if month is not None:
+                    months_data[int(month)-1] = int(count)
+            
+            if format == 'pdf':
+                data = {
+                    'selected_year': year,
+                    'total_assignments': total_assignments,
+                    'assignments_per_client': assignments_per_client,
+                    'assignments_by_status': assignments_by_status,
+                    'monthly_assignments': months_data
+                }
+                content, filename, mimetype = generate_pdf_from_template('reports/pdf_assignments_per_client.html', data, f'opdrachten_per_klant_{year}')
+                if not content:
+                    flash('Fout bij genereren PDF.', 'danger')
+                    return redirect(url_for('report_assignments_per_client', year=year))
+            else:
+                headers = ['Klant', 'Aantal Opdrachten', 'Open', 'In Uitvoering', 'Afgerond', 'Gemiddeld Uurtarief']
+                rows = [
+                    [
+                        client.bedrijfsnaam,
+                        client.assignment_count,
+                        client.open_count,
+                        client.in_progress_count,
+                        client.completed_count,
+                        client.average_hourly_rate
+                    ] for client in assignments_per_client
+                ]
+                if format == 'excel':
+                    content, filename, mimetype = export_service.to_excel(rows, headers, f'opdrachten_per_klant_{year}')
+                else:  # csv
+                    content, filename, mimetype = export_service.to_csv(rows, headers, f'opdrachten_per_klant_{year}')
+        except Exception as e:
+            app.logger.error(f"Error generating assignments report: {str(e)}")
+            flash('Fout bij genereren rapport.', 'danger')
+            return redirect(url_for('report_assignments_per_client', year=year))
+
+    elif entity == 'revenue':
+        try:
+            # Get total revenue for the selected year
+            total_revenue = Factuur.get_jaaropbrengst(year)
+            
+            # Get monthly revenue for the selected year
+            monthly_revenue = db.session.query(
+                func.strftime('%m', Factuur.datum).label('month'),
+                func.sum(Factuur.totaal).label('revenue')
+            ).filter(
+                func.strftime('%Y', Factuur.datum) == str(year),
+                Factuur.betaald == True
+            ).group_by('month').all()
+            
+            # Format for chart display
+            months_data = [0] * 12  # Initialize with zeros
+            for month, revenue in monthly_revenue:
+                months_data[int(month)-1] = float(revenue)
+            
+            # Simplified query for revenue per client
+            revenue_per_client = db.session.query(
+                Klant.bedrijfsnaam.label('klant_naam'),
+                func.count(Factuur.id).label('aantal_werkzaamheden'),
+                func.coalesce(func.sum(Werkzaamheid.aantal_uren), 0.0).label('totaal_uren'),
+                func.sum(Factuur.totaal).label('totaal_opbrengst')
+            ).join(
+                Factuur, Factuur.klant_id == Klant.id
+            ).outerjoin(
+                Werkzaamheid, Werkzaamheid.factuur_id == Factuur.id
+            ).filter(
+                func.strftime('%Y', Factuur.datum) == str(year),
+                Factuur.betaald == True
+            ).group_by(Klant.bedrijfsnaam).all()
+            
+            if format == 'pdf':
+                data = {
+                    'selected_year': year,
+                    'total_revenue': total_revenue,
+                    'monthly_revenue': months_data,
+                    'revenue_per_client': revenue_per_client
+                }
+                content, filename, mimetype = generate_pdf_from_template('reports/pdf_annual_revenue.html', data, f'jaaropbrengst_{year}')
+                if not content:
+                    flash('Fout bij genereren PDF.', 'danger')
+                    return redirect(url_for('report_annual_revenue', year=year))
+            else:
+                headers = ['Klant', 'Aantal Werkzaamheden', 'Totaal Uren', 'Totaal Opbrengst', 'Percentage']
+                rows = []
+                for client in revenue_per_client:
+                    percentage = (client.totaal_opbrengst / total_revenue * 100) if total_revenue > 0 else 0
+                    rows.append([
+                        client.klant_naam,
+                        client.aantal_werkzaamheden,
+                        client.totaal_uren,
+                        client.totaal_opbrengst,
+                        f"{percentage:.1f}%"
+                    ])
+                if format == 'excel':
+                    content, filename, mimetype = export_service.to_excel(rows, headers, f'jaaropbrengst_{year}')
+                else:  # csv
+                    content, filename, mimetype = export_service.to_csv(rows, headers, f'jaaropbrengst_{year}')
+        except Exception as e:
+            app.logger.error(f"Error generating revenue report: {str(e)}")
+            flash('Fout bij genereren rapport.', 'danger')
+            return redirect(url_for('report_annual_revenue', year=year))
+    else:
+        flash('Onbekend exporttype.', 'danger')
+        return redirect(url_for('dashboard'))
 
     return send_file(
         io.BytesIO(content),
@@ -539,6 +766,7 @@ def check_in():
 @app.route('/check-in/<int:checkin_id>/delete')
 @login_required
 def delete_check_in(checkin_id):
+    app.logger.debug(f"Deleting check-in {checkin_id}")
     check_in = CheckIn.query.get_or_404(checkin_id)
     if check_in.user_id != current_user.id:
         flash('Unauthorized access', 'danger')
@@ -547,31 +775,59 @@ def delete_check_in(checkin_id):
     try:
         db.session.delete(check_in)
         db.session.commit()
-        flash('Check-in deleted successfully', 'success')
+        flash('Check-in verwijderd', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error deleting check-in: ' + str(e), 'danger')
-        app.logger.error(f"Error deleting check-in: {str(e)}")
+        app.logger.error(f"Error deleting check-in {checkin_id}: {str(e)}")
+        flash(f'Fout bij verwijderen check-in: {str(e)}', 'danger')
 
     return redirect(url_for('dashboard'))
 
 @app.route('/check-in/<int:checkin_id>/edit', methods=['POST'])
 @login_required
 def edit_check_in(checkin_id):
+    app.logger.debug(f"Editing check-in {checkin_id}, form data: {request.form}")
     check_in = CheckIn.query.get_or_404(checkin_id)
     if check_in.user_id != current_user.id:
         flash('Unauthorized access', 'danger')
         return redirect(url_for('dashboard'))
 
     try:
+        # Validate required fields
+        if 'status' not in request.form:
+            raise ValueError("Status field is required")
+            
+        # Update fields
         check_in.status = request.form['status']
         check_in.note = request.form.get('note', '')
+        
+        # Update check-in time if provided
+        if 'check_in_time' in request.form and request.form['check_in_time']:
+            try:
+                # Get current date
+                current_date = check_in.check_in_time.date()
+                # Parse time from form
+                time_str = request.form['check_in_time']
+                hours, minutes = map(int, time_str.split(':'))
+                # Create new datetime object with current date and new time
+                from datetime import datetime, time
+                new_time = time(hour=hours, minute=minutes)
+                new_datetime = datetime.combine(current_date, new_time)
+                check_in.check_in_time = new_datetime
+                app.logger.debug(f"Updated check-in time to {new_datetime}")
+            except Exception as time_error:
+                app.logger.error(f"Error parsing time: {str(time_error)}")
+                raise ValueError(f"Invalid time format: {str(time_error)}")
+        
+        # Log what's being updated
+        app.logger.debug(f"Updating check-in {checkin_id}: status={check_in.status}, note={check_in.note}, time={check_in.check_in_time}")
+        
         db.session.commit()
-        flash('Check-in updated successfully', 'success')
+        flash('Check-in bijgewerkt', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error updating check-in: ' + str(e), 'danger')
-        app.logger.error(f"Error updating check-in: {str(e)}")
+        app.logger.error(f"Error updating check-in {checkin_id}: {str(e)}")
+        flash(f'Fout bij bijwerken check-in: {str(e)}', 'danger')
 
     return redirect(url_for('dashboard'))
 
@@ -677,3 +933,45 @@ def import_time_entries():
         return redirect(url_for('dashboard'))
         
     return redirect(url_for('time_entries'))
+
+# Admin routes
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    return render_template('admin/dashboard.html')
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    users = User.query.all()
+    roles = Role.query.all()
+    return render_template('admin/users.html', users=users, roles=roles)
+
+@app.route('/admin/users/<int:user_id>/set_role', methods=['POST'])
+@login_required
+@admin_required
+def admin_set_user_role(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Don't allow admins to downgrade themselves
+    if user.id == current_user.id and user.has_role(RoleEnum.ADMIN):
+        flash('Je kunt je eigen admin rol niet wijzigen.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    role_id = request.form.get('role_id')
+    if not role_id:
+        flash('Geen rol geselecteerd', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    role = Role.query.get(role_id)
+    if not role:
+        flash('Ongeldige rol geselecteerd', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    user.role_id = role.id
+    db.session.commit()
+    
+    flash(f'Gebruiker {user.username} heeft de rol: {role.name} toegewezen gekregen', 'success')
+    return redirect(url_for('admin_users'))

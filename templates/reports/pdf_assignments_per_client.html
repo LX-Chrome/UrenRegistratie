@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Opdrachten per klant {{ selected_year }}</title>
+    <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #2C3E50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #2C3E50;
+            color: white;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 30px;
+        }
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            width: 48%;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
+        .stat-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #2C3E50;
+        }
+        .monthly-chart {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .monthly-assignments {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .month-item {
+            width: 23%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .month-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Opdrachten per klant {{ selected_year }}</h1>
+    
+    <div class="summary">
+        <h2>Samenvatting</h2>
+        <div class="summary-item">
+            <span class="summary-label">Totaal aantal opdrachten:</span>
+            <span>{{ total_assignments }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Aantal klanten met opdrachten:</span>
+            <span>{{ assignments_per_client|length }}</span>
+        </div>
+        
+        {% set open_count = 0 %}
+        {% set in_progress_count = 0 %}
+        {% set completed_count = 0 %}
+        {% set cancelled_count = 0 %}
+        
+        {% for status in assignments_by_status %}
+            {% if status.status == 'open' %}
+                {% set open_count = status.count %}
+            {% elif status.status == 'in-progress' %}
+                {% set in_progress_count = status.count %}
+            {% elif status.status == 'completed' %}
+                {% set completed_count = status.count %}
+            {% elif status.status == 'cancelled' %}
+                {% set cancelled_count = status.count %}
+            {% endif %}
+        {% endfor %}
+        
+        <div class="summary-item">
+            <span class="summary-label">Open opdrachten:</span>
+            <span>{{ open_count }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Opdrachten in uitvoering:</span>
+            <span>{{ in_progress_count }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Afgeronde opdrachten:</span>
+            <span>{{ completed_count }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Geannuleerde opdrachten:</span>
+            <span>{{ cancelled_count }}</span>
+        </div>
+    </div>
+    
+    <div class="monthly-chart">
+        <h2>Opdrachten per maand</h2>
+        <div class="monthly-assignments">
+            {% set months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'] %}
+            {% for month in range(12) %}
+            <div class="month-item">
+                <div class="month-name">{{ months[month] }}</div>
+                <div>{{ monthly_assignments[month] }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <h2>Opdrachten per klant</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Klant</th>
+                <th>Aantal opdrachten</th>
+                <th>Open</th>
+                <th>In uitvoering</th>
+                <th>Afgerond</th>
+                <th>Gemiddeld uurtarief</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if assignments_per_client %}
+                {% for client in assignments_per_client %}
+                <tr>
+                    <td>{{ client.bedrijfsnaam }}</td>
+                    <td>{{ client.assignment_count }}</td>
+                    <td>{{ client.open_count }}</td>
+                    <td>{{ client.in_progress_count }}</td>
+                    <td>{{ client.completed_count }}</td>
+                    <td>€ {{ "%.2f"|format(client.average_hourly_rate) }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">Geen gegevens beschikbaar</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>UrenRegistratie Opdrachten per Klant Overzicht</p>
+        <p>Gegenereerd op {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
+        <p>Jaar: {{ selected_year }}</p>
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Adres: Bredeweg 235, 6042 GE Roermond | Telefoon: 088 468 2000 | Provincie: Limburg</p>
+        <p>Openingstijden: Maandag-Vrijdag 8:00–17:00 | Zaterdag-Zondag Gesloten</p>
+    </div>
+</body>
+</html> 

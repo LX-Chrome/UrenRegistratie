@@ -64,4 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Language toggle initialized');
     }
+    
+    // The translation handling is now in translations.js with optimized implementation
 });
