@@ -189,7 +189,17 @@ const translations = {
         "Rol wijzigen voor": "Change Role for",
         "Selecteer rol": "Select Role",
         "Waarschuwing: Je kunt je eigen admin rol niet downgraden": "Warning: You cannot downgrade your own admin role",
-        "Rol opslaan": "Save Role"
+        "Rol opslaan": "Save Role",
+        
+        // Employee time entries
+        "Uren Medewerkers": "Employee Hours",
+        "Urenregistratie voor medewerkers": "Time Registration for Employees",
+        "Uren Registreren": "Register Hours",
+        "Alle medewerkers": "All employees",
+        "Geen uren gevonden": "No hours found",
+        "Uren registreren voor medewerker": "Register hours for employee",
+        "Selecteer medewerker": "Select employee",
+        "Urenregistratie bewerken": "Edit time registration"
     },
     nl: {
         // Navigation
@@ -381,7 +391,17 @@ const translations = {
         "Rol wijzigen voor": "Rol wijzigen voor",
         "Selecteer rol": "Selecteer rol",
         "Waarschuwing: Je kunt je eigen admin rol niet downgraden": "Waarschuwing: Je kunt je eigen admin rol niet downgraden",
-        "Rol opslaan": "Rol opslaan"
+        "Rol opslaan": "Rol opslaan",
+        
+        // Employee time entries
+        "Uren Medewerkers": "Uren Medewerkers",
+        "Urenregistratie voor medewerkers": "Urenregistratie voor medewerkers",
+        "Uren Registreren": "Uren Registreren",
+        "Alle medewerkers": "Alle medewerkers",
+        "Geen uren gevonden": "Geen uren gevonden",
+        "Uren registreren voor medewerker": "Uren registreren voor medewerker",
+        "Selecteer medewerker": "Selecteer medewerker",
+        "Urenregistratie bewerken": "Urenregistratie bewerken"
     }
 };
 
