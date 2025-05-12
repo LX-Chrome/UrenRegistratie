@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" data-translate="Urenregistratie voor medewerkers">Urenregistratie voor medewerkers</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+                            <i data-feather="plus"></i> <span data-translate="Uren Registreren">Uren Registreren</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Employee Filter -->
+                <form class="mb-4" method="GET">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <label class="input-group-text" for="employee_id" data-translate="Medewerker">Medewerker</label>
+                                <select class="form-select" name="employee_id" id="employee_id" onchange="this.form.submit()">
+                                    <option value="" data-translate="Alle medewerkers">Alle medewerkers</option>
+                                    {% for medewerker in medewerkers %}
+                                    <option value="{{ medewerker.id }}" {% if selected_employee and selected_employee|int == medewerker.id %}selected{% endif %}>
+                                        {{ medewerker.voornaam }} {% if medewerker.tussenvoegsel %}{{ medewerker.tussenvoegsel }}{% endif %} {{ medewerker.achternaam }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Time Entries Table -->
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-translate="Medewerker">Medewerker</th>
+                                <th data-translate="Date">Datum</th>
+                                <th data-translate="Project">Project</th>
+                                <th data-translate="Hours">Uren</th>
+                                <th data-translate="Description">Omschrijving</th>
+                                <th data-translate="Actions">Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in entries %}
+                            <tr>
+                                <td>{{ item.employee_name }}</td>
+                                <td>{{ item.entry.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ item.entry.project }}</td>
+                                <td>{{ item.entry.hours }}</td>
+                                <td>{{ item.entry.description }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editEntryModal{{ item.entry.id }}"
+                                                title="Edit">
+                                            <i data-feather="edit-2"></i> <span class="d-none d-md-inline" data-translate="Bewerken">Bewerken</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ url_for('admin_delete_employee_time_entry', entry_id=item.entry.id) }}')"
+                                                title="Delete">
+                                            <i data-feather="trash-2"></i> <span class="d-none d-md-inline" data-translate="Verwijderen">Verwijderen</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not entries %}
+                <div class="alert alert-info" data-translate="Geen uren gevonden">Geen uren gevonden</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" data-translate="Uren registreren voor medewerker">Uren registreren voor medewerker</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_employee_time_entries') }}">
+                <div class="modal-body">
+                    <!-- Employee select -->
+                    <div class="mb-3">
+                        <label for="employee_selector" class="form-label" data-translate="Medewerker">Medewerker</label>
+                        <select class="form-select" id="employee_selector" name="medewerker_id" required>
+                            <option value="" data-translate="Selecteer medewerker">-- Selecteer medewerker --</option>
+                            {% for medewerker in medewerkers %}
+                            <option value="{{ medewerker.id }}">
+                                {{ medewerker.voornaam }} {% if medewerker.tussenvoegsel %}{{ medewerker.tussenvoegsel }}{% endif %} {{ medewerker.achternaam }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Date field -->
+                    <div class="mb-3">
+                        <label for="date" class="form-label" data-translate="Date">Datum</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ datetime.utcnow().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <!-- Project field -->
+                    <div class="mb-3">
+                        <label for="project" class="form-label" data-translate="Project">Project</label>
+                        <input type="text" class="form-control" id="project" name="project" required>
+                    </div>
+                    
+                    <!-- Hours field -->
+                    <div class="mb-3">
+                        <label for="hours" class="form-label" data-translate="Hours">Uren</label>
+                        <input type="number" step="0.5" class="form-control" id="hours" name="hours" min="0.5" max="24" required>
+                    </div>
+                    
+                    <!-- Description field -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label" data-translate="Description">Omschrijving</label>
+                        <textarea class="form-control" id="description" name="description" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Close">Sluiten</button>
+                    <button type="submit" class="btn btn-primary" data-translate="Save Entry">Opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Entry Modals -->
+{% for item in entries %}
+<div class="modal fade" id="editEntryModal{{ item.entry.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" data-translate="Edit Time Entry">Urenregistratie bewerken</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_edit_employee_time_entry', entry_id=item.entry.id) }}">
+                <div class="modal-body">
+                    <!-- Date field -->
+                    <div class="mb-3">
+                        <label for="date{{ item.entry.id }}" class="form-label" data-translate="Date">Datum</label>
+                        <input type="date" class="form-control" id="date{{ item.entry.id }}" name="date" 
+                               value="{{ item.entry.date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <!-- Project field -->
+                    <div class="mb-3">
+                        <label for="project{{ item.entry.id }}" class="form-label" data-translate="Project">Project</label>
+                        <input type="text" class="form-control" id="project{{ item.entry.id }}" name="project" 
+                               value="{{ item.entry.project }}" required>
+                    </div>
+                    
+                    <!-- Hours field -->
+                    <div class="mb-3">
+                        <label for="hours{{ item.entry.id }}" class="form-label" data-translate="Hours">Uren</label>
+                        <input type="number" step="0.5" class="form-control" id="hours{{ item.entry.id }}" name="hours" 
+                               value="{{ item.entry.hours }}" required>
+                    </div>
+                    
+                    <!-- Description field -->
+                    <div class="mb-3">
+                        <label for="description{{ item.entry.id }}" class="form-label" data-translate="Description">Omschrijving</label>
+                        <textarea class="form-control" id="description{{ item.entry.id }}" name="description" required>{{ item.entry.description }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Close">Sluiten</button>
+                    <button type="submit" class="btn btn-primary" data-translate="Save Changes">Wijzigingen opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" data-translate="Confirm Delete">Verwijderen bevestigen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p data-translate="Are you sure you want to delete this entry? This action cannot be undone.">
+                    Weet je zeker dat je deze urenregistratie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Cancel">Annuleren</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger" data-translate="Delete">Verwijderen</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(deleteUrl) {
+    // Get the confirmation modal and show it
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    
+    // Set the delete button href to the provided URL
+    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    
+    // Show the modal
+    modal.show();
+}
+</script>
+{% endblock %} 

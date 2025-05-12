@@ -975,3 +975,150 @@ def admin_set_user_role(user_id):
     
     flash(f'Gebruiker {user.username} heeft de rol: {role.name} toegewezen gekregen', 'success')
     return redirect(url_for('admin_users'))
+
+@app.route('/admin/employee-time-entries', methods=['GET', 'POST'])
+@login_required
+def admin_employee_time_entries():
+    # Check if user is admin or afdelingshoofd or verkoop
+    if not current_user.has_role(RoleEnum.ADMIN) and not current_user.has_role(RoleEnum.AFDELINGSHOOFD) and not current_user.has_role(RoleEnum.VERKOOP):
+        flash('Je hebt geen toegang tot deze pagina.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get all employees for the dropdown
+    medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
+    users = User.query.join(Role).filter(Role.name != RoleEnum.ADMIN).all()
+    
+    # Load all user and employee IDs for mapping
+    user_medewerker_map = {}
+    for user in users:
+        if user.medewerker_id:
+            user_medewerker_map[user.medewerker_id] = user.id
+    
+    # Handle form submission for adding new entry
+    if request.method == 'POST':
+        try:
+            # Get the user_id or find one based on medewerker_id
+            user_id = request.form.get('user_id')
+            medewerker_id = request.form.get('medewerker_id')
+            
+            # If user_id is not provided, try to get it from medewerker_id
+            if not user_id and medewerker_id:
+                user_id = user_medewerker_map.get(int(medewerker_id))
+                
+                # If there's no user account for this employee, use the current user's ID
+                # and add a note about who it was registered for
+                if not user_id:
+                    user_id = current_user.id
+                    description_prefix = f"[Geregistreerd voor medewerker #{medewerker_id}] "
+                    description = description_prefix + request.form['description']
+                else:
+                    description = request.form['description']
+            else:
+                user_id = int(user_id)
+                description = request.form['description']
+                
+            # Create the time entry
+            entry = TimeEntry(
+                date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
+                hours=float(request.form['hours']),
+                description=description,
+                project=request.form['project'],
+                user_id=user_id
+            )
+            db.session.add(entry)
+            db.session.commit()
+            
+            flash('Time entry toegevoegd voor medewerker', 'success')
+            return redirect(url_for('admin_employee_time_entries'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error bij toevoegen time entry: {str(e)}', 'danger')
+            app.logger.error(f"Error adding time entry: {str(e)}")
+    
+    # Get all entries for display - or filter if an employee is selected
+    selected_employee = request.args.get('employee_id', '')
+    
+    entries_query = TimeEntry.query
+    if selected_employee:
+        # Filter by user_id where medewerker_id matches
+        user_ids = [user.id for user in users if user.medewerker_id == int(selected_employee)]
+        if user_ids:
+            entries_query = entries_query.filter(TimeEntry.user_id.in_(user_ids))
+    
+    entries = entries_query.order_by(TimeEntry.date.desc()).all()
+    
+    # Associate entries with employee names
+    entries_with_employee = []
+    for entry in entries:
+        user = User.query.get(entry.user_id)
+        employee_name = "Unknown"
+        if user and user.medewerker_id:
+            medewerker = Medewerker.query.get(user.medewerker_id)
+            if medewerker:
+                employee_name = f"{medewerker.voornaam} {medewerker.tussenvoegsel + ' ' if medewerker.tussenvoegsel else ''}{medewerker.achternaam}"
+        elif user:
+            employee_name = user.username
+        
+        entries_with_employee.append({
+            'entry': entry,
+            'employee_name': employee_name
+        })
+    
+    return render_template('admin/employee_time_entries.html', 
+                           entries=entries_with_employee, 
+                           medewerkers=medewerkers,
+                           users=users,
+                           selected_employee=selected_employee,
+                           datetime=datetime)
+
+# Add route to edit employee time entries
+@app.route('/admin/employee-time-entries/<int:entry_id>/edit', methods=['POST'])
+@login_required
+def admin_edit_employee_time_entry(entry_id):
+    # Check if user is admin or afdelingshoofd or verkoop
+    if not current_user.has_role(RoleEnum.ADMIN) and not current_user.has_role(RoleEnum.AFDELINGSHOOFD) and not current_user.has_role(RoleEnum.VERKOOP):
+        flash('Je hebt geen toegang tot deze pagina.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    entry = TimeEntry.query.get_or_404(entry_id)
+    
+    try:
+        entry.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        entry.hours = float(request.form['hours'])
+        entry.description = request.form['description']
+        entry.project = request.form['project']
+        
+        # Only admin and department heads can change the user assignment
+        if (current_user.has_role(RoleEnum.ADMIN) or current_user.has_role(RoleEnum.AFDELINGSHOOFD)) and 'user_id' in request.form:
+            entry.user_id = int(request.form['user_id'])
+        
+        db.session.commit()
+        flash('Time entry bijgewerkt', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error bij bijwerken time entry: {str(e)}', 'danger')
+        app.logger.error(f"Error updating time entry: {str(e)}")
+    
+    return redirect(url_for('admin_employee_time_entries'))
+
+# Add route to delete employee time entries
+@app.route('/admin/employee-time-entries/<int:entry_id>/delete')
+@login_required
+def admin_delete_employee_time_entry(entry_id):
+    # Check if user is admin or afdelingshoofd (only these roles can delete)
+    if not current_user.has_role(RoleEnum.ADMIN) and not current_user.has_role(RoleEnum.AFDELINGSHOOFD):
+        flash('Je hebt geen toegang tot deze functie.', 'danger')
+        return redirect(url_for('admin_employee_time_entries'))
+    
+    entry = TimeEntry.query.get_or_404(entry_id)
+    
+    try:
+        db.session.delete(entry)
+        db.session.commit()
+        flash('Time entry verwijderd', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error bij verwijderen time entry: {str(e)}', 'danger')
+        app.logger.error(f"Error deleting time entry: {str(e)}")
+    
+    return redirect(url_for('admin_employee_time_entries'))

@@ -81,6 +81,14 @@
                         </a>
                     </li>
                     {% endif %}
+                    
+                    {% if current_user.has_role(RoleEnum.ADMIN) or current_user.has_role(RoleEnum.AFDELINGSHOOFD) or current_user.has_role(RoleEnum.VERKOOP) %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_employee_time_entries') }}">
+                            <i data-feather="users" class="feather-sm"></i> <span data-translate="Uren Medewerkers">Uren Medewerkers</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
