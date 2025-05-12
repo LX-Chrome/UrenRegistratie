@@ -2,8 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Time Entries Export</title>
+    <title>Time Entries</title>
     <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -12,6 +16,17 @@
             color: #2C3E50;
             text-align: center;
             margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
         }
         table {
             width: 100%;
@@ -40,7 +55,28 @@
     </style>
 </head>
 <body>
-    <h1>Time Entries Export</h1>
+    <h1>Time Entries Overview</h1>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        {% set total_hours = 0 %}
+        {% set billable_hours = 0 %}
+        {% set non_billable_hours = 0 %}
+        
+        {% for entry in entries %}
+            {% set total_hours = total_hours + entry.hours %}
+            {% if entry.is_billable %}
+                {% set billable_hours = billable_hours + entry.hours %}
+            {% else %}
+                {% set non_billable_hours = non_billable_hours + entry.hours %}
+            {% endif %}
+        {% endfor %}
+        
+        <p><strong>Total Hours:</strong> {{ total_hours }}</p>
+        <p><strong>Billable Hours:</strong> {{ billable_hours }}</p>
+        <p><strong>Non-Billable Hours:</strong> {{ non_billable_hours }}</p>
+        <p><strong>Total Entries:</strong> {{ entries|length }}</p>
+    </div>
     
     <table>
         <thead>
@@ -49,6 +85,7 @@
                 <th>Project</th>
                 <th>Hours</th>
                 <th>Description</th>
+                <th>Billable</th>
             </tr>
         </thead>
         <tbody>
@@ -58,14 +95,18 @@
                 <td>{{ entry.project }}</td>
                 <td>{{ entry.hours }}</td>
                 <td>{{ entry.description }}</td>
+                <td>{{ 'Yes' if entry.is_billable else 'No' }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     
     <div class="footer">
-        <p>Generated on {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
-        <p>gildeDevOps Solutions</p>
+        <p>UrenRegistratie Time Entries</p>
+        <p>Generated on {% if now %}{{ now.strftime('%d-%m-%Y %H:%M') }}{% else %}{{ datetime.now().strftime('%d-%m-%Y %H:%M') }}{% endif %}</p>
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Address: Bredeweg 235, 6042 GE Roermond | Phone: 088 468 2000 | Province: Limburg</p>
+        <p>Hours: Monday-Friday 8 am–5 pm | Saturday-Sunday Closed</p>
     </div>
 </body>
 </html> 

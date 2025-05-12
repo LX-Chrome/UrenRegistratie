@@ -82,4 +82,10 @@ def invoice_creation_required(f):
 
 with app.app_context():
     import models  # noqa: F401
+    from models import RoleEnum
     db.create_all()
+    
+    # Make RoleEnum available to all templates
+    @app.context_processor
+    def inject_role_enum():
+        return {'RoleEnum': RoleEnum}

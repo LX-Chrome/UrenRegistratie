@@ -2,8 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Assignments Export</title>
+    <title>Assignments Overview</title>
     <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -12,6 +16,17 @@
             color: #2C3E50;
             text-align: center;
             margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
         }
         table {
             width: 100%;
@@ -42,6 +57,33 @@
 <body>
     <h1>Assignments Overview</h1>
     
+    <div class="summary">
+        <h2>Summary</h2>
+        <p><strong>Total Assignments:</strong> {{ opdrachten|length }}</p>
+        <p><strong>Open Assignments:</strong> {{ opdrachten|selectattr('status', 'equalto', 'open')|list|length }}</p>
+        <p><strong>Completed Assignments:</strong> {{ opdrachten|selectattr('status', 'equalto', 'voltooid')|list|length }}</p>
+        
+        {% set clients = {} %}
+        {% for opdracht in opdrachten %}
+            {% if opdracht.klant %}
+                {% if opdracht.klant.bedrijfsnaam in clients %}
+                    {% set _ = clients.update({opdracht.klant.bedrijfsnaam: clients[opdracht.klant.bedrijfsnaam] + 1}) %}
+                {% else %}
+                    {% set _ = clients.update({opdracht.klant.bedrijfsnaam: 1}) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        <p><strong>Top Clients:</strong></p>
+        <ul>
+            {% for client, count in clients.items() %}
+                {% if count > 1 %}
+                    <li>{{ client }}: {{ count }} assignments</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    
     <table>
         <thead>
             <tr>
@@ -50,24 +92,29 @@
                 <th>Title</th>
                 <th>Description</th>
                 <th>Required Knowledge</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             {% for opdracht in opdrachten %}
             <tr>
                 <td>{{ opdracht.aanvraagdatum.strftime('%d-%m-%Y') }}</td>
-                <td>{{ opdracht.klant.bedrijfsnaam }}</td>
+                <td>{{ opdracht.klant.bedrijfsnaam if opdracht.klant else '-' }}</td>
                 <td>{{ opdracht.titel }}</td>
-                <td>{{ opdracht.omschrijving }}</td>
+                <td>{{ opdracht.omschrijving[:100] }}{% if opdracht.omschrijving|length > 100 %}...{% endif %}</td>
                 <td>{{ opdracht.benodigde_kennis or '-' }}</td>
+                <td>{{ opdracht.status or 'open' }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     
     <div class="footer">
-        <p>Generated on {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
-        <p>gildeDevOps Solutions</p>
+        <p>UrenRegistratie Assignments Overview</p>
+        <p>Generated on {% if now %}{{ now.strftime('%d-%m-%Y %H:%M') }}{% else %}{{ datetime.now().strftime('%d-%m-%Y %H:%M') }}{% endif %}</p>
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Address: Bredeweg 235, 6042 GE Roermond | Phone: 088 468 2000 | Province: Limburg</p>
+        <p>Hours: Monday-Friday 8 am–5 pm | Saturday-Sunday Closed</p>
     </div>
 </body>
 </html> 

@@ -13,6 +13,38 @@ import pdfkit
 from io import BytesIO
 from sqlalchemy import func
 from services.export_service import ExportService
+import io
+import xhtml2pdf.pisa as pisa
+
+# Direct PDF generation function using xhtml2pdf
+def generate_pdf_from_template(template_name, data, filename):
+    """Generate PDF directly using xhtml2pdf"""
+    try:
+        # Add datetime for templates that need it
+        if 'now' not in data:
+            data['now'] = datetime.now()
+            
+        # Try to render the template
+        html = render_template(template_name, **data)
+        
+        # Create a BytesIO object to store the PDF
+        result = BytesIO()
+        
+        # Generate the PDF using xhtml2pdf
+        pdf = pisa.CreatePDF(html, dest=result)
+        
+        if pdf.err:
+            app.logger.error(f"Error generating PDF with xhtml2pdf: {pdf.err}")
+            return html, f"{filename}.html", "text/html"
+        
+        # Get the PDF from the BytesIO object
+        pdf_data = result.getvalue()
+        result.close()
+        
+        return pdf_data, f"{filename}.pdf", 'application/pdf'
+    except Exception as e:
+        app.logger.error(f"Error in PDF generation: {str(e)}")
+        return None, None, "text/html"
 
 # Invoice routes
 @app.route('/facturen')
@@ -261,56 +293,17 @@ def factuur_pdf(factuur_id):
     """Generate a PDF of the invoice"""
     factuur = Factuur.query.get_or_404(factuur_id)
     
-    # Get debug flag and custom wkhtmltopdf path from query params
-    debug_mode = request.args.get('debug', '') == '1'
-    custom_path = request.args.get('wkhtmltopdf_path', '')
-    
     try:
-        # Probeer direct reportlab te gebruiken (meest betrouwbare methode)
-        try:
-            # Importeer onze reportlab PDF generator
-            from services.reportlab_pdf import generate_factuur_pdf
-            
-            # Genereer PDF direct met ReportLab (zonder HTML-template)
-            app.logger.info(f"Generating PDF for invoice {factuur.factuur_nummer} using ReportLab")
-            pdf_data, filename, mime_type = generate_factuur_pdf(factuur, f"Factuur_{factuur.factuur_nummer}")
-            
-            # Prepare response
-            response = make_response(pdf_data)
-            response.headers['Content-Type'] = mime_type
-            response.headers['Content-Disposition'] = f'inline; filename={filename}'
-            
-            return response
-        except ImportError as e:
-            app.logger.warning(f"ReportLab not available, falling back to wkhtmltopdf: {str(e)}")
-            # Ga verder met de oorspronkelijke methode als reportlab niet beschikbaar is
-        except Exception as e:
-            app.logger.error(f"Error generating PDF with ReportLab: {str(e)}")
-            # Ga verder met de oorspronkelijke methode als reportlab een fout geeft
-        
-        # Oorspronkelijke implementatie als fallback
-        from services.export_service import ExportService
-        
         # Prepare data for the template
         data = {'factuur': factuur}
         
-        # Override wkhtmltopdf path if custom_path is provided
-        if custom_path and os.path.exists(custom_path):
-            app.logger.info(f"Using custom wkhtmltopdf path: {custom_path}")
-            # Temporarily monkey patch the _find_wkhtmltopdf method to return our custom path
-            original_find_method = ExportService._find_wkhtmltopdf
-            ExportService._find_wkhtmltopdf = lambda: custom_path
+        # Generate PDF directly using xhtml2pdf
+        pdf_data, filename, mime_type = generate_pdf_from_template("factuur_pdf.html", data, f"Factuur_{factuur.factuur_nummer}")
             
-        # Generate PDF - use "factuur_pdf.html" as the template name explicitly
-        pdf_data, filename, mime_type = ExportService.to_pdf("factuur_pdf.html", data, f"Factuur_{factuur.factuur_nummer}")
-        
-        # Restore original method if we monkey patched it
-        if custom_path and os.path.exists(custom_path):
-            ExportService._find_wkhtmltopdf = original_find_method
-        
-        # Return debug info if requested
-        if debug_mode and mime_type == 'text/html':
-            return pdf_data
+        # If we failed to generate a PDF, show an error
+        if not pdf_data:
+            flash('Fout bij genereren PDF.', 'danger')
+            return redirect(url_for('bekijk_factuur', factuur_id=factuur.id))
             
         # Prepare response
         response = make_response(pdf_data)
@@ -320,7 +313,6 @@ def factuur_pdf(factuur_id):
         return response
     except Exception as e:
         flash(f'Fout bij genereren PDF: {str(e)}', 'danger')
-        app.logger.error(f"Error generating PDF: {str(e)}")
         return redirect(url_for('bekijk_factuur', factuur_id=factuur.id))
 
 @app.route('/factuur/<int:factuur_id>/mark_paid', methods=['POST'])
@@ -387,3 +379,60 @@ def api_facturen_stats():
     except Exception as e:
         app.logger.error(f"Error getting invoice stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/facturen/export/<format>')
+@login_required
+@view_all_required
+def export_facturen(format):
+    """Export invoices data in various formats"""
+    try:
+        facturen = Factuur.query.order_by(Factuur.datum.desc()).all()
+        
+        if format == 'pdf':
+            # Use the PDF template for invoices
+            data = {
+                'facturen': facturen,
+                'title': 'Facturen Overzicht',
+                'now': datetime.now(),
+            }
+            
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template("reports/pdf_facturen.html", data, 'facturen_overzicht')
+            
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('facturen'))
+        else:
+            # For Excel and CSV, prepare the data rows
+            headers = ['Nummer', 'Datum', 'Vervaldatum', 'Klant', 'Bedrag', 'BTW', 'Totaal', 'Status']
+            rows = []
+            
+            for factuur in facturen:
+                status = "Betaald" if factuur.betaald else "Onbetaald"
+                rows.append([
+                    factuur.factuur_nummer,
+                    factuur.datum.strftime('%d-%m-%Y'),
+                    factuur.vervaldatum.strftime('%d-%m-%Y'),
+                    factuur.klant.bedrijfsnaam,
+                    f"{factuur.subtotaal:.2f}",
+                    f"{factuur.btw_bedrag:.2f}",
+                    f"{factuur.totaal:.2f}",
+                    status
+                ])
+            
+            if format == 'excel':
+                content, filename, mimetype = ExportService.to_excel(rows, headers, 'facturen')
+            else:  # csv
+                content, filename, mimetype = ExportService.to_csv(rows, headers, 'facturen')
+        
+        # Prepare response
+        return send_file(
+            io.BytesIO(content),
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        flash(f'Fout bij exporteren facturen: {str(e)}', 'danger')
+        return redirect(url_for('facturen'))

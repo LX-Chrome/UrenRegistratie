@@ -43,23 +43,41 @@
                                         <a href="#" data-bs-toggle="modal" data-bs-target="#editCheckinModal{{ check_in.id }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
                                             <i data-feather="edit-2" class="feather-sm"></i>
                                         </a>
-                                        <a href="#" onclick="confirmDeleteCheckin('{{ url_for('delete_check_in', checkin_id=check_in.id) }}')" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <a href="#" class="btn btn-sm btn-outline-danger delete-checkin" data-url="{{ url_for('delete_check_in', checkin_id=check_in.id) }}" title="Delete">
                                             <i data-feather="trash-2" class="feather-sm"></i>
                                         </a>
                                     </div>
                                     
-                                    <!-- Modal for Editing Check-in Time -->
+                                    <!-- Modal for Editing Check-in -->
                                     <div class="modal fade" id="editCheckinModal{{ check_in.id }}" tabindex="-1" aria-labelledby="editCheckinModalLabel" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title" id="editCheckinModalLabel">Edit Check-in Time</h5>
+                                                    <h5 class="modal-title" id="editCheckinModalLabel" data-translate="Edit Check-in">Edit Check-in</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <form action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}" method="POST">
                                                     <div class="modal-body">
-                                                        <label for="checkinTime{{ check_in.id }}" class="form-label">New Check-in Time:</label>
-                                                        <input type="time" class="form-control" id="checkinTime{{ check_in.id }}" name="checkin_time" value="{{ check_in.check_in_time.strftime('%H:%M') }}" required>
+                                                        <div class="mb-3">
+                                                            <label for="status{{ check_in.id }}" class="form-label" data-translate="Status">Status</label>
+                                                            <select class="form-select" id="status{{ check_in.id }}" name="status" required>
+                                                                <option value="working" {% if check_in.status == 'working' %}selected{% endif %} data-translate="Aan het werk">Aan het werk</option>
+                                                                <option value="break" {% if check_in.status == 'break' %}selected{% endif %} data-translate="Pauze">Pauze</option>
+                                                                <option value="done" {% if check_in.status == 'done' %}selected{% endif %} data-translate="Klaar voor vandaag">Klaar voor vandaag</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="check_in_time{{ check_in.id }}" class="form-label" data-translate="Tijd">Tijd</label>
+                                                            <input type="time" class="form-control" id="check_in_time{{ check_in.id }}" name="check_in_time" 
+                                                                  value="{{ check_in.check_in_time.strftime('%H:%M') }}">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="note{{ check_in.id }}" class="form-label" data-translate="Notitie">Notitie</label>
+                                                            <input type="text" class="form-control" id="note{{ check_in.id }}" name="note" 
+                                                                value="{{ check_in.note or '' }}" 
+                                                                data-placeholder="Waar ben je mee bezig?" 
+                                                                placeholder="Waar ben je mee bezig?">
+                                                        </div>
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -116,10 +134,10 @@
                                 <td>
                                     <div class="btn-group">
                                         <a href="{{ url_for('time_entries') }}?edit={{ entry.id }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                                            <i data-feather="edit-2"></i>
+                                            <i data-feather="edit-2"></i> <span class="d-none d-md-inline" data-translate="Bewerken">Bewerken</span>
                                         </a>
-                                        <a href="#" onclick="confirmDelete('{{ url_for('delete_time_entry', entry_id=entry.id) }}')" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            <i data-feather="trash-2"></i>
+                                        <a href="#" class="btn btn-sm btn-outline-danger delete-entry" data-url="{{ url_for('delete_time_entry', entry_id=entry.id) }}" title="Delete">
+                                            <i data-feather="trash-2"></i> <span class="d-none d-md-inline" data-translate="Verwijderen">Verwijderen</span>
                                         </a>
                                     </div>
                                 </td>
@@ -145,43 +163,6 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Edit Check-in Modals -->
-{% for check_in in check_ins %}
-<div class="modal fade" id="editCheckinModal{{ check_in.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" data-translate="Edit Check-in">Edit Check-in</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="status{{ check_in.id }}" class="form-label" data-translate="Status">Status</label>
-                        <select class="form-select" id="status{{ check_in.id }}" name="status" required>
-                            <option value="working" {% if check_in.status == 'working' %}selected{% endif %} data-translate="Aan het werk">Aan het werk</option>
-                            <option value="break" {% if check_in.status == 'break' %}selected{% endif %} data-translate="Pauze">Pauze</option>
-                            <option value="done" {% if check_in.status == 'done' %}selected{% endif %} data-translate="Klaar voor vandaag">Klaar voor vandaag</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="note{{ check_in.id }}" class="form-label" data-translate="Notitie">Notitie</label>
-                        <input type="text" class="form-control" id="note{{ check_in.id }}" name="note" 
-                               value="{{ check_in.note or '' }}" 
-                               data-placeholder="Waar ben je mee bezig?" 
-                               placeholder="Waar ben je mee bezig?">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Close">Close</button>
-                    <button type="submit" class="btn btn-primary" data-translate="Save Changes">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endfor %}
-
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
     <div class="modal-dialog">
@@ -225,5 +206,24 @@ function confirmDeleteCheckin(deleteUrl) {
     // Show the modal
     modal.show();
 }
+
+// Add event listeners for delete entry buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-entry').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            confirmDelete(url);
+        });
+    });
+    
+    document.querySelectorAll('.delete-checkin').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            confirmDeleteCheckin(url);
+        });
+    });
+});
 </script>
 {% endblock %}

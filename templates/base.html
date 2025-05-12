@@ -74,6 +74,13 @@
                             <i data-feather="bar-chart-2" class="feather-sm"></i> <span data-translate="Rapportages">Rapportages</span>
                         </a>
                     </li>
+                    {% if current_user.has_role(RoleEnum.ADMIN) %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i data-feather="shield" class="feather-sm"></i> <span data-translate="Admin">Admin</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">

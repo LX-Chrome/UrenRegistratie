@@ -2,8 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Employees Export</title>
+    <title>Employees Overview</title>
     <style>
+        @page {
+            size: 21cm 29.7cm;
+            margin: 2cm;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -12,6 +16,17 @@
             color: #2C3E50;
             text-align: center;
             margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
         }
         table {
             width: 100%;
@@ -42,24 +57,43 @@
 <body>
     <h1>Employees Overview</h1>
     
+    <div class="summary">
+        <h2>Summary</h2>
+        <p><strong>Total Employees:</strong> {{ medewerkers|length }}</p>
+        
+        {% set functions = {} %}
+        {% for medewerker in medewerkers %}
+            {% if medewerker.functie %}
+                {% if medewerker.functie in functions %}
+                    {% set _ = functions.update({medewerker.functie: functions[medewerker.functie] + 1}) %}
+                {% else %}
+                    {% set _ = functions.update({medewerker.functie: 1}) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        <p><strong>Functions:</strong></p>
+        <ul>
+            {% for function, count in functions.items() %}
+                <li>{{ function }}: {{ count }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
     <table>
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Function</th>
                 <th>Work Email</th>
-                <th>Office Space</th>
+                <th>Office</th>
                 <th>Birth Date</th>
             </tr>
         </thead>
         <tbody>
             {% for medewerker in medewerkers %}
             <tr>
-                <td>
-                    {{ medewerker.voornaam }} 
-                    {% if medewerker.tussenvoegsel %}{{ medewerker.tussenvoegsel }}{% endif %} 
-                    {{ medewerker.achternaam }}
-                </td>
+                <td>{{ medewerker.voornaam }} {% if medewerker.tussenvoegsel %}{{ medewerker.tussenvoegsel }}{% endif %} {{ medewerker.achternaam }}</td>
                 <td>{{ medewerker.functie or '-' }}</td>
                 <td>{{ medewerker.werkmail }}</td>
                 <td>{{ medewerker.kantoorruimte or '-' }}</td>
@@ -70,8 +104,11 @@
     </table>
     
     <div class="footer">
-        <p>Generated on {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
-        <p>gildeDevOps Solutions</p>
+        <p>UrenRegistratie Employees Overview</p>
+        <p>Generated on {% if now %}{{ now.strftime('%d-%m-%Y %H:%M') }}{% else %}{{ datetime.now().strftime('%d-%m-%Y %H:%M') }}{% endif %}</p>
+        <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+        <p>Address: Bredeweg 235, 6042 GE Roermond | Phone: 088 468 2000 | Province: Limburg</p>
+        <p>Hours: Monday-Friday 8 am–5 pm | Saturday-Sunday Closed</p>
     </div>
 </body>
 </html> 

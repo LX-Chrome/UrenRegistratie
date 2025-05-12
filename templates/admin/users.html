@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"><i data-feather="shield" class="feather-sm"></i> <span data-translate="Admin">Admin</span></a></li>
+                    <li class="breadcrumb-item active" aria-current="page"><span data-translate="Gebruikersbeheer">Gebruikersbeheer</span></li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="users" class="feather-sm"></i>
+                        <span data-translate="Gebruikersbeheer">Gebruikersbeheer</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th><span data-translate="ID">ID</span></th>
+                                    <th><span data-translate="Gebruikersnaam">Gebruikersnaam</span></th>
+                                    <th><span data-translate="Email">Email</span></th>
+                                    <th><span data-translate="Huidige rol">Huidige rol</span></th>
+                                    <th><span data-translate="Actief">Actief</span></th>
+                                    <th><span data-translate="Aangemaakt op">Aangemaakt op</span></th>
+                                    <th><span data-translate="Acties">Acties</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge {% if user.role.name == 'admin' %}bg-danger{% elif user.role.name == 'afdelingshoofd' %}bg-warning{% elif user.role.name == 'verkoop' %}bg-info{% else %}bg-secondary{% endif %}">
+                                            {{ user.role.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if user.is_active %}
+                                            <span data-translate="Actief">Actief</span>
+                                            {% else %}
+                                            <span data-translate="Inactief">Inactief</span>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changeRoleModal{{ user.id }}">
+                                            <i data-feather="edit" class="feather-sm"></i> <span data-translate="Rol wijzigen">Rol wijzigen</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Change Role Modal -->
+                                <div class="modal fade" id="changeRoleModal{{ user.id }}" tabindex="-1" aria-labelledby="changeRoleModalLabel{{ user.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="changeRoleModalLabel{{ user.id }}">
+                                                    <span data-translate="Rol wijzigen voor">Rol wijzigen voor</span> {{ user.username }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="{{ url_for('admin_set_user_role', user_id=user.id) }}" method="POST">
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="role_id{{ user.id }}" class="form-label" data-translate="Selecteer rol">Selecteer rol</label>
+                                                        <select class="form-select" id="role_id{{ user.id }}" name="role_id" required>
+                                                            {% for role in roles %}
+                                                            <option value="{{ role.id }}" {% if user.role_id == role.id %}selected{% endif %}>
+                                                                {{ role.name }} - {{ role.description }}
+                                                            </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    {% if user.id == current_user.id and user.has_role(RoleEnum.ADMIN) %}
+                                                    <div class="alert alert-warning">
+                                                        <i data-feather="alert-triangle" class="feather-sm"></i>
+                                                        <span data-translate="Waarschuwing: Je kunt je eigen admin rol niet downgraden">Waarschuwing: Je kunt je eigen admin rol niet downgraden</span>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Annuleren">Annuleren</button>
+                                                    <button type="submit" class="btn btn-primary" data-translate="Rol opslaan">Rol opslaan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
