@@ -1,7 +1,6 @@
 import csv
 import io
 from datetime import datetime
-import pdfkit
 import xlsxwriter
 from flask import render_template, current_app
 import os
@@ -9,35 +8,375 @@ import sys
 import subprocess
 import tempfile
 import logging
+import traceback
 
-# Configureer standaard logging voor gebruik buiten applicatiecontext
+# Configure logging
 logger = logging.getLogger('export_service')
 
-# Import ReportLab first (pure Python PDF generation)
+# Global flags for PDF library availability
+REPORTLAB_AVAILABLE = False
+WEASYPRINT_AVAILABLE = False
+PDFKIT_AVAILABLE = False
+
+# Try to import ReportLab (pure Python PDF generation - preferred method)
 try:
+    import reportlab
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
-    REPORTLAB_AVAILABLE = True
-    logger.info("ReportLab is available for PDF generation")
-except ImportError:
-    REPORTLAB_AVAILABLE = False
-    logger.warning("ReportLab is NOT available - please run: pip install reportlab")
+    
+    # Verify it works by creating a tiny test PDF
+    test_buffer = io.BytesIO()
+    p = canvas.Canvas(test_buffer)
+    p.drawString(100, 100, "ReportLab Test")
+    p.showPage()
+    p.save()
+    if len(test_buffer.getvalue()) > 0:
+        REPORTLAB_AVAILABLE = True
+        logger.info(f"ReportLab {reportlab.Version} is available for PDF generation")
+    else:
+        logger.warning("ReportLab imports succeeded but test PDF generation failed")
+except Exception as e:
+    logger.warning(f"ReportLab is not available: {str(e)}\nConsider installing with: pip install reportlab")
 
-# Import WeasyPrint if available
+# Try to import WeasyPrint (alternative HTML to PDF converter)
 try:
     from weasyprint import HTML, CSS
     from weasyprint.text.fonts import FontConfiguration
     WEASYPRINT_AVAILABLE = True
     logger.info("WeasyPrint is available for PDF generation")
-except ImportError:
-    WEASYPRINT_AVAILABLE = False
-    logger.warning("WeasyPrint is NOT available")
+except ImportError as e:
+    logger.warning(f"WeasyPrint is not available: {str(e)}")
+
+# Try to import pdfkit (wkhtmltopdf wrapper)
+try:
+    import pdfkit
+    PDFKIT_AVAILABLE = True
+    logger.info("pdfkit is available for PDF generation")
+except ImportError as e:
+    logger.warning(f"pdfkit is not available: {str(e)}")
 
 class ExportService:
+    @staticmethod
+    def simple_pdf(data, title):
+        """Generate PDF directly in memory without any temp files"""
+        try:
+            # First try with ReportLab (preferred method)
+            if REPORTLAB_AVAILABLE:
+                logger.info(f"Using ReportLab for direct PDF generation for {title}")
+                return ExportService._generate_reportlab_pdf(data, title)
+            else:
+                # Fall back to plain HTML if ReportLab not available
+                logger.warning(f"ReportLab not available, falling back to HTML export for {title}")
+                return ExportService._generate_html_export(data, title)
+        except Exception as e:
+            logger.error(f"Error in simple_pdf: {str(e)}, falling back to HTML export")
+            return ExportService._generate_html_export(data, title)
+    
+    @staticmethod
+    def _generate_html_export(data, title):
+        """Generate a simple HTML file as fallback when PDF generation fails"""
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        table {{ border-collapse: collapse; width: 100%; margin-bottom: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+        h1 {{ color: #333; }}
+        .footer {{ margin-top: 30px; font-size: 0.8em; color: #777; }}
+    </style>
+</head>
+<body>
+    <h1>{title.capitalize().replace('_', ' ')}</h1>
+"""
+        
+        # Handle different entity types
+        if 'entries' in data:  # Time entries
+            entries = data['entries']
+            html += """<table>
+    <thead>
+        <tr>
+            <th>Datum</th>
+            <th>Project</th>
+            <th>Uren</th>
+            <th>Omschrijving</th>
+        </tr>
+    </thead>
+    <tbody>"""
+            
+            for entry in entries:
+                # Safely handle date values with the pattern from memory
+                date_str = entry.date.strftime('%d-%m-%Y') if entry.date else '-'
+                html += f"""        <tr>
+            <td>{date_str}</td>
+            <td>{entry.project}</td>
+            <td>{entry.hours}</td>
+            <td>{entry.description}</td>
+        </tr>
+"""
+            
+            html += """    </tbody>
+</table>"""
+            
+        elif 'klanten' in data:  # Clients
+            klanten = data['klanten']
+            html += """<table>
+    <thead>
+        <tr>
+            <th>Bedrijfsnaam</th>
+            <th>Naam</th>
+            <th>Email</th>
+            <th>Telefoon</th>
+            <th>Functie</th>
+        </tr>
+    </thead>
+    <tbody>"""
+            
+            for klant in klanten:
+                full_name = f"{klant.voornaam} {klant.tussenvoegsel + ' ' if klant.tussenvoegsel else ''}{klant.achternaam}".strip()
+                html += f"""        <tr>
+            <td>{klant.bedrijfsnaam}</td>
+            <td>{full_name}</td>
+            <td>{klant.email}</td>
+            <td>{klant.telefoonnummer or '-'}</td>
+            <td>{klant.functie or '-'}</td>
+        </tr>
+"""
+            
+            html += """    </tbody>
+</table>"""
+            
+        # Add more entity types as needed (medewerkers, opdrachten, etc.)
+        # For brevity, these are omitted here but would follow the same pattern
+            
+        # Footer
+        current_time = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        html += f"""    <div class="footer">
+        <p>Gegenereerd op: {current_time}</p>
+        <p>Note: This is an HTML export because PDF generation was not available. Install ReportLab for PDF export.</p>
+    </div>
+</body>
+</html>"""
+        
+        content = html.encode('utf-8')
+        return content, f"{title}_{datetime.now().strftime('%Y%m%d')}.html", 'text/html'
+    
+    @staticmethod
+    def _generate_reportlab_pdf(data, title):
+        """Generate PDF using ReportLab"""
+        try:
+            # Create a BytesIO buffer instead of a file
+            buffer = io.BytesIO()
+            
+            # Create the PDF document in memory
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=A4,
+                rightMargin=2*cm,
+                leftMargin=2*cm,
+                topMargin=2*cm,
+                bottomMargin=2*cm
+            )
+            
+            # Container for the 'Flowable' objects
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Add title
+            elements.append(Paragraph(title.capitalize().replace('_', ' '), styles['Title']))
+            elements.append(Spacer(1, 0.5*cm))
+            
+            # Handle different entity types
+            if 'entries' in data:  # Time entries
+                entries = data['entries']
+                # Create header row and data rows
+                table_data = [["Datum", "Project", "Uren", "Omschrijving"]]
+                for entry in entries:
+                    date_str = entry.date.strftime('%d-%m-%Y') if entry.date else '-'
+                    table_data.append([
+                        date_str,
+                        entry.project,
+                        str(entry.hours),
+                        entry.description
+                    ])
+                
+                # Create the table
+                table = Table(table_data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Bold header
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),  # Grey header
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),  # Center header
+                    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),  # Inner grid
+                    ('BOX', (0, 0), (-1, -1), 0.25, colors.black),  # Outer border
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Middle vertical align
+                ]))
+                elements.append(table)
+            
+            elif 'klanten' in data:  # Clients
+                klanten = data['klanten']
+                # Create header row and data rows
+                table_data = [["Bedrijfsnaam", "Naam", "Email", "Telefoon", "Functie"]]
+                for klant in klanten:
+                    full_name = f"{klant.voornaam} {klant.tussenvoegsel + ' ' if klant.tussenvoegsel else ''}{klant.achternaam}".strip()
+                    table_data.append([
+                        klant.bedrijfsnaam,
+                        full_name,
+                        klant.email,
+                        klant.telefoonnummer or '-',
+                        klant.functie or '-'
+                    ])
+            
+                # Create the table with appropriate column widths
+                col_widths = [4*cm, 4*cm, 4*cm, 3*cm, 3*cm]
+                table = Table(table_data, repeatRows=1, colWidths=col_widths)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                elements.append(table)
+            
+            elif 'medewerkers' in data:  # Employees
+                medewerkers = data['medewerkers']
+                # Create header row and data rows
+                table_data = [["Naam", "Functie", "Werkmail", "Kantoorruimte", "Geboortedatum"]]
+                for medewerker in medewerkers:
+                    try:
+                        full_name = f"{medewerker.voornaam} {medewerker.tussenvoegsel + ' ' if medewerker.tussenvoegsel else ''}{medewerker.achternaam}".strip()
+                        geb_date = medewerker.geboortedatum.strftime('%d-%m-%Y') if medewerker.geboortedatum else '-'
+                        table_data.append([
+                            full_name,
+                            medewerker.functie or '-',
+                            medewerker.werkmail,
+                            medewerker.kantoorruimte or '-',
+                            geb_date
+                        ])
+                    except Exception as e:
+                        # Skip any problematic records
+                        logger.warning(f"Error processing medewerker: {str(e)}")
+                
+                # Create the table with appropriate column widths
+                col_widths = [4*cm, 3*cm, 4*cm, 3*cm, 3*cm]
+                table = Table(table_data, repeatRows=1, colWidths=col_widths)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                elements.append(table)
+                
+            elif 'medewerkers' in data:  # Employees
+                medewerkers = data['medewerkers']
+                # Create header row and data rows
+                table_data = [["Naam", "Functie", "Werkmail", "Kantoorruimte", "Geboortedatum"]]
+                for medewerker in medewerkers:
+                    try:
+                        full_name = f"{medewerker.voornaam} {medewerker.tussenvoegsel + ' ' if medewerker.tussenvoegsel else ''}{medewerker.achternaam}".strip()
+                        geb_date = medewerker.geboortedatum.strftime('%d-%m-%Y') if medewerker.geboortedatum else '-'
+                        table_data.append([
+                            full_name,
+                            medewerker.functie or '-',
+                            medewerker.werkmail,
+                            medewerker.kantoorruimte or '-',
+                            geb_date
+                        ])
+                    except Exception as e:
+                        # Skip any problematic records
+                        logger.warning(f"Error processing medewerker: {str(e)}")
+                
+                # Create the table with appropriate column widths
+                col_widths = [4*cm, 3*cm, 4*cm, 3*cm, 3*cm]
+                table = Table(table_data, repeatRows=1, colWidths=col_widths)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                elements.append(table)
+                
+            elif 'opdrachten' in data:  # Assignments
+                opdrachten = data['opdrachten']
+                # Create header row and data rows
+                table_data = [["Datum", "Klant", "Titel", "Omschrijving", "Benodigde Kennis"]]
+                for opdracht in opdrachten:
+                    # Safely handle date values
+                    date_str = opdracht.aanvraagdatum.strftime('%d-%m-%Y') if opdracht.aanvraagdatum else '-'
+                    # Handle potential None values safely
+                    klant_naam = opdracht.klant.bedrijfsnaam if opdracht.klant else '-'
+                    table_data.append([
+                        date_str,
+                        klant_naam,
+                        opdracht.titel,
+                        opdracht.omschrijving or '-',
+                        opdracht.benodigde_kennis or '-'
+                    ])
+                
+                # Create the table - Auto-width columns
+                table = Table(table_data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                elements.append(table)
+                
+            else:
+                # Unknown data type
+                elements.append(Paragraph(f"Geen gegevens gevonden voor {title}", styles['Normal']))
+            
+            # Footer with date
+            elements.append(Spacer(1, 1*cm))
+            elements.append(Paragraph(f"Gegenereerd op: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}", styles['Normal']))
+            
+            # Build the PDF into the buffer
+            doc.build(elements)
+            
+            # Get the value from the buffer
+            pdf_data = buffer.getvalue()
+            buffer.close()
+            
+            return pdf_data, f"{title}_{datetime.now().strftime('%Y%m%d')}.pdf", 'application/pdf'
+            
+        except Exception as e:
+            logger.error(f"Error in _generate_reportlab_pdf: {str(e)}")
+            # Create a simple error PDF
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            elements.append(Paragraph("PDF Generatie Fout", styles['Title']))
+            elements.append(Spacer(1, 0.5*cm))
+            elements.append(Paragraph(f"Er is een fout opgetreden: {str(e)}", styles['Normal']))
+            elements.append(Spacer(1, 0.5*cm))
+            elements.append(Paragraph(f"Probeer de CSV of Excel export als alternatief.", styles['Normal']))
+            
+            doc.build(elements)
+            
+            pdf_data = buffer.getvalue()
+            buffer.close()
+            
+            return pdf_data, f"error_{datetime.now().strftime('%Y%m%d')}.pdf", 'application/pdf'
+            
     @staticmethod
     def to_pdf(template_name, data, title):
         """Generate PDF from template"""

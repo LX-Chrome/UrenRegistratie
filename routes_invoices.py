@@ -259,19 +259,26 @@ def delete_factuur(factuur_id):
 @view_all_required
 def factuur_pdf(factuur_id):
     """Generate a PDF of the invoice"""
-    factuur = Factuur.query.get_or_404(factuur_id)
+    # Load the invoice with all necessary relationships
+    factuur = db.session.query(Factuur)\
+        .options(db.joinedload(Factuur.klant))\
+        .options(db.joinedload(Factuur.opdracht))\
+        .options(db.joinedload(Factuur.werkzaamheden))\
+        .options(db.joinedload(Factuur.time_entries))\
+        .filter(Factuur.id == factuur_id)\
+        .first_or_404()
     
     # Get debug flag and custom wkhtmltopdf path from query params
     debug_mode = request.args.get('debug', '') == '1'
     custom_path = request.args.get('wkhtmltopdf_path', '')
     
     try:
-        # Probeer direct reportlab te gebruiken (meest betrouwbare methode)
+        # Try to use ReportLab first (most reliable method)
         try:
-            # Importeer onze reportlab PDF generator
+            # Import our ReportLab PDF generator
             from services.reportlab_pdf import generate_factuur_pdf
             
-            # Genereer PDF direct met ReportLab (zonder HTML-template)
+            # Generate PDF directly with ReportLab (without HTML template)
             app.logger.info(f"Generating PDF for invoice {factuur.factuur_nummer} using ReportLab")
             pdf_data, filename, mime_type = generate_factuur_pdf(factuur, f"Factuur_{factuur.factuur_nummer}")
             
@@ -283,16 +290,21 @@ def factuur_pdf(factuur_id):
             return response
         except ImportError as e:
             app.logger.warning(f"ReportLab not available, falling back to wkhtmltopdf: {str(e)}")
-            # Ga verder met de oorspronkelijke methode als reportlab niet beschikbaar is
+            # Continue with original method if ReportLab is not available
         except Exception as e:
             app.logger.error(f"Error generating PDF with ReportLab: {str(e)}")
-            # Ga verder met de oorspronkelijke methode als reportlab een fout geeft
+            # Continue with original method if ReportLab fails
         
-        # Oorspronkelijke implementatie als fallback
+        # Fallback implementation
         from services.export_service import ExportService
         
         # Prepare data for the template
-        data = {'factuur': factuur}
+        data = {
+            'factuur': factuur,
+            'now': datetime.now(),  # Pass current datetime for date formatting
+            'has_werkzaamheden': bool(factuur.werkzaamheden),
+            'has_time_entries': bool(factuur.time_entries)
+        }
         
         # Override wkhtmltopdf path if custom_path is provided
         if custom_path and os.path.exists(custom_path):

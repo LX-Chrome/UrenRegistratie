@@ -1,10 +1,16 @@
 """
 ReportLab PDF Generator Module
 """
-from datetime import datetime
+import sys
 import os
+from datetime import datetime
 import tempfile
 import logging
+
+# Add the project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 # Configureer een logger
 logger = logging.getLogger(__name__)
@@ -19,10 +25,18 @@ try:
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
+    
+    # Check if all dependencies are available
+    if not hasattr(colors, 'black') or not hasattr(colors, 'lightgrey'):
+        raise ImportError("ReportLab colors not available")
+    if not hasattr(canvas, 'Canvas'):
+        raise ImportError("ReportLab Canvas not available")
+    
     REPORTLAB_AVAILABLE = True
     logger.info("ReportLab is beschikbaar voor PDF generatie")
-except ImportError:
-    logger.warning("ReportLab is niet beschikbaar - installeer het met: pip install reportlab")
+except ImportError as e:
+    logger.warning(f"ReportLab is niet beschikbaar: {str(e)}")
+    logger.warning("Installeer het met: pip install reportlab")
 
 def generate_factuur_pdf(factuur, title="Factuur"):
     """
@@ -107,8 +121,9 @@ def generate_factuur_pdf(factuur, title="Factuur"):
         # Factuurinfo tabel
         invoice_info = [
             ["Factuurnummer:", getattr(factuur, 'factuur_nummer', 'N/A')],
-            ["Datum:", getattr(factuur, 'datum', datetime.now()).strftime('%d-%m-%Y')],
-            ["Vervaldatum:", getattr(factuur, 'vervaldatum', datetime.now()).strftime('%d-%m-%Y')],
+            ["Datum:", (getattr(factuur, 'datum', datetime.now()) or datetime.now()).strftime('%d-%m-%Y')],
+            ["Vervaldatum:", (getattr(factuur, 'vervaldatum', datetime.now()) or datetime.now()).strftime('%d-%m-%Y')],
+            ["Betaaldatum:", (getattr(factuur, 'betaaldatum', None) or datetime.now()).strftime('%d-%m-%Y') if factuur.betaald else "-"]
         ]
         
         invoice_table = Table(invoice_info, colWidths=[4*cm, 10*cm])
@@ -127,6 +142,21 @@ def generate_factuur_pdf(factuur, title="Factuur"):
             ["Totaal", f"€ {getattr(factuur, 'totaal', 0):.2f}"]
         ]
         
+        # Add work activities and time entries if available
+        if hasattr(factuur, 'werkzaamheden') and factuur.werkzaamheden:
+            for werkzaamheid in factuur.werkzaamheden:
+                summary_data.append([
+                    werkzaamheid.omschrijving,
+                    f"€ {werkzaamheid.aantal_uren * werkzaamheid.get_effective_tarief():.2f}"
+                ])
+        
+        if hasattr(factuur, 'time_entries') and factuur.time_entries:
+            for entry in factuur.time_entries:
+                summary_data.append([
+                    entry.description,
+                    f"€ {entry.hours * (getattr(factuur.opdracht, 'uurtarief', 0) if hasattr(factuur, 'opdracht') else 0):.2f}"
+                ])
+        
         summary_table = Table(summary_data, colWidths=[10*cm, 4*cm])
         summary_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -140,14 +170,15 @@ def generate_factuur_pdf(factuur, title="Factuur"):
         
         # Betalingsvoorwaarden
         elements.append(Spacer(1, 1*cm))
-        if hasattr(factuur, 'betalingsvoorwaarden'):
-            elements.append(Paragraph(f"Betalingsvoorwaarden: {factuur.betalingsvoorwaarden}", styles['Normal']))
+        betalingsvoorwaarden = getattr(factuur, 'betalingsvoorwaarden', 'Betaling binnen 30 dagen')
+        elements.append(Paragraph(f"Betalingsvoorwaarden: {betalingsvoorwaarden}", styles['Normal']))
         
         # Notities
-        if hasattr(factuur, 'notities') and factuur.notities:
+        notities = getattr(factuur, 'notities', '')
+        if notities:
             elements.append(Spacer(1, 0.5*cm))
             elements.append(Paragraph("Notities:", styles['Heading3']))
-            elements.append(Paragraph(factuur.notities, styles['Normal']))
+            elements.append(Paragraph(notities, styles['Normal']))
         
         # Bouw de PDF
         doc.build(elements)

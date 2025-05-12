@@ -116,18 +116,16 @@
                     </tr>
                     <tr>
                         <td><strong>Factuurdatum:</strong></td>
-                        <td>{{ factuur.datum.strftime('%d-%m-%Y') }}</td>
+                        <td>{% if factuur.datum %}{{ factuur.datum.strftime('%d-%m-%Y') }}{% else %}-{% endif %}</td>
                     </tr>
                     <tr>
                         <td><strong>Vervaldatum:</strong></td>
-                        <td>{{ factuur.vervaldatum.strftime('%d-%m-%Y') }}</td>
+                        <td>{% if factuur.vervaldatum %}{{ factuur.vervaldatum.strftime('%d-%m-%Y') }}{% else %}-{% endif %}</td>
                     </tr>
-                    {% if factuur.betaald and factuur.betaaldatum %}
                     <tr>
                         <td><strong>Betaaldatum:</strong></td>
-                        <td>{% if factuur.betaaldatum %}{{ factuur.betaaldatum.strftime('%d-%m-%Y') }}{% else %}-{% endif %}</td>
+                        <td>{% if factuur.betaald and factuur.betaaldatum %}{{ factuur.betaaldatum.strftime('%d-%m-%Y') }}{% else %}-{% endif %}</td>
                     </tr>
-                    {% endif %}
                 </table>
             </div>
         </div>

@@ -170,7 +170,8 @@ def export_data(entity, format):
         entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).all()
         if format == 'pdf':
             data = {'entries': entries}
-            content, filename, mimetype = export_service.to_pdf('time_entries.html', data, 'time_entries')
+            # Use the in-memory PDF generation method
+            content, filename, mimetype = export_service.simple_pdf(data, 'time_entries')
         else:
             headers = ['Datum', 'Project', 'Uren', 'Omschrijving']
             rows = [[e.date.strftime('%Y-%m-%d'), e.project, e.hours, e.description] for e in entries]
@@ -183,7 +184,8 @@ def export_data(entity, format):
         klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
         if format == 'pdf':
             data = {'klanten': klanten}
-            content, filename, mimetype = export_service.to_pdf('klanten.html', data, 'klanten')
+            # Use the in-memory PDF generation method
+            content, filename, mimetype = export_service.simple_pdf(data, 'klanten')
         else:
             headers = ['Bedrijfsnaam', 'Naam', 'Email', 'Telefoon', 'Functie']
             rows = [[
@@ -202,7 +204,8 @@ def export_data(entity, format):
         medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
         if format == 'pdf':
             data = {'medewerkers': medewerkers}
-            content, filename, mimetype = export_service.to_pdf('medewerkers.html', data, 'medewerkers')
+            # Use the in-memory PDF generation method
+            content, filename, mimetype = export_service.simple_pdf(data, 'medewerkers')
         else:
             headers = ['Naam', 'Functie', 'Werkmail', 'Kantoorruimte', 'Geboortedatum']
             rows = [[
@@ -221,7 +224,8 @@ def export_data(entity, format):
         opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
         if format == 'pdf':
             data = {'opdrachten': opdrachten}
-            content, filename, mimetype = export_service.to_pdf('opdrachten.html', data, 'opdrachten')
+            # Use the in-memory PDF generation method
+            content, filename, mimetype = export_service.simple_pdf(data, 'opdrachten')
         else:
             headers = ['Datum', 'Klant', 'Titel', 'Omschrijving', 'Benodigde Kennis']
             rows = [[
