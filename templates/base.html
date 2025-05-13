@@ -2,7 +2,8 @@
 <html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>gildeDevOps Solutions</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
@@ -19,11 +20,36 @@
             transition: top 0.3s;
         }
         body {
-            padding-top: 70px; /* Zorg dat de inhoud niet achter de navbar verdwijnt */
-            min-height: 120vh; /* Maakt de pagina iets langer */
+            padding-top: 70px; /* Adjust content to avoid navbar overlap */
+            min-height: 100vh; /* Use full viewport height */
         }
         footer {
-            margin-top: 100px; /* Verplaatst de copyright verder naar beneden */
+            margin-top: auto; /* Push footer to bottom */
+            padding: 20px 0;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .navbar-brand img {
+                height: 40px; /* Smaller logo on mobile */
+            }
+            body {
+                padding-top: 60px; /* Less padding on mobile */
+            }
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .navbar .container {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .navbar-brand img {
+                height: 35px; /* Even smaller logo on very small devices */
+            }
         }
     </style>
 </head>
@@ -117,18 +143,26 @@
     </nav>
 
     <main class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category not in ('message', 'default') else 'info' }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
+        <div class="row">
+            <div class="col-12">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category not in ('message', 'default') else 'info' }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
     </main>
 
   

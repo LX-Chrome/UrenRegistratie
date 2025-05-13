@@ -2,8 +2,8 @@
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h1 class="h2 mb-2 mb-md-0">
             <i data-feather="file-text" class="feather-lg me-2"></i> 
             {% if factuur %}
             <span data-translate="Bewerk factuur">Bewerk factuur</span> {{ factuur.factuur_nummer }}
@@ -18,19 +18,19 @@
 
     <form method="POST" id="factuurForm" class="needs-validation" novalidate>
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-lg-8 col-md-12">
                 <div class="card shadow mb-4">
                     <div class="card-header bg-dark text-white">
                         <h5 class="mb-0"><span data-translate="Factuurgegevens">Factuurgegevens</span></h5>
                     </div>
                     <div class="card-body">
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-sm-12 mb-3 mb-md-0">
                                 <label for="datum" class="form-label"><span data-translate="Factuurdatum">Factuurdatum</span> *</label>
                                 <input type="date" class="form-control" id="datum" name="datum" 
                                        value="{{ factuur.datum.strftime('%Y-%m-%d') if factuur else today.strftime('%Y-%m-%d') }}" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-sm-12">
                                 <label for="payment_terms_days" class="form-label"><span data-translate="Betalingstermijn (dagen)">Betalingstermijn (dagen)</span></label>
                                 <input type="number" class="form-control" id="payment_terms_days" name="payment_terms_days" 
                                        value="30" min="1" max="90">
@@ -38,7 +38,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-sm-12 mb-3 mb-md-0">
                                 <label for="klant_id" class="form-label"><span data-translate="Klant">Klant</span> *</label>
                                 <select class="form-select" id="klant_id" name="klant_id" required 
                                         {% if factuur %}disabled{% endif %}>
@@ -54,7 +54,7 @@
                                 <input type="hidden" name="klant_id" value="{{ factuur.klant_id }}">
                                 {% endif %}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-sm-12">
                                 <label for="opdracht_id" class="form-label"><span data-translate="Opdracht">Opdracht</span></label>
                                 <select class="form-select" id="opdracht_id" name="opdracht_id"
                                         {% if factuur %}disabled{% endif %}>
@@ -73,7 +73,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-12">
+                            <div class="col-12">
                                 <label for="betalingsvoorwaarden" class="form-label"><span data-translate="Betalingsvoorwaarden">Betalingsvoorwaarden</span></label>
                                 <input type="text" class="form-control" id="betalingsvoorwaarden" name="betalingsvoorwaarden" 
                                        value="{{ factuur.betalingsvoorwaarden if factuur else 'Betaling binnen 30 dagen' }}">
@@ -81,7 +81,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-12">
+                            <div class="col-12">
                                 <label for="notities" class="form-label"><span data-translate="Notities">Notities</span></label>
                                 <textarea class="form-control" id="notities" name="notities" rows="3">{{ factuur.notities if factuur else '' }}</textarea>
                             </div>
@@ -103,10 +103,10 @@
                                         <tr>
                                             <th width="5%"></th>
                                             <th><span data-translate="Omschrijving">Omschrijving</span></th>
-                                            <th><span data-translate="Medewerker">Medewerker</span></th>
+                                            <th class="d-none d-md-table-cell"><span data-translate="Medewerker">Medewerker</span></th>
                                             <th><span data-translate="Datum">Datum</span></th>
                                             <th class="text-end"><span data-translate="Uren">Uren</span></th>
-                                            <th class="text-end"><span data-translate="Tarief">Tarief</span></th>
+                                            <th class="text-end d-none d-sm-table-cell"><span data-translate="Tarief">Tarief</span></th>
                                             <th class="text-end"><span data-translate="Bedrag">Bedrag</span></th>
                                         </tr>
                                     </thead>
@@ -122,11 +122,11 @@
                                                            data-tarief="{{ w.uurtarief_override or w.opdracht.uurtarief or 0 }}">
                                                 </div>
                                             </td>
-                                            <td>{{ w.omschrijving }}</td>
-                                            <td>{{ w.medewerker.voornaam }} {{ w.medewerker.achternaam }}</td>
+                                            <td class="text-truncate" style="max-width: 150px;">{{ w.omschrijving }}</td>
+                                            <td class="d-none d-md-table-cell">{{ w.medewerker.voornaam }} {{ w.medewerker.achternaam }}</td>
                                             <td>{{ w.datum.strftime('%d-%m-%Y') }}</td>
                                             <td class="text-end">{{ "%.2f"|format(w.aantal_uren) }}</td>
-                                            <td class="text-end">
+                                            <td class="text-end d-none d-sm-table-cell">
                                                 {% if w.uurtarief_override %}
                                                 € {{ "%.2f"|format(w.uurtarief_override) }}
                                                 {% elif w.opdracht.uurtarief %}
@@ -167,10 +167,10 @@
                                         <tr>
                                             <th width="5%"></th>
                                             <th><span data-translate="Omschrijving">Omschrijving</span></th>
-                                            <th><span data-translate="Project">Project</span></th>
+                                            <th class="d-none d-md-table-cell"><span data-translate="Project">Project</span></th>
                                             <th><span data-translate="Datum">Datum</span></th>
                                             <th class="text-end"><span data-translate="Uren">Uren</span></th>
-                                            <th class="text-end"><span data-translate="Tarief">Tarief</span></th>
+                                            <th class="text-end d-none d-sm-table-cell"><span data-translate="Tarief">Tarief</span></th>
                                             <th class="text-end"><span data-translate="Bedrag">Bedrag</span></th>
                                         </tr>
                                     </thead>
