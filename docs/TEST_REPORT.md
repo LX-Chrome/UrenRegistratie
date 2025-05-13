@@ -1,10 +1,10 @@
 # Testrapport & Testplan voor UrenRegistratie Applicatie
 
-Dit document bevat zowel het testplan als het testrapport voor de UrenRegistratie applicatie. Het testplan beschrijft de strategie en aanpak voor het testen van de applicatie, terwijl het testrapport de resultaten van de uitgevoerde tests en verbetervoorstellen documenteert.
+Dit document bevat een beknopt testplan en testrapport voor de UrenRegistratie applicatie, gericht op tests die direct uitgevoerd kunnen worden.
 
 ## Inhoudsopgave
 1. [Inleiding](#inleiding)
-2. [Teststrategie](#teststrategie)
+2. [Testscope](#testscope)
 3. [Uitgevoerde Programmeerprojecten](#uitgevoerde-programmeerprojecten)
 4. [Gerealiseerde Infrastructuur](#gerealiseerde-infrastructuur)
 5. [Gebruiksvriendelijkheid](#gebruiksvriendelijkheid)
@@ -12,409 +12,194 @@ Dit document bevat zowel het testplan als het testrapport voor de UrenRegistrati
 7. [Betrouwbaarheid](#betrouwbaarheid)
 8. [Gekozen hulpmiddelen en tools](#gekozen-hulpmiddelen-en-tools)
 9. [Testscenario's](#testscenarios)
-10. [Verbetervoorstellen log](#verbetervoorstellen-log)
-11. [Conclusies en aanbevelingen](#conclusies-en-aanbevelingen)
+10. [Verbetervoorstellen](#verbetervoorstellen)
+11. [Conclusies](#conclusies)
 
 ## Inleiding
 
-Dit testrapport en testplan zijn opgesteld voor de UrenRegistratie applicatie, een uitgebreid systeem voor tijdsregistratie, projectmanagement en facturering. Het doel van dit document is om een gestructureerde aanpak te bieden voor het testen van de applicatie en de resultaten van deze tests te documenteren.
+Dit rapport documenteert de testresultaten voor de UrenRegistratie applicatie, een webgebaseerd systeem voor tijdsregistratie, projectmanagement en facturering. Het doel is om inzicht te geven in de kwaliteit van de applicatie op basis van door mij uitgevoerde tests.
 
-De UrenRegistratie applicatie is ontwikkeld als een webgebaseerd platform waarmee gebruikers hun werktijd kunnen registreren, projecten kunnen beheren, facturen kunnen genereren en rapporten kunnen maken. Dit testplan en testrapport richten zich op het evalueren van de functionaliteit, betrouwbaarheid en gebruiksvriendelijkheid van deze applicatie.
+## Testscope
 
-## Teststrategie
-
-Onze teststrategie omvat verschillende niveaus van testen:
-
-1. **Unit tests** - Testen van individuele componenten en functies
-2. **Integratietests** - Testen van de interactie tussen componenten
-3. **Systeemtests** - Testen van het volledige systeem
-4. **Gebruikersacceptatietests** - Testen uitgevoerd door eindgebruikers
-
-Voor elk van deze niveaus gebruiken we een combinatie van automatische en handmatige tests. Automatische tests worden uitgevoerd met behulp van Python's unittest framework, terwijl handmatige tests worden uitgevoerd volgens vooraf gedefinieerde testscenario's.
+Ik heb de applicatie getest op de volgende aspecten:
+- Functionaliteit van de kernmodules
+- Prestaties bij normaal gebruik
+- Gebruiksvriendelijkheid vanuit gebruikersperspectief
+- Basisveiligheid
+- Betrouwbaarheid van dagelijkse functies
 
 ## Uitgevoerde Programmeerprojecten
 
-### Overzicht van gerealiseerde modules
+Ik heb de volgende modules getest:
 
-De volgende programmeeropdrachten zijn uitgevoerd en getest:
+| Module | Testmethode | Bevindingen |
+|--------|-------------|-------------|
+| User Management | Handmatige tests van login/registratie | Login functioneert correct; wachtwoordherstel werkt maar kan intuïtiever |
+| Time Tracking | CRUD-operaties getest via UI | Tijdsregistratie werkt goed; mobiele weergave kan verbeterd worden |
+| Client Management | Handmatige tests klantenbeheer | Toevoegen/wijzigen werkt goed; bulk-import heeft validatieproblemen |
+| Project Management | Handmatige tests projectbeheer | Projectaanmaak werkt; koppeling met klanten is soms instabiel |
+| Invoice Generation | Factuurgeneratie tests | Werkt goed voor kleine facturen; vertraagt bij grote hoeveelheden regels |
 
-| Module | Beschrijving | Status | Testresultaat |
-|--------|-------------|--------|---------------|
-| User Management | Gebruikersregistratie, authenticatie en autorisatie | Voltooid | Geslaagd |
-| Time Tracking | Registreren van werktijden en activiteiten | Voltooid | Geslaagd |
-| Client Management | Beheer van klantgegevens | Voltooid | Geslaagd |
-| Project Management | Beheer van projecten en opdrachten | Voltooid | Geslaagd |
-| Employee Management | Beheer van medewerkers en hun gegevens | Voltooid | Geslaagd |
-| Invoice Generation | Genereren van facturen op basis van tijdsregistraties | Voltooid | Geslaagd |
-| Reporting | Genereren van diverse rapporten | Voltooid | Geslaagd met opmerkingen |
-| PDF Export | Exporteren van gegevens naar PDF | Voltooid | Geslaagd |
-| API Interface | REST API voor externe integratie | Gedeeltelijk voltooid | Gedeeltelijk geslaagd |
-| Responsive UI | Mobiel-vriendelijke gebruikersinterface | Voltooid | Geslaagd |
-
-### Testdekking
-
-Voor alle programmeeropdrachten hebben we zowel unit tests als integratietests geschreven. De testdekking voor de belangrijkste modules is als volgt:
-
-- User Management: 85% code coverage
-- Time Tracking: 78% code coverage
-- Client Management: 80% code coverage
-- Project Management: 75% code coverage
-- Employee Management: 82% code coverage
-- Invoice Generation: 70% code coverage
-- Reporting: 65% code coverage
-
-### Bevindingen en aanbevelingen
-
-De meeste modules functioneren naar behoren, maar er zijn enkele aandachtspunten:
-
-1. De rapportagemodule heeft enkele prestatieproblemen bij het genereren van grote rapporten.
-2. De API-interface is nog niet volledig geïmplementeerd en heeft aanvullende tests nodig.
-3. De factureringsfunctionaliteit heeft behoefte aan extra validaties voor complexe factureringsscenario's.
+De functionaliteit voldoet over het algemeen aan de vereisten, met enkele aandachtspunten:
+- API-interface behoeft uitbreiding
+- Validatie van factuurgegevens kan robuuster
 
 ## Gerealiseerde Infrastructuur
 
-### Hardware en Software Infrastructuur
+Ik heb de volgende infrastructuurcomponenten getest:
 
-De UrenRegistratie applicatie is geïmplementeerd op de volgende infrastructuur:
+| Component | Testresultaat | Opmerkingen |
+|-----------|---------------|-------------|
+| Webserver (Flask) | Positief | Responstijd is acceptabel bij normaal gebruik |
+| Database | Positief | Queries presteren goed, behalve bij grote rapporten |
+| PDF Export | Gedeeltelijk | Werkt goed voor kleine documenten, time-outs bij grote exports |
+| Excel Export | Positief | Alle geteste exports werken correct |
 
-| Component | Specificatie | Status | Testresultaat |
-|-----------|-------------|--------|---------------|
-| Webserver | Flask met Gunicorn | Operationeel | Geslaagd |
-| Database | SQLite (ontwikkeling) / PostgreSQL (productie) | Operationeel | Geslaagd |
-| Authenticatie | Flask-Login | Operationeel | Geslaagd |
-| Frontend | Bootstrap 5 met responsive design | Operationeel | Geslaagd |
-| PDF-generatie | ReportLab en WeasyPrint | Operationeel | Geslaagd |
-| Excel Export | XlsxWriter en openpyxl | Operationeel | Geslaagd |
-| Email service | SMTP via Flask-Mail | Operationeel | Geslaagd |
-| Caching | Redis | Operationeel | Geslaagd met opmerkingen |
-| Monitoring | Flask-Monitor | Gedeeltelijk operationeel | Gedeeltelijk geslaagd |
-
-### Prestaties en schaalbaarheid
-
-Prestatietests zijn uitgevoerd onder verschillende belastingomstandigheden:
-
-- Lichte belasting (10 gelijktijdige gebruikers): Responstijd < 200ms
-- Gemiddelde belasting (50 gelijktijdige gebruikers): Responstijd < 500ms
-- Zware belasting (100 gelijktijdige gebruikers): Responstijd < 1,5s
-
-De database presteert goed bij normale werklasten, maar de prestaties nemen af bij complexe rapportages met grote datasets.
-
-### Bevindingen en aanbevelingen
-
-1. De Redis-caching verbetert de prestaties aanzienlijk, maar vereist aanzienlijke serverresources.
-2. Voor toekomstige schaalbaarheid moet worden overwogen om de database-intensieve bewerkingen te optimaliseren.
-3. Het monitoringsysteem moet worden verbeterd om beter inzicht te krijgen in prestatieknelpunten.
+De infrastructuur is solide voor dagelijks gebruik, maar heeft optimalisatie nodig voor zwaardere belasting.
 
 ## Gebruiksvriendelijkheid
 
-De gebruiksvriendelijkheid is getest door een gebruikersgroep van 15 personen, verdeeld over verschillende rollen (administrateurs, managers, medewerkers en klanten).
+Mijn persoonlijke ervaring met de gebruikersinterface:
 
-### Gebruikerstevredenheid
+| Aspect | Ervaring | Suggestie |
+|--------|----------|-----------|
+| Navigatie | Intuïtief | Menu's zijn logisch ingedeeld |
+| Formulieren | Gemiddeld | Sommige formulieren hebben te veel velden op één pagina |
+| Responsiviteit | Goed | Werkt op desktop en tablet; smartphone-ervaring is acceptabel |
+| Foutmeldingen | Matig | Foutmeldingen kunnen specifieker en hulpvoller |
 
-| Aspect | Gemiddelde score (1-5) | Opmerkingen |
-|--------|------------------------|-------------|
-| Intuïtiviteit | 4.2 | Dashboard wordt als zeer intuïtief ervaren |
-| Leerbaarheid | 3.8 | Nieuwe gebruikers hebben soms moeite met complexe functies |
-| Efficiëntie | 4.5 | Terugkerende taken zijn snel uit te voeren |
-| Fouttolerantie | 3.9 | Foutmeldingen zijn duidelijk maar kunnen specifieker |
-| Esthetiek | 4.3 | Modern ontwerp wordt gewaardeerd |
-| Toegankelijkheid | 3.7 | Verbetering nodig voor screenreaders |
-| Responsiviteit | 4.4 | Werkt goed op verschillende apparaten |
-
-### Gebruikersinterface-tests
-
-Gebruikersinterface-tests zijn uitgevoerd op de volgende apparaten en browsers:
-
-- Desktop: Chrome, Firefox, Safari, Edge
-- Mobiel: iOS Safari, Android Chrome
-- Tablet: iPad Safari, Android Chrome
-
-De applicatie is responsief en past zich goed aan aan verschillende schermformaten.
-
-### Bevindingen en aanbevelingen
-
-1. Verbetering van toegankelijkheid voor gebruikers met een beperking is nodig.
-2. Het invoeren van tijdsregistraties op mobiele apparaten kan intuïtiever worden gemaakt.
-3. Sommige gebruikers geven aan dat er te veel stappen nodig zijn om facturen te genereren.
+De applicatie is over het algemeen gebruiksvriendelijk, maar kan verbeterd worden voor nieuwe gebruikers en op mobiele apparaten.
 
 ## Veiligheid
 
-### Beveiligingstests
+Ik heb enkele basisveiligheidstests uitgevoerd:
 
-De volgende beveiligingstests zijn uitgevoerd:
+| Test | Resultaat | Details |
+|------|-----------|---------|
+| Login beveiliging | Voldoende | Wachtwoordcontrole werkt, maar geen bescherming tegen brute force |
+| Sessiebeveiliging | Voldoende | Sessies verlopen correct, maar geen automatische uitlogoptie bij inactiviteit |
+| Toegangscontrole | Goed | Rolgebaseerde toegang werkt correct in geteste scenario's |
+| Input validatie | Gemiddeld | Basis validatie aanwezig, maar niet alle velden worden streng gevalideerd |
 
-| Test | Resultaat | Aanbevelingen |
-|------|-----------|---------------|
-| SQL Injectie | Geen kwetsbaarheden | SQLAlchemy ORM biedt goede bescherming |
-| Cross-Site Scripting (XSS) | Enkele kwetsbaarheden gevonden | Strikte Content Security Policy implementeren |
-| Cross-Site Request Forgery (CSRF) | Geen kwetsbaarheden | Flask-WTF CSRF-bescherming werkt effectief |
-| Authenticatiebeveiliging | Sterk | Wachtwoordbeleid kan worden verbeterd |
-| Autorisatiecontroles | Adequaat | Meer granulaire rechtencontroles aanbevolen |
-| API beveiliging | Verbetering nodig | Implementeer rate limiting en token-gebaseerde authenticatie |
-| Wachtwoordopslag | Sterk | Argon2 hashing wordt gebruikt |
-| Session management | Adequaat | HTTPOnly en Secure cookies worden gebruikt |
-
-### Privacyanalyse
-
-De applicatie voldoet aan de basisvereisten van de AVG (GDPR), maar er zijn enkele verbeterpunten:
-
-1. Implementatie van een formeel dataverwerkingsregister
-2. Verbetering van het proces voor het verwijderen van gebruikersgegevens
-3. Uitbreiding van privacy-instellingen voor gebruikers
-
-### Bevindingen en aanbevelingen
-
-1. Implementeer een formele beveiligingsscan als onderdeel van de CI/CD-pipeline.
-2. Verbeter de logging van beveiligingsgerelateerde gebeurtenissen.
-3. Ontwikkel een formeel incidentresponsplan voor beveiligingsincidenten.
+Er zijn enkele verbeterpunten voor veiligheid, vooral rond input validatie en bescherming tegen brute force aanvallen.
 
 ## Betrouwbaarheid
 
-### Stabiliteit en foutafhandeling
+Ik heb de betrouwbaarheid getest tijdens normaal gebruik:
 
-De applicatie is getest op stabiliteit door langdurige gebruikssessies en stressomstandigheden te simuleren.
+| Aspect | Resultaat | Toelichting |
+|--------|-----------|-------------|
+| Stabiliteit | Goed | Geen crashes tijdens regulier gebruik |
+| Gegevensbehoud | Goed | Data blijft behouden na bewerkingen en sessies |
+| Foutafhandeling | Matig | Sommige fouten worden niet duidelijk aan gebruiker gemeld |
+| Browsercompatibiliteit | Goed | Werkt consistent in Chrome, Firefox en Edge |
 
-| Test | Resultaat | Opmerkingen |
-|------|-----------|-------------|
-| Langdurige sessies (24 uur) | Geslaagd | Geen significante geheugenlekkage |
-| Hoge gebruikersbelasting | Geslaagd met aantekeningen | Prestatievertraging bij >100 gelijktijdige gebruikers |
-| Onverwachte invoer | Geslaagd | Invoervalidatie vangt de meeste problemen op |
-| Database-integriteit | Geslaagd | Transacties worden correct uitgevoerd |
-| Netwerkstoringen | Gedeeltelijk geslaagd | Offline modus kan worden verbeterd |
-| Gegevensverlies preventie | Geslaagd | Automatische backups werken correct |
-
-### Failover en Backup
-
-- Database backup: Dagelijkse automatische backups
-- Applicatie failover: Beperkte failover-mogelijkheden
-- Monitoring: Basic monitoring via Flask-Monitor
-
-### Bevindingen en aanbevelingen
-
-1. Implementeer een robuustere failover-oplossing voor productieomgevingen.
-2. Verbeter de offline functionaliteit voor mobiele gebruikers.
-3. Voeg automatische herstelprocessen toe voor database-inconsistenties.
+De applicatie is betrouwbaar voor dagelijks gebruik, maar foutafhandeling kan beter.
 
 ## Gekozen hulpmiddelen en tools
 
-### Testtools
+Voor mijn tests heb ik de volgende tools gebruikt:
 
-Voor het testen van de UrenRegistratie applicatie zijn de volgende tools geselecteerd:
+| Tool | Doel | Waarom gekozen |
+|------|------|----------------|
+| Chrome DevTools | UI inspectie en prestatiemeting | Ingebouwd, krachtig en makkelijk te gebruiken |
+| Firefox Responsive Design Mode | Testen van responsiviteit | Snelle simulatie van verschillende schermformaten |
+| Postman | API testing | Eenvoudig te gebruiken voor API endpoint tests |
+| Python unittest | Basis unit tests | Native integratie met Flask applicatie |
 
-| Tool | Doel | Argumentatie |
-|------|------|-------------|
-| Python unittest | Unit en integratie testen | Native Python framework, naadloze integratie met Flask |
-| Pytest | Geavanceerde test scenario's | Flexibele test fixtures en parameterisatie |
-| Selenium | UI automatisering | Industrie-standaard voor browser-automatisering |
-| Locust | Prestatietests | Open-source, schaalbaar en Python-gebaseerd |
-| OWASP ZAP | Beveiligingstests | Gratis, open-source beveiligingsscanner met actieve community |
-| PyLint | Code kwaliteit | Hoge standaard voor code kwaliteit en consistentie |
-| Coverage.py | Test dekking analyse | Gedetailleerde inzichten in testdekking |
-
-### Ontwikkeltools
-
-De applicatie is ontwikkeld met de volgende tools:
-
-| Tool | Doel | Argumentatie |
-|------|------|-------------|
-| Flask | Web framework | Lichtgewicht, flexibel en goed gedocumenteerd |
-| SQLAlchemy | ORM | Krachtige abstractie voor database-operaties, voorkomt SQL-injectie |
-| Bootstrap 5 | Frontend framework | Responsief design out-of-the-box, moderne UI-componenten |
-| Werkzeug | WSGI utility library | Bevat beveiligingsfuncties voor wachtwoordhashing |
-| WeasyPrint | PDF generatie | Hoge kwaliteit PDF's van HTML-templates |
-| XlsxWriter | Excel export | Flexibele en feature-rijke Excel-generatie |
-| Redis | Caching | Hoge prestaties en betrouwbaarheid |
-
-De keuze voor deze tools is gebaseerd op:
-
-1. **Compatibiliteit**: Alle tools integreren goed met het Flask ecosysteem.
-2. **Betrouwbaarheid**: Tools met bewezen track records en actieve ondersteuning.
-3. **Performance**: Geoptimaliseerd voor de specifieke vereisten van de applicatie.
-4. **Veiligheid**: Focus op tools die security best practices ondersteunen.
-5. **Onderhoudbaarheid**: Open-source tools met goede documentatie.
+Deze tools waren toereikend voor mijn testdoeleinden, maar voor diepgaandere tests zou ik aanvullende tools aanbevelen.
 
 ## Testscenario's
 
-Hieronder volgen gedetailleerde stap-voor-stap testscenario's voor de belangrijkste functionaliteiten:
+Hieronder volgen enkele specifieke testscenario's die ik heb uitgevoerd:
 
-### Testscenario 1: Gebruikersregistratie en inloggen
+### 1. Gebruiker registreren en inloggen
 
-**Doel**: Verifiëren dat gebruikers zich kunnen registreren en inloggen.
+**Stappen uitgevoerd:**
+1. Navigeer naar de registratiepagina
+2. Vul testgegevens in (naam, e-mail, wachtwoord)
+3. Verzend registratieformulier
+4. Log uit en log weer in met de nieuwe gegevens
 
-**Stappen**:
-1. Open de applicatie in de browser.
-2. Klik op "Registreren" in de navigatiebalk.
-3. Vul het registratieformulier in met:
-   - Gebruikersnaam: "testgebruiker"
-   - E-mail: "test@example.com"
-   - Wachtwoord: "Testw0rd!"
-   - Bevestig wachtwoord: "Testw0rd!"
-4. Klik op de knop "Registreren".
-5. Verifieer dat de bevestigingspagina wordt weergegeven.
-6. Klik op "Inloggen" in de navigatiebalk.
-7. Vul in:
-   - E-mail: "test@example.com"
-   - Wachtwoord: "Testw0rd!"
-8. Klik op de knop "Inloggen".
+**Resultaat:** Geslaagd
+Registratie en inloggen verlopen zonder problemen. E-mailverificatie werkt zoals verwacht.
 
-**Verwacht resultaat**:
-- De gebruiker is succesvol geregistreerd.
-- De gebruiker kan inloggen en wordt doorgestuurd naar het dashboard.
+### 2. Tijdsregistratie toevoegen
 
-**Testresultaat**: Geslaagd
+**Stappen uitgevoerd:**
+1. Log in als testgebruiker
+2. Ga naar "Uren"
+3. Voeg een nieuwe tijdsregistratie toe
+4. Controleer of deze correct wordt weergegeven in het overzicht
 
-### Testscenario 2: Tijdsregistratie toevoegen
+**Resultaat:** Geslaagd
+De tijdsregistratie wordt correct opgeslagen en weergegeven in het overzicht.
 
-**Doel**: Verifiëren dat gebruikers hun werktijd kunnen registreren.
+### 3. Klant toevoegen en bewerken
 
-**Stappen**:
-1. Log in met een geregistreerde gebruiker.
-2. Navigeer naar "Uren" in de navigatiebalk.
-3. Klik op de knop "Add Entry".
-4. Vul het formulier in met:
-   - Datum: Selecteer de huidige datum
-   - Project: "Test Project"
-   - Uren: 8
-   - Beschrijving: "Werken aan testrapport"
-5. Klik op "Save Entry".
+**Stappen uitgevoerd:**
+1. Navigeer naar klantenbeheer
+2. Voeg een nieuwe klant toe met testgegevens
+3. Sla op en controleer de weergave
+4. Bewerk de klantgegevens en sla opnieuw op
 
-**Verwacht resultaat**:
-- De tijdsregistratie wordt opgeslagen.
-- De nieuwe registratie verschijnt in de lijst met tijdsregistraties.
+**Resultaat:** Geslaagd
+Het toevoegen en bewerken van klanten functioneert correct.
 
-**Testresultaat**: Geslaagd
+### 4. Factuur genereren
 
-### Testscenario 3: Factuur genereren
+**Stappen uitgevoerd:**
+1. Voeg enkele tijdsregistraties toe aan een testproject
+2. Navigeer naar facturering
+3. Maak een nieuwe factuur aan voor de testklant
+4. Selecteer de tijdsregistraties en genereer de factuur
 
-**Doel**: Verifiëren dat het systeem facturen kan genereren op basis van tijdsregistraties.
+**Resultaat:** Gedeeltelijk geslaagd
+Factuur wordt correct gegenereerd voor een klein aantal regels, maar het systeem vertraagt aanzienlijk bij meer dan 50 regels.
 
-**Stappen**:
-1. Log in als administratieve gebruiker.
-2. Navigeer naar "Facturen" in de navigatiebalk.
-3. Klik op "Nieuwe factuur".
-4. Selecteer een klant uit de dropdown.
-5. Selecteer een project (optioneel).
-6. Stel de factuurdatum in op de huidige datum.
-7. Scroll naar "Werkzaamheden" en selecteer enkele tijdsregistraties.
-8. Klik op "Factuur aanmaken".
+### 5. Rapport exporteren
 
-**Verwacht resultaat**:
-- Een nieuwe factuur wordt gegenereerd.
-- De geselecteerde tijdsregistraties worden gemarkeerd als gefactureerd.
-- De factuur bevat de correcte werkzaamheden en bedragen.
+**Stappen uitgevoerd:**
+1. Navigeer naar het rapportagescherm
+2. Selecteer een urenrapport voor een testperiode
+3. Genereer het rapport
+4. Exporteer naar PDF en Excel
 
-**Testresultaat**: Geslaagd met opmerkingen
-- Prestatievertraging bij het genereren van grote facturen.
+**Resultaat:** Gedeeltelijk geslaagd
+Excel export werkt goed; PDF export heeft problemen bij grote rapporten.
 
-### Testscenario 4: Rapportage genereren en exporteren
+## Verbetervoorstellen
 
-**Doel**: Verifiëren dat het systeem rapporten kan genereren en exporteren.
+Op basis van mijn tests stel ik de volgende verbeteringen voor:
 
-**Stappen**:
-1. Log in als administratieve gebruiker.
-2. Navigeer naar "Rapportages" in de navigatiebalk.
-3. Selecteer "Urenrapport".
-4. Stel een datumbereik in voor de afgelopen maand.
-5. Selecteer een project of alle projecten.
-6. Klik op "Genereer rapport".
-7. Bekijk het rapport op het scherm.
-8. Klik op "Exporteer als PDF".
+1. **Gebruiksvriendelijkheid:**
+   - Vereenvoudig het factuurcreatieproces door het in kleinere stappen op te delen
+   - Verbeter de mobiele interface voor tijdsregistratie
 
-**Verwacht resultaat**:
-- Het rapport wordt gegenereerd en weergegeven.
-- Een PDF-bestand wordt gedownload met het rapport.
-- Het PDF-bestand bevat alle gegevens die op het scherm worden weergegeven.
+2. **Prestaties:**
+   - Optimaliseer PDF-generatie door paginering of asynchrone verwerking in te voeren
+   - Verbeter database-queries voor rapporten met grote datasets
 
-**Testresultaat**: Gedeeltelijk geslaagd
-- PDF-export werkt goed voor kleine tot middelgrote rapporten.
-- Grote rapporten veroorzaken soms time-outs.
+3. **Veiligheid:**
+   - Implementeer rate limiting voor loginpogingen
+   - Voeg sessietime-out toe bij inactiviteit
 
-### Testscenario 5: Klantbeheer
+4. **Betrouwbaarheid:**
+   - Verbeter foutmeldingen door specifiekere informatie te geven
+   - Implementeer automatisch opslaan bij formulieren
 
-**Doel**: Verifiëren dat administratieve gebruikers klantgegevens kunnen beheren.
+## Conclusies
 
-**Stappen**:
-1. Log in als administratieve gebruiker.
-2. Navigeer naar "Klanten" in de navigatiebalk.
-3. Klik op "Add Klant".
-4. Vul het formulier in met:
-   - Bedrijfsnaam: "Testbedrijf BV"
-   - Contactpersoon: "Jan Janssen"
-   - E-mail: "contact@testbedrijf.nl"
-   - Telefoon: "0201234567"
-   - Adres: "Teststraat 123"
-   - Postcode: "1234 AB"
-   - Plaats: "Amsterdam"
-5. Klik op "Save".
-6. Zoek de nieuwe klant in de klantenlijst.
-7. Klik op de "Bewerken" knop voor deze klant.
-8. Wijzig de bedrijfsnaam in "Testbedrijf Nederland BV".
-9. Klik op "Save".
+De UrenRegistratie applicatie is een functioneel en bruikbaar systeem dat de kernfunctionaliteit goed afhandelt. Uit mijn tests blijkt dat de applicatie geschikt is voor dagelijks gebruik, met enkele aandachtspunten:
 
-**Verwacht resultaat**:
-- De nieuwe klant wordt toegevoegd aan het systeem.
-- De klantgegevens kunnen worden gewijzigd.
-- De gewijzigde gegevens worden bewaard.
+**Sterke punten:**
+- Intuïtieve navigatie en werkstroom
+- Betrouwbare gegevensopslag
+- Goede responsiviteit op desktop en tablet
 
-**Testresultaat**: Geslaagd
+**Verbeterpunten:**
+- Prestaties bij grote datasets
+- Mobiele gebruikerservaring
+- Foutmeldingen en validatie
 
-## Verbetervoorstellen log
-
-| Datum | Bron | Categorie | Omschrijving | Prioriteit | Status |
-|-------|------|-----------|--------------|------------|--------|
-| 2023-10-05 | Zelfreflectie | Gebruiksvriendelijkheid | Dashboard kan intuïtiever gemaakt worden door recente activiteiten prominenter weer te geven | Medium | Open |
-| 2023-10-08 | Product Owner | Prestaties | Rapportgeneratie moet geoptimaliseerd worden voor grote datasets | Hoog | In behandeling |
-| 2023-10-12 | Klant | Functionaliteit | Mogelijkheid toevoegen om herhalende facturen automatisch te genereren | Medium | Gepland |
-| 2023-10-15 | Zelfreflectie | Veiligheid | Implementatie van twee-factor authenticatie voor verhoogde beveiliging | Hoog | Open |
-| 2023-10-18 | Klant | Gebruiksvriendelijkheid | Vereenvoudiging van het proces voor factuurgeneratie | Medium | In behandeling |
-| 2023-10-20 | Zelfreflectie | Infrastructuur | Migratie naar containergebaseerde deployment voor betere schaalbaarheid | Medium | Gepland |
-| 2023-10-22 | Product Owner | Betrouwbaarheid | Implementatie van geavanceerde foutafhandeling voor netwerkstoringen | Hoog | Open |
-| 2023-10-25 | Klant | Rapportage | Uitgebreidere rapportagemogelijkheden voor projectvoortgang | Medium | Gepland |
-| 2023-10-28 | Zelfreflectie | Prestaties | Optimalisatie van database queries voor tijdsregistratie-overzichten | Hoog | In behandeling |
-| 2023-10-30 | Product Owner | Functionaliteit | Integratie met externe kalendertools (Google Calendar, Outlook) | Laag | Gepland |
-| 2023-11-02 | Klant | Gebruiksvriendelijkheid | Verbeterde mobiele ervaring voor tijdsregistratie onderweg | Medium | Open |
-| 2023-11-05 | Zelfreflectie | Veiligheid | Regelmatige security audits inplannen als onderdeel van SDLC | Hoog | Gepland |
-
-## Conclusies en aanbevelingen
-
-### Algemene conclusie
-
-De UrenRegistratie applicatie voldoet over het algemeen aan de functionele eisen en presteert goed onder normale omstandigheden. De gebruiksvriendelijkheid wordt positief beoordeeld, en de beveiliging voldoet aan de basisnormen.
-
-### Sterke punten
-
-1. **Gebruiksvriendelijke interface** - De applicatie biedt een intuïtieve gebruikerservaring, vooral voor terugkerende taken.
-2. **Modulaire architectuur** - De componenten zijn goed gescheiden, wat het onderhoud en uitbreiding vergemakkelijkt.
-3. **Beveiliging** - De basis beveiligingsmaatregelen zijn effectief geïmplementeerd.
-4. **Mobiliteit** - De responsieve interface werkt goed op verschillende apparaten.
-
-### Aandachtspunten
-
-1. **Prestaties bij hoge belasting** - De applicatie kan beter geoptimaliseerd worden voor situaties met hoge gebruikersaantallen.
-2. **Rapportage voor grote datasets** - Prestatieproblemen bij het genereren van grote rapporten moeten worden aangepakt.
-3. **API-volledigheid** - De API-interface moet verder worden uitgebreid en getest.
-4. **Toegankelijkheid** - Verbeteringen nodig voor gebruikers met beperkingen.
-
-### Aanbevelingen voor vervolgstappen
-
-1. **Prestatieoptimalisatie**:
-   - Implementeer caching voor veelgebruikte queries
-   - Optimaliseer database-indexen
-   - Voer asynchrone verwerking in voor rapportage-generatie
-
-2. **Beveiligingsverbeteringen**:
-   - Implementeer twee-factor authenticatie
-   - Verbeter sessiebeheer en wachtwoordbeleid
-   - Voer regelmatige beveiligingsaudits uit
-
-3. **Gebruikservaring**:
-   - Vereenvoudig complexe workflows, vooral voor facturering
-   - Verbeter mobiele ervaring voor tijdsregistratie
-   - Implementeer betere toegankelijkheidsfeatures
-
-4. **Infrastructuur**:
-   - Migreer naar containergebaseerde deployment
-   - Verbeter monitoring en logging
-   - Implementeer CI/CD-pipeline met geautomatiseerde tests
-
-Door deze aanbevelingen te implementeren, kan de UrenRegistratie applicatie verder worden verbeterd om te voldoen aan de groeiende behoeften van gebruikers en de verwachte schaalvergroting. 
+De meeste problemen zijn relatief eenvoudig op te lossen en hebben geen invloed op de kernfunctionaliteit. Met de voorgestelde verbeteringen kan de applicatie uitgroeien tot een robuuster, sneller en gebruiksvriendelijker systeem. 
