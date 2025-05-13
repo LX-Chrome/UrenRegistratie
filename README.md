@@ -10,6 +10,9 @@ For comprehensive documentation about the Time Registrator application, please r
 - **[Capabilities Guide](docs/CAPABILITIES.md)** - Comprehensive overview of all features and functionality
 - **[API Documentation](docs/API.md)** - Complete reference for the REST API endpoints and integration options
 - **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - Instructions for setting up this repository on GitHub
+- **[Test Report & Plan](docs/TEST_REPORT.md)** - Comprehensive test report and plan for the application
+- **[Test Plan Template](docs/TEST_PLAN_TEMPLATE.md)** - Template for creating future test plans
+- **[Improvement Log](docs/IMPROVEMENT_LOG.md)** - Log of all improvement proposals and their status
 
 ## Features
 
