@@ -2,18 +2,18 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0" data-translate="Time Entries">Time Entries</h5>
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h5 class="mb-2 mb-md-0" data-translate="Time Entries">Time Entries</h5>
                     {% if not export_mode %}
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <div class="dropdown">
                             <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
+                                <i data-feather="download"></i> <span class="d-none d-md-inline" data-translate="Exporteren">Exporteren</span>
                             </button>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='pdf') }}">
                                     <i data-feather="file-text"></i> PDF
                                 </a></li>
@@ -26,10 +26,10 @@
                             </ul>
                         </div>
                         <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importEntriesModal">
-                            <i data-feather="upload"></i> <span data-translate="Import">Import</span>
+                            <i data-feather="upload"></i> <span class="d-none d-md-inline" data-translate="Import">Import</span>
                         </button>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
-                            <i data-feather="plus"></i> <span data-translate="Add Entry">Add Entry</span>
+                            <i data-feather="plus"></i> <span class="d-none d-md-inline" data-translate="Add Entry">Add Entry</span>
                         </button>
                     </div>
                     {% endif %}
@@ -52,7 +52,7 @@
                                 <th data-translate="Date">Date</th>
                                 <th data-translate="Project">Project</th>
                                 <th data-translate="Hours">Hours</th>
-                                <th data-translate="Description">Description</th>
+                                <th class="d-none d-md-table-cell" data-translate="Description">Description</th>
                                 {% if not export_mode %}
                                 <th data-translate="Actions">Actions</th>
                                 {% endif %}
@@ -64,7 +64,7 @@
                                 <td>{{ entry.date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ entry.project }}</td>
                                 <td>{{ entry.hours }}</td>
-                                <td>{{ entry.description }}</td>
+                                <td class="d-none d-md-table-cell text-truncate" style="max-width: 200px;">{{ entry.description }}</td>
                                 {% if not export_mode %}
                                 <td>
                                     <div class="btn-group">
@@ -72,12 +72,12 @@
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#editEntryModal{{ entry.id }}"
                                                 title="Edit">
-                                            <i data-feather="edit-2"></i> <span class="d-none d-md-inline" data-translate="Bewerken">Edit</span>
+                                            <i data-feather="edit-2"></i> <span class="d-none d-lg-inline" data-translate="Bewerken">Edit</span>
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger" 
                                                 onclick="confirmDelete('{{ url_for('delete_time_entry', entry_id=entry.id) }}')"
                                                 title="Delete">
-                                            <i data-feather="trash-2"></i> <span class="d-none d-md-inline" data-translate="Verwijderen">Delete</span>
+                                            <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Delete</span>
                                         </button>
                                     </div>
                                 </td>
@@ -94,7 +94,7 @@
 
 <!-- Import Entries Modal -->
 <div class="modal fade" id="importEntriesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" data-translate="Import Time Entries">Import Time Entries</h5>
@@ -136,7 +136,7 @@
 
 <!-- Add Entry Modal -->
 <div class="modal fade" id="addEntryModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" data-translate="Add Time Entry">Add Time Entry</h5>
@@ -176,7 +176,7 @@
 <!-- Edit Entry Modals -->
 {% for entry in entries %}
 <div class="modal fade" id="editEntryModal{{ entry.id }}" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" data-translate="Edit Time Entry">Edit Time Entry</h5>
@@ -216,7 +216,7 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" data-translate="Confirm Delete">Confirm Delete</h5>
@@ -246,41 +246,22 @@ function confirmDelete(deleteUrl) {
     // Show the modal
     modal.show();
 }
-</script>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set up redirect if user came from dashboard
-        {% if from_dashboard %}
-        // Add event listener to the "Add Entry" button
-        document.querySelector('[data-bs-target="#addEntryModal"]').addEventListener('click', function() {
-            // Set the hidden field to redirect back to dashboard after submission
-            document.getElementById('redirect_to_dashboard').value = 'true';
-        });
-        
-        // Automatically open the modal if came directly from dashboard with ?new=true
-        if (window.location.search.includes('new=true')) {
-            var addEntryModal = new bootstrap.Modal(document.getElementById('addEntryModal'));
-            addEntryModal.show();
-        }
-        {% endif %}
-        
-        // Show edit modal if specified
-        {% if show_edit_modal %}
-        var editModal = new bootstrap.Modal(document.getElementById('editEntryModal{{ show_edit_modal }}'));
-        if (editModal) {
-            editModal.show();
-            // Set hidden field to redirect back to dashboard after edit
-            var form = document.querySelector('#editEntryModal{{ show_edit_modal }} form');
-            var redirectInput = document.createElement('input');
-            redirectInput.type = 'hidden';
-            redirectInput.name = 'redirect_to_dashboard';
-            redirectInput.value = 'true';
-            form.appendChild(redirectInput);
-        }
-        {% endif %}
-    });
+{% if from_dashboard %}
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('redirect_to_dashboard').value = 'true';
+    {% if new %}
+    var addEntryModal = new bootstrap.Modal(document.getElementById('addEntryModal'));
+    addEntryModal.show();
+    {% endif %}
+});
+{% endif %}
+
+{% if edit %}
+document.addEventListener('DOMContentLoaded', function() {
+    var editEntryModal = new bootstrap.Modal(document.getElementById('editEntryModal{{ edit }}'));
+    editEntryModal.show();
+});
+{% endif %}
 </script>
 {% endblock %}
