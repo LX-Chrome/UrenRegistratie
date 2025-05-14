@@ -11,98 +11,208 @@
     <link rel="icon" href="{{ url_for('static', filename='logo-small.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ url_for('static', filename='logo.webp') }}" type="image/webp">
     <style>
+        /* Verbeterde navigatie styling */
         .navbar {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             z-index: 1000;
-            transition: top 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to right, var(--gilde-secondary), #254a85) !important;
+            padding: 0.5rem 1rem;
         }
+        
+        .navbar .nav-link {
+            position: relative;
+            padding: 0.8rem 1rem;
+            font-weight: 500;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+        
+        .navbar .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: var(--gilde-primary);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        
+        .navbar .nav-link:hover::after,
+        .navbar .nav-link.active::after {
+            width: 80%;
+        }
+        
+        .navbar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .navbar-brand {
+            padding: 0.5rem 0;
+            margin-right: 2rem;
+        }
+        
+        .navbar-brand img {
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));
+            transition: transform 0.3s ease;
+        }
+        
+        .navbar-brand:hover img {
+            transform: scale(1.05);
+        }
+        
         body {
-            padding-top: 70px; /* Adjust content to avoid navbar overlap */
-            min-height: 100vh; /* Use full viewport height */
+            padding-top: 70px;
+            min-height: 100vh;
         }
+        
         footer {
-            margin-top: auto; /* Push footer to bottom */
+            margin-top: auto;
             padding: 20px 0;
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
+        /* User actions menu */
+        .user-actions .nav-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-actions .btn-link {
+            color: var(--gilde-text);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 0 5px;
+        }
+        
+        .user-actions .btn-link:hover {
+            background-color: var(--gilde-primary);
+            transform: translateY(-2px);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 992px) {
+            .navbar-collapse {
+                background-color: rgba(27, 59, 111, 0.98);
+                border-radius: 0 0 10px 10px;
+                padding: 10px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            
+            .navbar .nav-link {
+                padding: 0.8rem;
+                margin: 5px 0;
+                border-left: 3px solid transparent;
+            }
+            
+            .navbar .nav-link:hover,
+            .navbar .nav-link.active {
+                border-left: 3px solid var(--gilde-primary);
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .navbar .nav-link::after {
+                display: none;
+            }
+            
             .navbar-brand img {
-                height: 40px; /* Smaller logo on mobile */
+                height: 45px;
             }
-            body {
-                padding-top: 60px; /* Less padding on mobile */
+            
+            .navbar-toggler {
+                border: none;
+                padding: 0.5rem;
+                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
             }
-            .container {
-                padding-left: 10px;
-                padding-right: 10px;
+            
+            .navbar-toggler:focus {
+                box-shadow: none;
+                outline: 2px solid var(--gilde-primary);
             }
-            .navbar .container {
-                width: 100%;
-                max-width: 100%;
+            
+            .user-actions {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
             }
         }
         
         @media (max-width: 576px) {
             .navbar-brand img {
-                height: 35px; /* Even smaller logo on very small devices */
+                height: 40px;
+            }
+            
+            body {
+                padding-top: 65px;
             }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <img src="{{ url_for('static', filename='logo.webp') }}" alt="UrenRegistratie Logo" height="60" width="auto" style="filter: drop-shadow(0 0 5px rgba(255,255,255,1));">
+                <img src="{{ url_for('static', filename='logo.webp') }}" alt="UrenRegistratie Logo" height="50" width="auto">
             </a>
             {% if current_user.is_authenticated %}
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                        <a class="nav-link{% if request.path == url_for('dashboard') %} active{% endif %}" href="{{ url_for('dashboard') }}">
                             <i data-feather="home" class="feather-sm"></i> <span data-translate="Dashboard">Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('time_entries') }}">
+                        <a class="nav-link{% if request.path == url_for('time_entries') %} active{% endif %}" href="{{ url_for('time_entries') }}">
                             <i data-feather="clock" class="feather-sm"></i> <span data-translate="Uren">Uren</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('klanten') }}">
+                        <a class="nav-link{% if request.path == url_for('klanten') %} active{% endif %}" href="{{ url_for('klanten') }}">
                             <i data-feather="users" class="feather-sm"></i> <span data-translate="Klanten">Klanten</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('medewerkers') }}">
+                        <a class="nav-link{% if request.path == url_for('medewerkers') %} active{% endif %}" href="{{ url_for('medewerkers') }}">
                             <i data-feather="user" class="feather-sm"></i> <span data-translate="Medewerkers">Medewerkers</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('opdrachten') }}">
+                        <a class="nav-link{% if request.path == url_for('opdrachten') %} active{% endif %}" href="{{ url_for('opdrachten') }}">
                             <i data-feather="briefcase" class="feather-sm"></i> <span data-translate="Opdrachten">Opdrachten</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('facturen') }}">
+                        <a class="nav-link{% if request.path == url_for('facturen') %} active{% endif %}" href="{{ url_for('facturen') }}">
                             <i data-feather="file-text" class="feather-sm"></i> <span data-translate="Facturen">Facturen</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('reports_dashboard') }}">
+                        <a class="nav-link{% if request.path == url_for('reports_dashboard') %} active{% endif %}" href="{{ url_for('reports_dashboard') }}">
                             <i data-feather="bar-chart-2" class="feather-sm"></i> <span data-translate="Rapportages">Rapportages</span>
                         </a>
                     </li>
                     {% if current_user.has_role(RoleEnum.ADMIN) %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                        <a class="nav-link{% if request.path == url_for('admin_dashboard') %} active{% endif %}" href="{{ url_for('admin_dashboard') }}">
                             <i data-feather="shield" class="feather-sm"></i> <span data-translate="Admin">Admin</span>
                         </a>
                     </li>
@@ -110,24 +220,24 @@
                     
                     {% if current_user.has_role(RoleEnum.ADMIN) or current_user.has_role(RoleEnum.AFDELINGSHOOFD) or current_user.has_role(RoleEnum.VERKOOP) %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_employee_time_entries') }}">
+                        <a class="nav-link{% if request.path == url_for('admin_employee_time_entries') %} active{% endif %}" href="{{ url_for('admin_employee_time_entries') }}">
                             <i data-feather="users" class="feather-sm"></i> <span data-translate="Uren Medewerkers">Uren Medewerkers</span>
                         </a>
                     </li>
                     {% endif %}
                 </ul>
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav user-actions">
                     <li class="nav-item">
-                        <button class="btn btn-link nav-link" id="themeToggle">
+                        <button class="btn btn-link" id="themeToggle" aria-label="Toggle theme">
                             <i data-feather="moon" class="feather-sm"></i>
                         </button>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i data-feather="log-out" class="feather-sm"></i> <span data-translate="Uitloggen">Uitloggen</span>
+                        <a class="btn btn-link" href="{{ url_for('logout') }}" aria-label="Logout">
+                            <i data-feather="log-out" class="feather-sm"></i>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item d-flex align-items-center">
                         <label class="language-toggle ms-2" id="languageToggle">
                             <input type="checkbox" id="languageCheckbox">
                             <span class="language-toggle-slider">
