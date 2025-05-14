@@ -4,7 +4,6 @@ import secrets
 from flask import Flask, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
-from sqlalchemy.orm import DeclarativeBase
 from dotenv import load_dotenv  # Load environment variables from .env
 from functools import wraps
 
@@ -14,10 +13,7 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
+# Create Flask app first
 app = Flask(__name__)
 
 # Configuration
@@ -28,6 +24,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 app.config["API_KEY"] = os.environ.get("API_KEY", secrets.token_urlsafe(32))  # Generate if missing
+
+# Initialize SQLAlchemy without custom base class
+db = SQLAlchemy()
 
 # Debug prints
 print("Database URI:", app.config["SQLALCHEMY_DATABASE_URI"])

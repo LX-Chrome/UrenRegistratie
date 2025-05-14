@@ -8,7 +8,8 @@ from services.export_service import ExportService
 # Import our direct PDF generation function
 from routes_invoices import generate_pdf_from_template
 import io
-import pandas as pd
+# Temporarily comment out pandas to help diagnose startup issues
+# import pandas as pd
 import csv
 from werkzeug.utils import secure_filename
 import os
