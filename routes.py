@@ -66,6 +66,11 @@ def dashboard():
     check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
         func.date(CheckIn.check_in_time) == today
     ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
+    
+    # Log check-ins for debugging
+    app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
+    for check_in in check_ins:
+        app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
 
     return render_template('dashboard.html', entries=entries, check_ins=check_ins)
 
@@ -767,21 +772,35 @@ def check_in():
 @app.route('/check-in/<int:checkin_id>/delete')
 @login_required
 def delete_check_in(checkin_id):
-    app.logger.debug(f"Deleting check-in {checkin_id}")
-    check_in = CheckIn.query.get_or_404(checkin_id)
-    if check_in.user_id != current_user.id:
-        flash('Unauthorized access', 'danger')
-        return redirect(url_for('dashboard'))
-
+    """Delete a check-in record with proper error handling and logging"""
     try:
+        app.logger.debug(f"Starting delete process for check-in {checkin_id}")
+        check_in = CheckIn.query.get_or_404(checkin_id)
+        
+        # Verify ownership
+        if check_in.user_id != current_user.id:
+            app.logger.warning(f"Unauthorized delete attempt for check-in {checkin_id} by user {current_user.id}")
+            flash('Niet toegestaan. Dit is niet jouw check-in.', 'danger')
+            return redirect(url_for('dashboard'))
+
+        # Capture info for logging before deletion
+        user_id = check_in.user_id
+        timestamp = check_in.check_in_time
+        status = check_in.status
+        
+        # Delete the check-in
         db.session.delete(check_in)
         db.session.commit()
-        flash('Check-in verwijderd', 'success')
+        
+        app.logger.info(f"Successfully deleted check-in {checkin_id} (user: {user_id}, time: {timestamp}, status: {status})")
+        flash('Check-in is verwijderd', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error deleting check-in {checkin_id}: {str(e)}")
-        flash(f'Fout bij verwijderen check-in: {str(e)}', 'danger')
-
+        app.logger.error(f"Error deleting check-in {checkin_id}: {str(e)}", exc_info=True)
+        flash(f'Fout bij het verwijderen van de check-in: {str(e)}', 'danger')
+    
+    # Always return to dashboard after processing
     return redirect(url_for('dashboard'))
 
 @app.route('/check-in/<int:checkin_id>/edit', methods=['POST'])
@@ -810,10 +829,13 @@ def edit_check_in(checkin_id):
                 # Parse time from form
                 time_str = request.form['check_in_time']
                 hours, minutes = map(int, time_str.split(':'))
+                
                 # Create new datetime object with current date and new time
                 from datetime import datetime, time
                 new_time = time(hour=hours, minute=minutes)
                 new_datetime = datetime.combine(current_date, new_time)
+                
+                # Store the time (it's already in UTC in the database)
                 check_in.check_in_time = new_datetime
                 app.logger.debug(f"Updated check-in time to {new_datetime}")
             except Exception as time_error:
