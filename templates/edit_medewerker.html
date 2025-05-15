@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,50 +5,50 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Medewerker Bewerken</h5>
+                <h5 class="mb-0"><span data-translate="Medewerker Bewerken">Medewerker Bewerken</span></h5>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label for="voornaam" class="form-label">Voornaam</label>
+                            <label for="voornaam" class="form-label"><span data-translate="Voornaam">Voornaam</span></label>
                             <input type="text" class="form-control" id="voornaam" name="voornaam" value="{{ medewerker.voornaam }}" required>
                         </div>
                         <div class="col-md-4">
-                            <label for="tussenvoegsel" class="form-label">Tussenvoegsel</label>
+                            <label for="tussenvoegsel" class="form-label"><span data-translate="Tussenvoegsel">Tussenvoegsel</span></label>
                             <input type="text" class="form-control" id="tussenvoegsel" name="tussenvoegsel" value="{{ medewerker.tussenvoegsel or '' }}">
                         </div>
                         <div class="col-md-4">
-                            <label for="achternaam" class="form-label">Achternaam</label>
+                            <label for="achternaam" class="form-label"><span data-translate="Achternaam">Achternaam</span></label>
                             <input type="text" class="form-control" id="achternaam" name="achternaam" value="{{ medewerker.achternaam }}" required>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="geboortedatum" class="form-label">Geboortedatum</label>
+                            <label for="geboortedatum" class="form-label"><span data-translate="Geboortedatum">Geboortedatum</span></label>
                             <input type="date" class="form-control" id="geboortedatum" name="geboortedatum" 
                                    value="{{ medewerker.geboortedatum.strftime('%Y-%m-%d') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="functie" class="form-label">Functie</label>
+                            <label for="functie" class="form-label"><span data-translate="Functie">Functie</span></label>
                             <input type="text" class="form-control" id="functie" name="functie" value="{{ medewerker.functie or '' }}">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="werkmail" class="form-label">Werkmail</label>
+                        <label for="werkmail" class="form-label"><span data-translate="Werkmail">Werkmail</span></label>
                         <input type="email" class="form-control" id="werkmail" name="werkmail" value="{{ medewerker.werkmail }}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="kantoorruimte" class="form-label">Kantoorruimte</label>
+                        <label for="kantoorruimte" class="form-label"><span data-translate="Kantoorruimte">Kantoorruimte</span></label>
                         <input type="text" class="form-control" id="kantoorruimte" name="kantoorruimte" value="{{ medewerker.kantoorruimte or '' }}">
                     </div>
 
                     <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('medewerkers') }}" class="btn btn-secondary">Annuleren</a>
-                        <button type="submit" class="btn btn-primary">Wijzigingen Opslaan</button>
+                        <a href="{{ url_for('medewerkers') }}" class="btn btn-secondary"><span data-translate="Annuleren">Annuleren</span></a>
+                        <button type="submit" class="btn btn-primary"><span data-translate="Wijzigingen Opslaan">Wijzigingen Opslaan</span></button>
                     </div>
                 </form>
             </div>
