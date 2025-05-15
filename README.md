@@ -99,6 +99,25 @@ These scripts will:
 3. Create a default .env file if missing
 4. Start the application
 
+### Troubleshooting
+
+If you encounter errors about missing packages such as `xhtml2pdf`, `reportlab`, or other dependencies, you can fix them using:
+
+#### For Windows users:
+
+```bash
+# Simply run the dependency fixer batch file
+fix_dependencies.bat
+```
+
+#### For all platforms using Python directly:
+
+```bash
+python fix_dependencies.py
+```
+
+These scripts will check for and install any missing dependencies required by the application.
+
 ## Features
 
 ### User Management
