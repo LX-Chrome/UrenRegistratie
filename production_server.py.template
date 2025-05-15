@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+"""
+Production server for Time Registrator using Waitress WSGI server.
+This script is optimized for Windows Server deployment.
+"""
+
+from waitress import serve
+import os
+import socket
+from app import app
+import routes  # noqa: F401
+import routes_invoices  # noqa: F401
+import routes_reports  # noqa: F401
+
+if __name__ == "__main__":
+    # Get configuration from environment or use defaults
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 8080))
+    threads = int(os.environ.get('THREADS', 4))
+    
+    # Print server information
+    print("=" * 50)
+    print("Time Registrator Production Server")
+    print("=" * 50)
+    print(f"Starting server on {host}:{port} with {threads} threads")
+    print()
+    print("Access URLs:")
+    
+    # Always show localhost for local access
+    print(f"Local URL: http://localhost:{port}")
+    print(f"         : http://127.0.0.1:{port}")
+    
+    # Try to get server hostname and IP for network access
+    try:
+        hostname = socket.gethostname()
+        print(f"Hostname : http://{hostname}:{port}")
+        
+        # Get all IP addresses
+        ips = socket.gethostbyname_ex(hostname)[2]
+        if ips:
+            print("Network URLs:")
+            for ip in ips:
+                if not ip.startswith('127.'):  # Skip localhost
+                    print(f"         : http://{ip}:{port}")
+    except Exception as e:
+        print(f"Note: Could not determine network address ({e})")
+    
+    print("=" * 50)
+    print("Press Ctrl+C to stop the server")
+    print("=" * 50)
+    
+    # Start production server with waitress
+    serve(app, host=host, port=port, threads=threads) 
