@@ -199,7 +199,33 @@ const translations = {
         "Geen uren gevonden": "No hours found",
         "Uren registreren voor medewerker": "Register hours for employee",
         "Selecteer medewerker": "Select employee",
-        "Urenregistratie bewerken": "Edit time registration"
+        "Urenregistratie bewerken": "Edit time registration",
+        
+        // Edit page titles
+        "Klant Bewerken": "Klant Bewerken",
+        "Medewerker Bewerken": "Medewerker Bewerken",
+        "Opdracht Bewerken": "Opdracht Bewerken",
+        
+        // Common form fields
+        "Bedrijfsnaam": "Company Name",
+        "Voornaam": "First Name",
+        "Tussenvoegsel": "Middle Name",
+        "Achternaam": "Last Name",
+        "Email": "Email",
+        "Telefoonnummer": "Phone Number",
+        "Adres": "Address",
+        "Functie": "Function",
+        "Geboortedatum": "Date of Birth",
+        "Werkmail": "Work Email",
+        "Kantoorruimte": "Office Space",
+        "Klant": "Client",
+        "Titel": "Title",
+        "Omschrijving": "Description",
+        "Aanvraagdatum": "Request Date",
+        "Benodigde Kennis": "Required Knowledge",
+        
+        // Action buttons
+        "Wijzigingen Opslaan": "Save Changes"
     },
     nl: {
         // Navigation
@@ -349,7 +375,7 @@ const translations = {
         "Weet je zeker dat je deze klant wilt verwijderen?": "Weet je zeker dat je deze klant wilt verwijderen?",
         "Weet je zeker dat je deze medewerker wilt verwijderen?": "Weet je zeker dat je deze medewerker wilt verwijderen?",
         "Weet je zeker dat je deze opdracht wilt verwijderen?": "Weet je zeker dat je deze opdracht wilt verwijderen?",
-        "Are you sure you want to delete this entry? This action cannot be undone.": "Weet je zeker dat je deze registratie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+        "Weet je zeker dat je deze registratie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.": "Weet je zeker dat je deze registratie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
         
         // Other common elements
         "gildeDevOps Solutions": "gildeDevOps Solutions",
@@ -401,7 +427,33 @@ const translations = {
         "Geen uren gevonden": "Geen uren gevonden",
         "Uren registreren voor medewerker": "Uren registreren voor medewerker",
         "Selecteer medewerker": "Selecteer medewerker",
-        "Urenregistratie bewerken": "Urenregistratie bewerken"
+        "Urenregistratie bewerken": "Urenregistratie bewerken",
+        
+        // Edit page titles
+        "Klant Bewerken": "Klant Bewerken",
+        "Medewerker Bewerken": "Medewerker Bewerken",
+        "Opdracht Bewerken": "Opdracht Bewerken",
+        
+        // Common form fields
+        "Bedrijfsnaam": "Bedrijfsnaam",
+        "Voornaam": "Voornaam",
+        "Tussenvoegsel": "Tussenvoegsel",
+        "Achternaam": "Achternaam",
+        "Email": "Email",
+        "Telefoonnummer": "Telefoonnummer",
+        "Adres": "Adres",
+        "Functie": "Functie",
+        "Geboortedatum": "Geboortedatum",
+        "Werkmail": "Werkmail",
+        "Kantoorruimte": "Kantoorruimte",
+        "Klant": "Klant",
+        "Titel": "Titel",
+        "Omschrijving": "Omschrijving",
+        "Aanvraagdatum": "Aanvraagdatum",
+        "Benodigde Kennis": "Benodigde Kennis",
+        
+        // Action buttons
+        "Wijzigingen Opslaan": "Wijzigingen Opslaan"
     }
 };
 

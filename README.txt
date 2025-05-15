@@ -30,6 +30,10 @@ WINDOWS USERS
 3. FIXING DEPENDENCY ISSUES:
    - Double-click 'fix_dependencies.bat'
 
+4. IF THE APPLICATION WON'T LOAD:
+   - Double-click 'fix_loading.bat' (fixes common loading issues)
+   - Double-click 'debug_server.bat' (for detailed diagnostics)
+
 ------------------
 MAC/LINUX USERS
 ------------------
@@ -46,6 +50,9 @@ MAC/LINUX USERS
 3. FIXING DEPENDENCY ISSUES:
    - Run: python fix_dependencies.py
 
+4. IF THE APPLICATION WON'T LOAD:
+   - Run: python debug_server.py
+
 ------------------
 HELP & TROUBLESHOOTING
 ------------------
@@ -56,5 +63,11 @@ HELP & TROUBLESHOOTING
 2. venv creation errors (Windows):
    - You're likely using Windows Store Python; use windows_setup.bat instead
 
-3. Other issues:
+3. Application won't load (infinite loading):
+   - Run fix_loading.bat to resolve common loading issues
+   - Try using a different port by running debug_server.bat
+   - Make sure no other application is using port 5000
+   - Try accessing the app at http://localhost:5000 or http://127.0.0.1:5000
+
+4. Other issues:
    - See full documentation in the docs folder 
