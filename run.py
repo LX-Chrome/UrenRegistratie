@@ -6,6 +6,14 @@ import subprocess
 import platform
 import time
 
+def is_windows_store_python():
+    """Check if Python is from Windows Store."""
+    if platform.system() != "Windows":
+        return False
+    
+    # Check if python is installed in WindowsApps
+    return "WindowsApps" in sys.executable
+
 def setup_environment():
     """Setup virtual environment if it doesn't exist and install dependencies."""
     print("Checking environment...")
@@ -14,13 +22,37 @@ def setup_environment():
     python_cmd = "python" if platform.system() == "Windows" else "python3"
     venv_dir = "venv"
     
-    # Set up paths
+    # Check if Windows Store Python (which has limitations)
+    if is_windows_store_python():
+        print("Detected Windows Store Python installation.")
+        print("This version has restrictions on creating virtual environments.")
+        print("Recommended: Use windows_setup.bat instead.")
+        print("Attempting to continue without virtual environment...")
+        
+        # Install packages directly
+        try:
+            subprocess.run([python_cmd, "-m", "pip", "install", "-r", "requirements.txt"])
+            
+            # Install critical packages explicitly
+            for pkg in ["xhtml2pdf", "reportlab", "weasyprint"]:
+                try:
+                    subprocess.run([python_cmd, "-m", "pip", "install", pkg])
+                except:
+                    print(f"Warning: Could not install {pkg}")
+                    
+            return python_cmd
+        except Exception as e:
+            print(f"Error: {e}")
+            print("Please try running windows_setup.bat instead.")
+            sys.exit(1)
+    
+    # Set up paths for regular Python
     if platform.system() == "Windows":
         pip_cmd = os.path.join(venv_dir, "Scripts", "pip")
-        python_cmd = os.path.join(venv_dir, "Scripts", "python")
+        venv_python_cmd = os.path.join(venv_dir, "Scripts", "python")
     else:
         pip_cmd = os.path.join(venv_dir, "bin", "pip")
-        python_cmd = os.path.join(venv_dir, "bin", "python")
+        venv_python_cmd = os.path.join(venv_dir, "bin", "python")
     
     # Check if virtual environment exists
     venv_exists = os.path.exists(venv_dir)
@@ -29,7 +61,8 @@ def setup_environment():
         try:
             subprocess.run([python_cmd, "-m", "venv", venv_dir], check=True)
         except subprocess.CalledProcessError:
-            print("Error: Failed to create virtual environment. Make sure Python is installed correctly.")
+            print("Error: Failed to create virtual environment.")
+            print("If you're using Python from Windows Store, try windows_setup.bat instead.")
             sys.exit(1)
         
         # Install dependencies (only if we created a new venv)
@@ -62,7 +95,7 @@ def setup_environment():
             print(f"Installing {pkg}...")
             subprocess.run([pip_cmd, "install", pkg])
     
-    return python_cmd
+    return venv_python_cmd
 
 def check_env_file():
     """Check if .env file exists, create a default one if it doesn't."""

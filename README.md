@@ -141,6 +141,38 @@ python fix_dependencies.py
 
 These scripts will check for and install any missing dependencies required by the application.
 
+### Windows Store Python Users:
+
+If you're using Python from the Windows Store (check if Python is installed in the WindowsApps folder), you might encounter issues with virtual environments. Use these special scripts instead:
+
+```bash
+# For first-time setup and running
+windows_setup.bat
+
+# For subsequent startups
+windows_direct_start.bat
+```
+
+These scripts bypass virtual environment creation and work with the restrictions of Windows Store Python.
+
+### Desktop Shortcuts
+
+To create desktop shortcuts with nice icons for easy access:
+
+```bash
+# Run the icon creator script
+create_all_icons.bat
+```
+
+This will create desktop shortcuts for:
+
+- Standard startup (Time Registrator)
+- Quick startup (Time Registrator - Quick)
+- Direct startup (Time Registrator - Direct)
+- Windows Store Python version (Time Registrator - Windows Store)
+
+Each shortcut has a distinct icon to help you identify it easily.
+
 ## Features
 
 ### User Management
