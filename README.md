@@ -14,44 +14,103 @@ For comprehensive documentation about the Time Registrator application, please r
 - **[Test Plan Template](docs/TEST_PLAN_TEMPLATE.md)** - Template for creating future test plans
 - **[Improvement Log](docs/IMPROVEMENT_LOG.md)** - Log of all improvement proposals and their status
 
+## Quick Start
+
+The easiest way to start the application is using the provided scripts:
+
+### For all platforms using Python directly:
+
+```bash
+# Clone the repository
+git clone https://github.com/LX-Chrome/UrenRegistratie.git
+cd UrenRegistratie
+
+# Run the application (handles environment setup automatically)
+python run.py
+```
+
+### For Windows users:
+
+Simply double-click on `start.bat` in the project folder.
+
+### For Unix/Linux/macOS users:
+
+```bash
+# Make the script executable (first time only)
+chmod +x start.sh
+
+# Run the application
+./start.sh
+```
+
+### For VS Code users:
+
+The repository includes pre-configured VS Code settings for easy development and execution:
+
+1. Open the project folder in VS Code
+2. Press F5 or click the Run and Debug icon in the sidebar
+3. Select "Python: Setup & Run" to run with automatic environment setup or "Python: Time Registrator" to run directly
+
+### For PyCharm users:
+
+The repository includes pre-configured PyCharm run configurations:
+
+1. Open the project folder in PyCharm
+2. The run configurations should be automatically loaded
+3. Click the Run button and select "Setup and Run" to run with automatic environment setup or "Time Registrator" to run directly
+
+These scripts will:
+
+1. Create a virtual environment if needed
+2. Install all dependencies
+3. Create a default .env file if missing
+4. Start the application
+
 ## Features
 
 ### User Management
+
 - User registration and authentication
 - User profile management
 - Role-based access control
 
 ### Time Tracking
+
 - Log working hours with project association
 - Real-time check-ins and status updates (working, break, done)
 - Daily/weekly/monthly time summaries
 - Project-based time tracking
 
 ### Client Management
+
 - Add and manage clients/customers
 - Store detailed client information
 - Track client-specific projects
 - Client relationship history
 
 ### Project Management
+
 - Create and manage projects/assignments
 - Link projects to specific clients
 - Track project status and deadlines
 - Store project requirements and descriptions
 
 ### Employee Management
+
 - Maintain employee records
 - Track employee skills and office locations
 - Associate employees with specific projects
 - Monitor employee workload
 
 ### Reporting and Analytics
+
 - Generate comprehensive reports (time, project, client, employee)
 - Export data in multiple formats (PDF, Excel, CSV)
 - Custom date range filtering
 - Data visualization dashboards
 
 ### Data Import/Export
+
 - Batch import time entries
 - Export filtered data sets
 - Integration-ready API endpoints
@@ -97,4 +156,4 @@ MIT License
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. 
+Contributions are welcome! Please feel free to submit a Pull Request.

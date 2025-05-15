@@ -39,11 +39,11 @@
                                 <div class="d-flex w-100 justify-content-between flex-wrap">
                                     <h6 class="mb-1">{{ check_in.status|title }}</h6>
                                     <div>
-                                        <small class="me-2">{{ check_in.check_in_time.strftime('%H:%M') }}</small>
+                                        <small class="me-2 utc-time" data-utc-time="{{ check_in.check_in_time.strftime('%Y-%m-%dT%H:%M:%S') }}">{{ check_in.check_in_time.strftime('%H:%M') }}</small>
                                         <a href="#" data-bs-toggle="modal" data-bs-target="#editCheckinModal{{ check_in.id }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
                                             <i data-feather="edit-2" class="feather-sm"></i>
                                         </a>
-                                        <a href="#" class="btn btn-sm btn-outline-danger delete-checkin" data-url="{{ url_for('delete_check_in', checkin_id=check_in.id) }}" title="Delete">
+                                        <a href="{{ url_for('delete_check_in', checkin_id=check_in.id) }}" class="btn btn-sm btn-outline-danger confirm-delete" title="Delete" onclick="return confirm('Weet je zeker dat je deze check-in wilt verwijderen?');">
                                             <i data-feather="trash-2" class="feather-sm"></i>
                                         </a>
                                     </div>
@@ -68,8 +68,9 @@
                                                         </div>
                                                         <div class="mb-3">
                                                             <label for="check_in_time{{ check_in.id }}" class="form-label" data-translate="Tijd">Tijd</label>
-                                                            <input type="time" class="form-control" id="check_in_time{{ check_in.id }}" name="check_in_time" 
-                                                                  value="{{ check_in.check_in_time.strftime('%H:%M') }}">
+                                                            <input type="time" class="form-control utc-time-input" id="check_in_time{{ check_in.id }}" name="check_in_time" 
+                                                                  value="{{ check_in.check_in_time.strftime('%H:%M') }}"
+                                                                  data-utc-time="{{ check_in.check_in_time.strftime('%Y-%m-%dT%H:%M:%S') }}">
                                                         </div>
                                                         <div class="mb-3">
                                                             <label for="note{{ check_in.id }}" class="form-label" data-translate="Notitie">Notitie</label>
@@ -185,43 +186,95 @@
 </div>
 
 <script>
+// Handle confirming deletion for any type of entry
 function confirmDelete(deleteUrl) {
-    // Get the confirmation modal and show it
+    console.log("Confirming delete with URL: " + deleteUrl);
+    // Get the confirmation modal
     const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
     
-    // Set the delete button href to the provided URL
-    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    // Set the delete button href
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    deleteBtn.href = deleteUrl;
+    
+    // When the delete button is clicked, log the action for debugging
+    deleteBtn.onclick = function() {
+        console.log("Delete confirmed, navigating to: " + deleteUrl);
+        // The navigation will happen automatically due to the href
+        return true;
+    };
     
     // Show the modal
     modal.show();
 }
 
-function confirmDeleteCheckin(deleteUrl) {
-    // Get the confirmation modal and show it
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+// Convert UTC times to local timezone
+function convertUTCTimesToLocal() {
+    // Process all time display elements
+    document.querySelectorAll('.utc-time').forEach(function(element) {
+        const utcTime = element.getAttribute('data-utc-time');
+        if (utcTime) {
+            try {
+                // Create a date object from the UTC time
+                const date = new Date(utcTime);
+                
+                // Format as HH:MM with proper localization
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                element.textContent = `${hours}:${minutes}`;
+                
+                // Add a tooltip with the full date and time for reference
+                const options = { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                };
+                element.title = date.toLocaleDateString(undefined, options);
+                
+                console.log("Converted time for element:", element, "UTC time:", utcTime, "Local time:", `${hours}:${minutes}`);
+            } catch (error) {
+                console.error("Error converting time:", error, "for time value:", utcTime);
+            }
+        }
+    });
     
-    // Set the delete button href to the provided URL
-    document.getElementById('confirmDeleteBtn').href = deleteUrl;
-    
-    // Show the modal
-    modal.show();
+    // Process all time input elements (for forms)
+    document.querySelectorAll('.utc-time-input').forEach(function(element) {
+        const utcTime = element.getAttribute('data-utc-time');
+        if (utcTime) {
+            try {
+                // Create a date object from the UTC time
+                const date = new Date(utcTime);
+                
+                // Format as HH:MM for input[type="time"]
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                element.value = `${hours}:${minutes}`;
+                
+                console.log("Converted time input for element:", element.id, "UTC time:", utcTime, "Local time:", `${hours}:${minutes}`);
+            } catch (error) {
+                console.error("Error converting time input:", error, "for time value:", utcTime);
+            }
+        }
+    });
 }
 
-// Add event listeners for delete entry buttons
+// Initialize everything when the document is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, initializing dashboard functionality");
+    
+    // Convert all UTC times to local time
+    convertUTCTimesToLocal();
+    
+    // Set up delete buttons for time entries
     document.querySelectorAll('.delete-entry').forEach(function(button) {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const url = this.getAttribute('data-url');
+            console.log("Delete entry button clicked, URL:", url);
             confirmDelete(url);
-        });
-    });
-    
-    document.querySelectorAll('.delete-checkin').forEach(function(button) {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = this.getAttribute('data-url');
-            confirmDeleteCheckin(url);
         });
     });
 });
