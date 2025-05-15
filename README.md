@@ -70,6 +70,29 @@ chmod +x quick_start.sh  # First time only
 
 These quick start options skip environment checks and dependency installation, making startup much faster.
 
+### Ultra-Fast Startup (For Experienced Users):
+
+For the fastest possible startup with NO checks (use only after confirming everything works):
+
+#### For all platforms using Python directly:
+
+```bash
+python direct_start.py
+```
+
+#### For Windows users:
+
+Double-click on `direct_start.bat` in the project folder.
+
+#### For Unix/Linux/macOS users:
+
+```bash
+chmod +x direct_start.sh  # First time only
+./direct_start.sh
+```
+
+Warning: The ultra-fast options skip ALL checks and will fail if dependencies are missing.
+
 ### For VS Code users:
 
 The repository includes pre-configured VS Code settings for easy development and execution:

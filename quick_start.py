@@ -11,28 +11,19 @@ import os
 import sys
 import platform
 import subprocess
-import importlib.util
+import importlib
 
-def check_key_packages():
-    """Check for key packages and suggest fixes if they're missing."""
-    key_packages = ["xhtml2pdf", "reportlab", "weasyprint"]
-    missing = []
-    
-    for package in key_packages:
-        if importlib.util.find_spec(package) is None:
-            missing.append(package)
-    
-    if missing:
-        print("Warning: The following required packages are missing:")
-        for pkg in missing:
-            print(f"  - {pkg}")
-        print("\nYou may encounter errors when running the application.")
-        print("To fix this issue, run fix_dependencies.py or fix_dependencies.bat")
-        
-        user_input = input("\nDo you want to continue anyway? (y/n): ")
-        if user_input.lower() != 'y':
-            print("Exiting. Please run fix_dependencies.py to fix the issues.")
-            sys.exit(1)
+def check_critical_packages():
+    """Check if the minimal required packages are available."""
+    try:
+        # Only check xhtml2pdf which has been the main issue
+        import xhtml2pdf
+        return True
+    except ImportError:
+        print("Warning: The 'xhtml2pdf' package is missing, which is required.")
+        print("To fix this, run fix_dependencies.py or fix_dependencies.bat")
+        choice = input("Do you want to continue anyway? (y/n): ").lower()
+        return choice == 'y'
 
 def main():
     """Run the application directly with minimal overhead."""
@@ -48,8 +39,9 @@ def main():
         print("Virtual environment not found. Please run 'python run.py' first.")
         sys.exit(1)
     
-    # Verify key packages
-    check_key_packages()
+    # Quick check for critical package
+    if not check_critical_packages():
+        sys.exit(1)
     
     # Start the application with the virtual environment python
     print("Starting the application...")

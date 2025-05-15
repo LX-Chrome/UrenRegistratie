@@ -30,25 +30,16 @@ def fix_dependencies():
         print("Please run 'python run.py' first to set up the environment.")
         sys.exit(1)
     
-    # Required packages that might be missing
-    required_packages = [
+    # Most common missing packages that cause errors
+    critical_packages = [
         "xhtml2pdf",
         "reportlab",
-        "weasyprint",
-        "pdfkit",
-        "Pillow",
-        "flask-login",
-        "flask-sqlalchemy",
-        "python-dotenv"
+        "weasyprint"
     ]
     
-    # Update pip first
-    print("Updating pip...")
-    subprocess.run([pip_cmd, "install", "--upgrade", "pip"])
-    
-    # Check and install each package
+    # Check and install each critical package
     missing_packages = []
-    for package in required_packages:
+    for package in critical_packages:
         print(f"Checking {package}...")
         result = subprocess.run(
             [pip_cmd, "show", package],
@@ -59,28 +50,21 @@ def fix_dependencies():
         if result.returncode != 0:
             missing_packages.append(package)
     
-    # Install missing packages
+    # Install only missing critical packages
     if missing_packages:
-        print("\nThe following packages are missing and will be installed:")
+        print("\nInstalling missing critical packages:")
         for package in missing_packages:
-            print(f"  - {package}")
-        
-        for package in missing_packages:
-            print(f"\nInstalling {package}...")
+            print(f"Installing {package}...")
             try:
                 subprocess.run([pip_cmd, "install", package], check=True)
                 print(f"Successfully installed {package}")
             except subprocess.CalledProcessError:
-                print(f"Failed to install {package}. Please install manually.")
+                print(f"Failed to install {package}.")
     else:
-        print("\nAll required packages are already installed.")
-    
-    # Install all requirements to be safe
-    print("\nReinstalling all requirements to ensure consistency...")
-    subprocess.run([pip_cmd, "install", "-r", "requirements.txt", "--upgrade"])
+        print("\nAll critical packages are installed.")
     
     print("\nDependency check complete!")
-    print("If you still have issues, try running the application with 'python run.py'")
+    print("Try starting the application now.")
 
 if __name__ == "__main__":
     fix_dependencies() 
