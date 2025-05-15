@@ -4,10 +4,11 @@ import os
 import sys
 import subprocess
 import platform
+import time
 
 def setup_environment():
     """Setup virtual environment if it doesn't exist and install dependencies."""
-    print("Checking and setting up environment...")
+    print("Checking environment...")
     
     # Determine OS-specific commands
     python_cmd = "python" if platform.system() == "Windows" else "python3"
@@ -17,19 +18,25 @@ def setup_environment():
     if not os.path.exists(venv_dir):
         print("Creating virtual environment...")
         subprocess.run([python_cmd, "-m", "venv", venv_dir])
-    
-    # Activate virtual environment and install dependencies
-    if platform.system() == "Windows":
-        pip_cmd = os.path.join(venv_dir, "Scripts", "pip")
-        python_cmd = os.path.join(venv_dir, "Scripts", "python")
+        
+        # Activate virtual environment and install dependencies
+        if platform.system() == "Windows":
+            pip_cmd = os.path.join(venv_dir, "Scripts", "pip")
+            python_cmd = os.path.join(venv_dir, "Scripts", "python")
+        else:
+            pip_cmd = os.path.join(venv_dir, "bin", "pip")
+            python_cmd = os.path.join(venv_dir, "bin", "python")
+        
+        # Install dependencies only on first run
+        print("Installing dependencies (first time only)...")
+        subprocess.run([pip_cmd, "install", "-r", "requirements.txt"])
     else:
-        pip_cmd = os.path.join(venv_dir, "bin", "pip")
-        python_cmd = os.path.join(venv_dir, "bin", "python")
-    
-    # Install dependencies
-    print("Installing dependencies...")
-    subprocess.run([pip_cmd, "install", "-r", "requirements.txt"])
-    
+        # Get python command from existing venv
+        if platform.system() == "Windows":
+            python_cmd = os.path.join(venv_dir, "Scripts", "python")
+        else:
+            python_cmd = os.path.join(venv_dir, "bin", "python")
+            
     return python_cmd
 
 def check_env_file():
@@ -55,6 +62,7 @@ def run_app(python_cmd):
 
 def main():
     """Main entry point."""
+    start_time = time.time()
     print("=== Time Registrator Application Starter ===")
     
     # Setup environment
@@ -64,6 +72,8 @@ def main():
     check_env_file()
     
     # Run the application
+    elapsed = time.time() - start_time
+    print(f"Setup completed in {elapsed:.2f} seconds")
     run_app(python_cmd)
 
 if __name__ == "__main__":

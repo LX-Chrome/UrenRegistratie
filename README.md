@@ -18,7 +18,11 @@ For comprehensive documentation about the Time Registrator application, please r
 
 The easiest way to start the application is using the provided scripts:
 
-### For all platforms using Python directly:
+### First Time Setup:
+
+For first-time setup, use these options:
+
+#### For all platforms using Python directly:
 
 ```bash
 # Clone the repository
@@ -29,11 +33,11 @@ cd UrenRegistratie
 python run.py
 ```
 
-### For Windows users:
+#### For Windows users:
 
 Simply double-click on `start.bat` in the project folder.
 
-### For Unix/Linux/macOS users:
+#### For Unix/Linux/macOS users:
 
 ```bash
 # Make the script executable (first time only)
@@ -43,13 +47,39 @@ chmod +x start.sh
 ./start.sh
 ```
 
+### Fast Startup (After First Setup):
+
+For faster startup after you've already set up the environment:
+
+#### For all platforms using Python directly:
+
+```bash
+python quick_start.py
+```
+
+#### For Windows users:
+
+Double-click on `quick_start.bat` in the project folder.
+
+#### For Unix/Linux/macOS users:
+
+```bash
+chmod +x quick_start.sh  # First time only
+./quick_start.sh
+```
+
+These quick start options skip environment checks and dependency installation, making startup much faster.
+
 ### For VS Code users:
 
 The repository includes pre-configured VS Code settings for easy development and execution:
 
 1. Open the project folder in VS Code
 2. Press F5 or click the Run and Debug icon in the sidebar
-3. Select "Python: Setup & Run" to run with automatic environment setup or "Python: Time Registrator" to run directly
+3. Select one of the following:
+   - "Python: Setup & Run" - First time setup with environment checks
+   - "Python: Time Registrator" - Direct execution if already set up
+   - "Python: Quick Start" - Fast startup (after first setup)
 
 ### For PyCharm users:
 
@@ -57,7 +87,10 @@ The repository includes pre-configured PyCharm run configurations:
 
 1. Open the project folder in PyCharm
 2. The run configurations should be automatically loaded
-3. Click the Run button and select "Setup and Run" to run with automatic environment setup or "Time Registrator" to run directly
+3. Click the Run button and select one of the following:
+   - "Setup and Run" - First time setup with environment checks
+   - "Time Registrator" - Direct execution if already set up
+   - "Quick Start" - Fast startup (after first setup)
 
 These scripts will:
 
