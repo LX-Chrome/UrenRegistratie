@@ -79,8 +79,12 @@ def dashboard():
 def time_entries():
     if request.method == 'POST':
         try:
+            # Get date from form and handle as local date (not UTC)
+            local_date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+            # Store the date as is - no UTC conversion needed for dates
+            # This keeps the date the user selected locally
             entry = TimeEntry(
-                date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
+                date=local_date,
                 hours=float(request.form['hours']),
                 description=request.form['description'],
                 project=request.form['project'],
@@ -89,6 +93,7 @@ def time_entries():
             db.session.add(entry)
             db.session.commit()
             flash('Time entry added successfully', 'success')
+            app.logger.info(f"Added time entry for user {current_user.id}: date={local_date}, hours={request.form['hours']}")
             
             # Redirect to dashboard to see the entry in the recent list
             if request.form.get('redirect_to_dashboard') == 'true':
@@ -98,6 +103,7 @@ def time_entries():
             db.session.rollback()
             flash(f'Error adding time entry: {str(e)}', 'danger')
             app.logger.error(f"Error adding time entry: {str(e)}")
+            app.logger.error(f"Form data: date={request.form.get('date')}, hours={request.form.get('hours')}, project={request.form.get('project')}")
 
     search = request.args.get('search', '')
     entries_query = TimeEntry.query.filter_by(user_id=current_user.id)
@@ -134,16 +140,20 @@ def edit_time_entry(entry_id):
         return redirect(url_for('time_entries'))
 
     try:
-        entry.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        # Get the local date from the form without UTC conversion
+        local_date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        entry.date = local_date
         entry.hours = float(request.form['hours'])
         entry.description = request.form['description']
         entry.project = request.form['project']
         db.session.commit()
         flash('Time entry updated successfully', 'success')
+        app.logger.info(f"Updated time entry {entry_id} for user {current_user.id}: date={local_date}, hours={request.form['hours']}")
     except Exception as e:
         db.session.rollback()
         flash('Error updating time entry: ' + str(e), 'danger')
         app.logger.error(f"Error updating time entry: {str(e)}")
+        app.logger.error(f"Form data: date={request.form.get('date')}, hours={request.form.get('hours')}, project={request.form.get('project')}")
 
     # Redirect to dashboard if requested
     if request.form.get('redirect_to_dashboard') == 'true':
@@ -753,18 +763,27 @@ def add_opdracht():
 @app.route('/check-in', methods=['POST'])
 @login_required
 def check_in():
+    # Create a check-in with the current local time, not UTC
+    # Get the local time first (already in UTC+2) and don't use model default
+    local_now = datetime.now()
+    
+    # Log the time details for debugging
+    app.logger.info(f"Current local time: {local_now}, Current UTC time: {datetime.utcnow()}")
+    
     check_in = CheckIn(
         user_id=current_user.id,
         status=request.form['status'],
-        note=request.form.get('note')
+        note=request.form.get('note'),
+        check_in_time=local_now  # Explicitly setting local time
     )
     db.session.add(check_in)
     try:
         db.session.commit()
-        flash('Status succesvol bijgewerkt')
+        app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
+        flash('Status succesvol bijgewerkt', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Er is een fout opgetreden bij het bijwerken van je status')
+        flash('Er is een fout opgetreden bij het bijwerken van je status', 'danger')
         app.logger.error(f"Error during check-in: {str(e)}")
 
     return redirect(url_for('dashboard'))
