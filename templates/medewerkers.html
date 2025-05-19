@@ -3,86 +3,150 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
+        <div class="card shadow-sm">
+            <div class="card-header bg-gradient d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center">
+                    <i data-feather="users" class="me-2"></i>
                     <h5 class="mb-0" data-translate="Medewerkers Overzicht">Medewerkers Overzicht</h5>
-                    {% if not export_mode %}
-                    <div class="d-flex gap-2">
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='pdf') }}">
-                                    <i data-feather="file-text"></i> PDF
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='excel') }}">
-                                    <i data-feather="file"></i> Excel
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='csv') }}">
-                                    <i data-feather="file"></i> CSV
-                                </a></li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary">
-                            <i data-feather="plus"></i> <span data-translate="Nieuwe Medewerker">Nieuwe Medewerker</span>
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
+                {% if not export_mode %}
+                <div class="d-flex gap-2 mt-2 mt-sm-0">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i data-feather="download" class="feather-sm me-1"></i> <span data-translate="Exporteren">Exporteren</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end animate slideIn">
+                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='pdf') }}">
+                                <i data-feather="file-text" class="feather-sm me-2"></i> <span>PDF</span>
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='excel') }}">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span>Excel</span>
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='medewerkers', format='csv') }}">
+                                <i data-feather="file" class="feather-sm me-2"></i> <span>CSV</span>
+                            </a></li>
+                        </ul>
+                    </div>
+                    <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary btn-glow">
+                        <i data-feather="user-plus" class="feather-sm me-1"></i> <span data-translate="Nieuwe Medewerker">Nieuwe Medewerker</span>
+                    </a>
+                </div>
+                {% endif %}
             </div>
             <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
                 {% if not export_mode %}
-                <form class="mb-4" method="GET">
+                <form class="mb-4" method="GET" id="searchForm">
                     <div class="input-group">
-                        <input type="text" class="form-control" name="search" 
+                        <span class="input-group-text bg-light border-end-0">
+                            <i data-feather="search" class="feather-sm text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="search" 
                                data-placeholder="Zoek op naam, email..."
                                placeholder="Zoek op naam, email..." 
                                value="{{ search }}">
-                        <button class="btn btn-outline-secondary" type="submit">
-                            <i data-feather="search"></i> <span data-translate="Zoeken">Zoeken</span>
+                        <button class="btn btn-primary" type="submit">
+                            <span data-translate="Zoeken">Zoeken</span>
                         </button>
+                        {% if search %}
+                        <a href="{{ url_for('medewerkers') }}" class="btn btn-outline-secondary">
+                            <i data-feather="x" class="feather-sm"></i> <span data-translate="Wissen">Wissen</span>
+                        </a>
+                        {% endif %}
                     </div>
                 </form>
                 {% endif %}
 
                 <div class="table-responsive">
-                    <table class="table">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th data-translate="Naam">Naam</th>
                                 <th data-translate="Functie">Functie</th>
-                                <th data-translate="Werkmail">Werkmail</th>
-                                <th data-translate="Kantoorruimte">Kantoorruimte</th>
-                                <th data-translate="Geboortedatum">Geboortedatum</th>
+                                <th class="d-none d-md-table-cell" data-translate="Werkmail">Werkmail</th>
+                                <th class="d-none d-lg-table-cell" data-translate="Kantoorruimte">Kantoorruimte</th>
+                                <th class="d-none d-sm-table-cell" data-translate="Geboortedatum">Geboortedatum</th>
+                                <th class="text-end">Acties</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for medewerker in medewerkers %}
-                            <tr>
-                                <td>
-                                    {{ medewerker.voornaam }}
-                                    {% if medewerker.tussenvoegsel %}
-                                        {{ medewerker.tussenvoegsel }}
-                                    {% endif %}
-                                    {{ medewerker.achternaam }}
-                                </td>
-                                <td>{{ medewerker.functie or '-' }}</td>
-                                <td>{{ medewerker.werkmail }}</td>
-                                <td>{{ medewerker.kantoorruimte or '-' }}</td>
-                                <td>{{ medewerker.geboortedatum.strftime('%d-%m-%Y') }}</td>
-                                <td class="text-end">
-                                    <a href="{{ url_for('edit_medewerker', id=medewerker.id) }}" class="btn btn-sm btn-primary">
-                                        <i data-feather="edit-2"></i> <span data-translate="Bewerken">Bewerken</span>
-                                    </a>
-                                    <a href="{{ url_for('delete_medewerker', id=medewerker.id) }}" class="btn btn-sm btn-danger" 
-                                       onclick="return confirm('Weet je zeker dat je deze medewerker wilt verwijderen?')">
-                                        <i data-feather="trash-2"></i> <span data-translate="Verwijderen">Verwijderen</span>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
+                            {% if medewerkers %}
+                                {% for medewerker in medewerkers %}
+                                <tr class="table-row-hover">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle bg-primary text-white me-2 d-flex align-items-center justify-content-center">
+                                                {{ medewerker.voornaam[0] }}{{ medewerker.achternaam[0] }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">
+                                                    {{ medewerker.voornaam }}
+                                                    {% if medewerker.tussenvoegsel %}
+                                                        {{ medewerker.tussenvoegsel }}
+                                                    {% endif %}
+                                                    {{ medewerker.achternaam }}
+                                                </div>
+                                                <small class="d-md-none text-muted">{{ medewerker.werkmail }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{% if medewerker.functie %}<span class="badge bg-light text-dark">{{ medewerker.functie }}</span>{% else %}-{% endif %}</td>
+                                    <td class="d-none d-md-table-cell">{{ medewerker.werkmail }}</td>
+                                    <td class="d-none d-lg-table-cell">{{ medewerker.kantoorruimte or '-' }}</td>
+                                    <td class="d-none d-sm-table-cell">{{ medewerker.geboortedatum.strftime('%d-%m-%Y') }}</td>
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_medewerker', id=medewerker.id) }}" class="btn btn-sm btn-outline-primary" title="Bewerken">
+                                                <i data-feather="edit-2" class="feather-sm"></i>
+                                                <span class="d-none d-lg-inline ms-1" data-translate="Bewerken">Bewerken</span>
+                                            </a>
+                                            <a href="#" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" 
+                                              data-bs-target="#deleteModal" 
+                                              data-id="{{ medewerker.id }}" 
+                                              data-name="{{ medewerker.voornaam }} {{ medewerker.achternaam }}" 
+                                              title="Verwijderen">
+                                                <i data-feather="trash-2" class="feather-sm"></i>
+                                                <span class="d-none d-lg-inline ms-1" data-translate="Verwijderen">Verwijderen</span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="empty-state">
+                                            <div class="empty-state-icon">
+                                                <i data-feather="users" style="width: 48px; height: 48px;"></i>
+                                            </div>
+                                            <h5 data-translate="Geen medewerkers gevonden">Geen medewerkers gevonden</h5>
+                                            {% if search %}
+                                                <p class="text-muted" data-translate="Probeer een andere zoekopdracht">Probeer een andere zoekopdracht</p>
+                                                <a href="{{ url_for('medewerkers') }}" class="btn btn-outline-primary">
+                                                    <i data-feather="refresh-cw" class="feather-sm me-1"></i>
+                                                    <span data-translate="Alle medewerkers weergeven">Alle medewerkers weergeven</span>
+                                                </a>
+                                            {% else %}
+                                                <p class="text-muted" data-translate="Er zijn nog geen medewerkers toegevoegd">Er zijn nog geen medewerkers toegevoegd</p>
+                                                <a href="{{ url_for('add_medewerker') }}" class="btn btn-primary">
+                                                    <i data-feather="user-plus" class="feather-sm me-1"></i>
+                                                    <span data-translate="Nieuwe Medewerker">Nieuwe Medewerker</span>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -90,4 +154,158 @@
         </div>
     </div>
 </div>
+
+<!-- Deletion Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel" data-translate="Bevestig verwijderen">Bevestig verwijderen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="alert-icon">
+                        <i data-feather="alert-triangle" style="width: 48px; height: 48px;" class="text-danger"></i>
+                    </div>
+                </div>
+                <p class="text-center" data-translate="Weet je zeker dat je deze medewerker wilt verwijderen?">Weet je zeker dat je <strong><span id="medewerkernaam"></span></strong> wilt verwijderen?</p>
+                <p class="text-center text-muted small">Deze actie kan niet ongedaan worden gemaakt.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="feather-sm me-1"></i>
+                    <span data-translate="Annuleren">Annuleren</span>
+                </button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">
+                    <i data-feather="trash-2" class="feather-sm me-1"></i>
+                    <span data-translate="Verwijderen">Verwijderen</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Setup delete modal
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const id = button.getAttribute('data-id');
+                const name = button.getAttribute('data-name');
+                
+                const nameSpan = document.getElementById('medewerkernaam');
+                const deleteBtn = document.getElementById('confirmDeleteBtn');
+                
+                nameSpan.textContent = name;
+                deleteBtn.href = "{{ url_for('delete_medewerker', id=0) }}".replace('0', id);
+            });
+        }
+        
+        // Add animation to search input
+        const searchInput = document.querySelector('#searchForm input');
+        if (searchInput) {
+            searchInput.addEventListener('focus', function() {
+                this.parentElement.classList.add('input-group-focus');
+            });
+            
+            searchInput.addEventListener('blur', function() {
+                this.parentElement.classList.remove('input-group-focus');
+            });
+        }
+    });
+</script>
+
+<style>
+    .bg-gradient {
+        background: linear-gradient(to right, var(--gilde-secondary), #254a85) !important;
+        color: white;
+    }
+    
+    .input-group-focus {
+        box-shadow: 0 0 0 0.25rem rgba(var(--gilde-primary-rgb), 0.25);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-glow:hover {
+        box-shadow: 0 0 15px rgba(var(--gilde-primary-rgb), 0.6);
+        transform: translateY(-2px);
+    }
+    
+    .avatar-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .table-row-hover:hover {
+        background-color: rgba(var(--gilde-primary-rgb), 0.05);
+        transition: background-color 0.2s ease;
+    }
+    
+    .dropdown-menu.animate {
+        animation-fill-mode: both;
+        animation-duration: 0.3s;
+    }
+    
+    .dropdown-menu.slideIn {
+        animation-name: slideIn;
+    }
+    
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state-icon {
+        color: var(--gilde-secondary);
+        opacity: 0.6;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-icon {
+        margin-bottom: 1rem;
+    }
+    
+    @keyframes slideIn {
+        0% {
+            transform: translateY(1rem);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .card-header {
+            padding: 1rem;
+        }
+        
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
 {% endblock %}
