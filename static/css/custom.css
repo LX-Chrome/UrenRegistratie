@@ -6,10 +6,29 @@
     --gilde-text: #ffffff;
 }
 
+/* Fix for spacing between text and dates/numbers */
+.card-header h5 span[data-translate] {
+    margin-right: 0.35em;
+}
+
+/* Fix for spacing between text and dates in alerts and other elements */
+.alert span[data-translate], 
+.card-body span[data-translate],
+.text-muted span[data-translate] {
+    margin-right: 0.35em;
+}
+
+/* Add small spacing after data translation spans */
+[data-translate] {
+    margin-right: 0.35em;
+}
+
 [data-bs-theme="light"] {
     --bs-body-bg: #ffffff;
     --bs-body-color: #212529;
     --bs-navbar-color: var(--gilde-text);
+    /* Fix for search box text in light mode */
+    --search-box-text: #212529;
 }
 
 [data-bs-theme="dark"] {
@@ -29,17 +48,46 @@ main {
     flex: 1;
 }
 
-/* Card styles */
+/* Card styles - enhanced for better visual hierarchy */
 .card {
-    margin-bottom: 1.5rem;
-    transition: transform var(--animation-duration), box-shadow var(--animation-duration);
+    margin-bottom: 2rem;
+    transition: all 0.35s ease;
     border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .card-header {
-    background-color: var(--gilde-secondary) !important;
+    background-color: var(--gilde-secondary) !important; /* Restored original color */
     color: var(--gilde-text);
+    padding: 1rem 1.25rem;
+    border-bottom: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-header h5, .card-header h6 {
+    margin-bottom: 0;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.card-header .feather-sm {
+    margin-right: 8px;
+}
+
+.card-body {
+    padding: 1.5rem;
 }
 
 .animate-card {
@@ -47,40 +95,198 @@ main {
     animation: fadeInUp 0.5s ease forwards;
 }
 
-/* Table styles */
+/* Enhanced table styles */
 .table {
     margin-bottom: 0;
     width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background-color: rgba(27, 59, 111, 0.1);
+    color: inherit;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    border-top: none;
+    border-bottom-width: 2px;
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+[data-bs-theme="light"] .table tbody td {
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] .table tbody td {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .hoverable-row {
-    transition: background-color var(--animation-duration);
+    transition: all 0.25s ease;
 }
 
 .hoverable-row:hover {
     background-color: rgba(230, 0, 126, 0.1);
+    transform: translateY(-2px);
 }
 
-/* Modal styles */
+/* Alternating row colors */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(0, 0, 0, 0.02);
+}
+
+[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(255, 255, 255, 0.02);
+}
+
+/* Enhanced modal styles - with original colors */
 .modal-content {
-    border-radius: 0.5rem;
-    animation: slideIn 0.3s ease-out;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease-out;
+    overflow: hidden;
 }
 
 .modal-header {
     background-color: var(--gilde-secondary);
     color: var(--gilde-text);
+    padding: 1rem;
+    border-bottom: none;
+    align-items: center;
 }
 
-/* Alert styles */
+.modal-header .btn-close {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+    transition: all 0.3s ease;
+}
+
+.modal-header .btn-close:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    transform: rotate(90deg);
+}
+
+.modal-title {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.modal-title .feather-sm {
+    margin-right: 0.75rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem 1.5rem;
+    border-top: none;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-30px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Enhanced alert styles */
 .alert {
     margin-bottom: 1.5rem;
     animation: slideInDown 0.3s ease-out;
+    border: none;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+}
+
+.alert-info {
+    background-color: rgba(23, 162, 184, 0.15);
+    color: #17a2b8;
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+/* List group enhancements */
+.list-group {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+    transition: all 0.3s ease;
+    border-left: none;
+    border-right: none;
+    background: transparent;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover {
+    background-color: rgba(27, 59, 111, 0.05);
+    transform: translateX(5px);
+}
+
+.list-group-item h6 {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+/* Badge enhancements */
+.badge {
+    padding: 0.5em 0.75em;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
 /* Icon animations */
@@ -95,26 +301,118 @@ main {
     margin-right: 4px;
 }
 
-/* Navbar refinements */
+/* Navbar and tab refinements */
 .navbar {
     background-color: var(--gilde-secondary) !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.25rem;
+}
+
+.navbar .container {
+    padding-left: 0.1rem;
+    padding-right: 0.1rem;
+    max-width: 100%;
 }
 
 .navbar-brand {
     color: var(--gilde-text) !important;
+    font-weight: 600;
+    padding: 0.25rem 0.25rem;
+    margin-right: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
 }
 
+.navbar-brand img {
+    height: 35px !important;
+}
+
+.navbar-brand:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ultra-compact navigation links */
 .nav-link {
-    transition: color var(--animation-duration);
+    transition: all 0.2s ease;
     color: var(--gilde-text) !important;
+    padding: 0.35rem 0.5rem !important;
+    margin: 0;
+    border-radius: 4px;
+    position: relative;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
 }
 
 .nav-link:hover {
-    color: var(--gilde-primary) !important;
+    color: var(--gilde-text) !important;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.nav-link.active {
+    background-color: var(--gilde-primary) !important;
+    color: white !important;
+    box-shadow: 0 1px 3px rgba(230, 0, 126, 0.3);
+}
+
+.nav-link .feather-sm {
+    margin-right: 0.3rem;
+    width: 14px; /* Even smaller icons */
+    height: 14px;
+}
+
+/* Compact the navbar toggler for mobile */
+.navbar-toggler {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.85rem;
+}
+
+/* Fix for theme and language toggle buttons */
+.user-actions .btn-link {
+    padding: 0.25rem;
+    margin: 0 0.1rem;
+}
+
+.user-actions .feather-sm {
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 0 !important;
+}
+
+.language-toggle {
+    margin-left: 0 !important;
+    transform: scale(0.85);
 }
 
 /* Button enhancements */
+.btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0px;
+    display: inline-block;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+}
+
+.btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Fix for clickable buttons */
+.btn, button, [type="button"], [type="submit"] {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
 .btn-primary {
     background-color: var(--gilde-primary) !important;
     border-color: var(--gilde-primary) !important;
@@ -125,12 +423,23 @@ main {
     border-color: var(--gilde-secondary) !important;
 }
 
-.btn {
-    transition: all var(--animation-duration);
+.btn-outline-primary {
+    color: var(--gilde-primary);
+    border-color: var(--gilde-primary);
 }
 
-.btn:hover {
-    transform: translateY(-1px);
+.btn-outline-primary:hover {
+    background-color: var(--gilde-primary);
+    color: white;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+}
+
+.btn .feather-sm {
+    margin-right: 0.5rem;
 }
 
 /* Animations */
@@ -196,6 +505,69 @@ main {
     .table {
         width: 100% !important;
     }
+}
+
+/* Form control enhancements */
+.form-control, .form-select {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    height: auto;
+    pointer-events: auto !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--gilde-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--gilde-primary-rgb), 0.25);
+}
+
+.input-group .form-control {
+    height: auto;
+}
+
+/* Fix for input group buttons */
+.input-group-text {
+    pointer-events: auto !important;
+    user-select: auto !important;
+}
+
+[data-bs-theme="light"] .form-control, 
+[data-bs-theme="light"] .form-select {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #212529 !important;
+}
+
+[data-bs-theme="dark"] .form-control, 
+[data-bs-theme="dark"] .form-select {
+    background-color: #2b3035;
+    border-color: #495057;
+    color: #ffffff !important;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(230, 0, 126, 0.25);
+    border-color: var(--gilde-primary);
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: inherit;
+}
+
+/* Search box specific styles */
+.input-group .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
 }
 
 /* Responsive adjustments */

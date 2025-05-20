@@ -26,7 +26,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
                 feather.replace();
             }
+            
+            // Fix for search box text colors in light mode
+            updateFormControlColors(theme);
         }
+        
+        // Helper function to update form control colors based on theme
+        function updateFormControlColors(theme) {
+            console.log('Updating form control colors for theme:', theme);
+            const formControls = document.querySelectorAll('.form-control');
+            formControls.forEach(input => {
+                if (theme === 'light') {
+                    input.style.color = '#212529';
+                    input.style.borderColor = '#ced4da';
+                } else {
+                    input.style.color = '#fff';
+                    input.style.borderColor = '#495057';
+                }
+            });
+        }
+        
+        // Initial call to set colors based on current theme
+        updateFormControlColors(savedTheme);
     }
 
     // Initialize tooltips
