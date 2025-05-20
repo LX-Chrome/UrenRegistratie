@@ -251,7 +251,7 @@ class Factuur(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     factuur_nummer = db.Column(db.String(50), unique=True, nullable=False)
-    klant_id = db.Column(db.Integer, db.ForeignKey('klant.id'), nullable=False)
+    klant_id = db.Column(db.Integer, db.ForeignKey('klant.id', ondelete='CASCADE'), nullable=False)
     opdracht_id = db.Column(db.Integer, db.ForeignKey('opdracht.id'), nullable=True)  # Optional link to assignment
     datum = db.Column(db.Date, nullable=False, default=datetime.utcnow)
     vervaldatum = db.Column(db.Date, nullable=False)  # Due date
