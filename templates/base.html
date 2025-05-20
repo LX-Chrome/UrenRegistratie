@@ -24,6 +24,15 @@
             padding: 0.5rem 1rem;
         }
         
+        /* Fix for search box text in light mode */
+        [data-bs-theme="light"] .form-control {
+            color: #212529 !important;
+        }
+        
+        [data-bs-theme="light"] .form-control::placeholder {
+            color: #6c757d !important;
+        }
+        
         .navbar .nav-link {
             position: relative;
             padding: 0.8rem 1rem;

@@ -486,21 +486,69 @@ def export_data(entity, format):
         download_name=filename
     )
 
-@app.route('/api/time-entries', methods=['GET'])
+@app.route('/api/time-entries')
+@login_required
 def api_get_time_entries():
-    if not request.headers.get('X-API-Key') == app.config.get('API_KEY'):
-        return jsonify({"error": "Unauthorized"}), 401
+    # Get the user's time entries for the API
+    entries = TimeEntry.query.filter_by(user_id=current_user.id)\
+        .order_by(TimeEntry.date.desc())\
+        .limit(100)\
+        .all()
+    
+    # Convert to JSON serializable format
+    results = []
+    for entry in entries:
+        results.append({
+            'id': entry.id,
+            'date': entry.date.strftime('%Y-%m-%d'),
+            'hours': entry.hours,
+            'description': entry.description,
+            'project': entry.project
+        })
+    
+    return jsonify(results)
 
-    entries = TimeEntry.query.order_by(TimeEntry.date.desc()).all()
-    return jsonify([{
-        'id': entry.id,
-        'date': entry.date.strftime('%Y-%m-%d'),
-        'hours': entry.hours,
-        'description': entry.description,
-        'project': entry.project,
-        'user_id': entry.user_id,
-        'created_at': entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
-    } for entry in entries])
+@app.route('/api/dashboard_stats')
+@login_required
+def dashboard_stats():
+    try:
+        # Get current month and year
+        now = datetime.now()
+        current_month = now.month
+        current_year = now.year
+        
+        # Get total hours for current month
+        month_entries = TimeEntry.query.filter(
+            TimeEntry.user_id == current_user.id,
+            extract('month', TimeEntry.date) == current_month,
+            extract('year', TimeEntry.date) == current_year
+        ).all()
+        
+        total_hours_month = sum(entry.hours for entry in month_entries)
+        
+        # Get check-ins for today
+        today = now.date()
+        checkins_today = CheckIn.query.filter(
+            CheckIn.user_id == current_user.id,
+            func.date(CheckIn.check_in_time) == today
+        ).count()
+        
+        # Get total projects worked on this month
+        projects_this_month = set(entry.project for entry in month_entries)
+        
+        # Return stats as JSON
+        stats = {
+            'total_hours_month': total_hours_month,
+            'checkins_today': checkins_today,
+            'projects_count': len(projects_this_month),
+            'last_updated': now.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        app.logger.error(f"Error generating dashboard stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/projects', methods=['GET'])
 def api_get_projects():

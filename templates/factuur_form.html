@@ -233,7 +233,9 @@
                                 <span class="input-group-text">€</span>
                                 <input type="number" class="form-control" id="subtotaal" name="subtotaal" 
                                        value="{{ "%.2f"|format(factuur.subtotaal) if factuur else '0.00' }}" 
-                                       step="0.01" min="0" required>
+                                       step="0.01" min="0" required 
+                                       style="pointer-events: auto !important; cursor: text !important;" 
+                                       onclick="event.stopPropagation();" onfocus="this.select();">
                             </div>
                         </div>
 
@@ -303,50 +305,149 @@
         // Initialize feather icons
         feather.replace();
         
-        // Calculate function
+        console.log('Invoice form initialized');
+        
+        // Direct reference to DOM elements
+        const subtotaalInput = document.getElementById('subtotaal');
+        const btwPercentageInput = document.getElementById('btw_percentage');
+        const btwBedragInput = document.getElementById('btw_bedrag');
+        const totaalInput = document.getElementById('totaal');
+        
+        // Manual subtotal calculation
+        function updateSubtotalManually() {
+            // Get the subtotal value directly from the input
+            const manualSubtotal = parseFloat(subtotaalInput.value) || 0;
+            console.log('Manual subtotal entry:', manualSubtotal);
+            
+            // Calculate BTW based on the manual subtotal
+            const btwPercentage = parseFloat(btwPercentageInput.value) || 0;
+            const btwBedrag = manualSubtotal * (btwPercentage / 100);
+            
+            // Update the BTW and total fields
+            btwBedragInput.value = btwBedrag.toFixed(2);
+            totaalInput.value = (manualSubtotal + btwBedrag).toFixed(2);
+            
+            console.log('Updated from manual subtotal:', {
+                subtotal: manualSubtotal.toFixed(2),
+                btwPercentage,
+                btwBedrag: btwBedrag.toFixed(2),
+                total: (manualSubtotal + btwBedrag).toFixed(2)
+            });
+        }
+        
+        // Automatic calculation from checkboxes
         function calculateTotals() {
+            console.log('Calculating totals from checkboxes...');
             let subtotal = 0;
             
-            // Calculate from werkzaamheden
-            document.querySelectorAll('.werkzaamheid-check:checked').forEach(function(checkbox) {
-                const uren = parseFloat(checkbox.dataset.uren);
-                const tarief = parseFloat(checkbox.dataset.tarief);
-                if (!isNaN(uren) && !isNaN(tarief)) {
-                    subtotal += uren * tarief;
+            try {
+                // Calculate from werkzaamheden
+                document.querySelectorAll('.werkzaamheid-check:checked').forEach(function(checkbox) {
+                    const uren = parseFloat(checkbox.dataset.uren);
+                    const tarief = parseFloat(checkbox.dataset.tarief);
+                    if (!isNaN(uren) && !isNaN(tarief)) {
+                        const amount = uren * tarief;
+                        subtotal += amount;
+                        console.log(`Added werkzaamheid: ${uren} x ${tarief} = ${amount} (running total: ${subtotal})`);
+                    }
+                });
+                
+                // Calculate from time entries
+                document.querySelectorAll('.time-entry-check:checked').forEach(function(checkbox) {
+                    const uren = parseFloat(checkbox.dataset.uren);
+                    const tarief = parseFloat(checkbox.dataset.tarief);
+                    if (!isNaN(uren) && !isNaN(tarief)) {
+                        const amount = uren * tarief;
+                        subtotal += amount;
+                        console.log(`Added time entry: ${uren} x ${tarief} = ${amount} (running total: ${subtotal})`);
+                    }
+                });
+                
+                // Only update subtotal if we have a value from checkboxes
+                if (subtotal > 0) {
+                    // Set subtotal
+                    console.log(`Setting subtotal to: ${subtotal.toFixed(2)}`);
+                    subtotaalInput.value = subtotal.toFixed(2);
+                    
+                    // Calculate BTW and total
+                    const btwPercentage = parseFloat(btwPercentageInput.value) || 0;
+                    const btwBedrag = subtotal * (btwPercentage / 100);
+                    btwBedragInput.value = btwBedrag.toFixed(2);
+                    totaalInput.value = (subtotal + btwBedrag).toFixed(2);
+                    
+                    console.log('Updated from automatic calculation:', {
+                        subtotal: subtotal.toFixed(2),
+                        btwPercentage,
+                        btwBedrag: btwBedrag.toFixed(2),
+                        total: (subtotal + btwBedrag).toFixed(2)
+                    });
                 }
-            });
-            
-            // Calculate from time entries
-            document.querySelectorAll('.time-entry-check:checked').forEach(function(checkbox) {
-                const uren = parseFloat(checkbox.dataset.uren);
-                const tarief = parseFloat(checkbox.dataset.tarief);
-                if (!isNaN(uren) && !isNaN(tarief)) {
-                    subtotal += uren * tarief;
-                }
-            });
-            
-            // Set subtotal
-            document.getElementById('subtotaal').value = subtotal.toFixed(2);
-            
-            // Calculate BTW and total
-            const btwPercentage = parseFloat(document.getElementById('btw_percentage').value);
-            if (!isNaN(btwPercentage)) {
-                const btwBedrag = subtotal * (btwPercentage / 100);
-                document.getElementById('btw_bedrag').value = btwBedrag.toFixed(2);
-                document.getElementById('totaal').value = (subtotal + btwBedrag).toFixed(2);
+            } catch (error) {
+                console.error('Error in calculateTotals:', error);
             }
         }
         
-        // Add event listeners
+        // Add event listeners for checkboxes
         document.querySelectorAll('.werkzaamheid-check, .time-entry-check').forEach(function(checkbox) {
+            console.log('Adding event listener to checkbox:', checkbox.id || 'unnamed checkbox');
+            checkbox.addEventListener('click', function(e) {
+                console.log('Checkbox clicked:', this.id, 'Checked:', this.checked);
+                calculateTotals();
+            });
+            // Also add change listener as a backup
             checkbox.addEventListener('change', calculateTotals);
         });
         
-        document.getElementById('btw_percentage').addEventListener('input', calculateTotals);
-        document.getElementById('subtotaal').addEventListener('input', calculateTotals);
+        // Event listener for BTW percentage input
+        if (btwPercentageInput) {
+            console.log('Adding event listener to btw_percentage');
+            
+            // Use both input and change events
+            btwPercentageInput.addEventListener('input', function() {
+                console.log('BTW percentage changed:', this.value);
+                // If subtotal is directly entered, use manual calculation
+                if (parseFloat(subtotaalInput.value) > 0) {
+                    updateSubtotalManually();
+                } else {
+                    // Otherwise calculate from checkboxes
+                    calculateTotals();
+                }
+            });
+        }
+        
+        // Event listener for manual subtotal entry
+        if (subtotaalInput) {
+            console.log('Adding event listener to subtotaal');
+            
+            // Use both input and change events
+            subtotaalInput.addEventListener('input', function() {
+                console.log('Subtotaal changed manually:', this.value);
+                updateSubtotalManually();
+            });
+            
+            subtotaalInput.addEventListener('change', function() {
+                console.log('Subtotaal changed (blur):', this.value);
+                updateSubtotalManually();
+            });
+            
+            // Add an explicit click handler to ensure it's clickable
+            subtotaalInput.addEventListener('click', function(e) {
+                console.log('Subtotaal field clicked');
+            });
+        }
         
         // Calculate on load
+        console.log('Running initial calculation');
         calculateTotals();
+        
+        // Add diagnostic output to help debug
+        console.log('Subtotal field properties:', {
+            id: subtotaalInput?.id,
+            type: subtotaalInput?.type,
+            readOnly: subtotaalInput?.readOnly,
+            disabled: subtotaalInput?.disabled,
+            value: subtotaalInput?.value
+        });
         
         // Form validation
         const form = document.getElementById('factuurForm');
