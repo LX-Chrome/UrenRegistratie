@@ -31,6 +31,11 @@
     --search-box-text: #212529;
 }
 
+/* Fix for footer copyright text in light mode */
+[data-bs-theme="light"] footer.text-muted {
+    color: #495057 !important;
+}
+
 [data-bs-theme="dark"] {
     --bs-body-bg: #1a1d20;
     --bs-body-color: #f8f9fa;

@@ -1,7 +1,6 @@
 import csv
 import io
 from datetime import datetime
-import pdfkit
 import xlsxwriter
 from flask import render_template, current_app
 import os
@@ -37,6 +36,10 @@ except ImportError:
 if True:  # Force the exception branch
     WEASYPRINT_AVAILABLE = False
     logger.warning("WeasyPrint is NOT available")
+
+# Disable pdfkit since we won't be using wkhtmltopdf
+PDFKIT_AVAILABLE = False
+logger.info("Using ReportLab for PDF generation instead of pdfkit")
 
 class ExportService:
     @staticmethod
@@ -225,8 +228,11 @@ class ExportService:
                     logger.warning(f"WeasyPrint error: {str(weasyprint_error)}")
                     # Continue to wkhtmltopdf approach
             
-            # If all Python-based approaches failed, try the wkhtmltopdf approach as before
-            # The rest of the original code for wkhtmltopdf handling follows...
+            # If all Python-based approaches failed, try the wkhtmltopdf approach if pdfkit is available
+            if not PDFKIT_AVAILABLE:
+                logger.error("Cannot generate PDF: pdfkit is not available and all other methods failed")
+                raise Exception("PDF generation failed: pdfkit is not installed and all other methods failed")
+                
             # Configure pdfkit options
             options = {
                 'page-size': 'A4',
