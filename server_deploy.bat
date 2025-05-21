@@ -47,8 +47,22 @@ python -m pip install -r requirements.txt
 python -m pip install waitress
 
 REM Ensure all critical packages are installed
-for %%p in (flask flask-login flask-sqlalchemy xhtml2pdf reportlab waitress python-dotenv) do (
+for %%p in (flask flask-login flask-sqlalchemy xhtml2pdf reportlab waitress python-dotenv pdfkit) do (
     python -m pip install %%p
+)
+
+REM Check and install wkhtmltopdf if needed
+echo.
+echo Checking for wkhtmltopdf installation...
+where wkhtmltopdf >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo WARNING: wkhtmltopdf is not found in your PATH.
+    echo This binary is required for PDF generation with pdfkit.
+    echo.
+    echo Please download and install wkhtmltopdf from: https://wkhtmltopdf.org/downloads.html
+    echo After installation, ensure it's added to your system PATH.
+    echo.
+    echo The application will fall back to ReportLab for PDF generation if wkhtmltopdf is not available.
 )
 
 REM Create production server script
@@ -56,10 +70,38 @@ echo.
 echo Creating production server script...
 echo from waitress import serve > production_server.py
 echo import os >> production_server.py
+echo import sys >> production_server.py
 echo from app import app >> production_server.py
-echo import routes  # noqa: F401 >> production_server.py
-echo import routes_invoices  # noqa: F401 >> production_server.py
-echo import routes_reports  # noqa: F401 >> production_server.py
+echo. >> production_server.py
+echo # Configure path for imports >> production_server.py
+echo current_dir = os.path.dirname(os.path.abspath(__file__)) >> production_server.py
+echo if current_dir not in sys.path: >> production_server.py
+echo     sys.path.append(current_dir) >> production_server.py
+echo. >> production_server.py
+echo # Configure pdfkit path if wkhtmltopdf is installed >> production_server.py
+echo try: >> production_server.py
+echo     import pdfkit >> production_server.py
+echo     import os.path >> production_server.py
+echo     wkhtmltopdf_paths = [ >> production_server.py
+echo         r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe", >> production_server.py
+echo         r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe" >> production_server.py
+echo     ] >> production_server.py
+echo     for path in wkhtmltopdf_paths: >> production_server.py
+echo         if os.path.exists(path): >> production_server.py
+echo             os.environ['WKHTMLTOPDF_PATH'] = path >> production_server.py
+echo             break >> production_server.py
+echo except ImportError: >> production_server.py
+echo     print("Warning: pdfkit module not found. PDF export will use alternative methods.") >> production_server.py
+echo. >> production_server.py
+echo # Import application routes >> production_server.py
+echo try: >> production_server.py
+echo     import routes  # noqa: F401 >> production_server.py
+echo     import routes_invoices  # noqa: F401 >> production_server.py
+echo     import routes_reports  # noqa: F401 >> production_server.py
+echo except ImportError as e: >> production_server.py
+echo     print(f"Error importing routes: {e}") >> production_server.py
+echo     print("Please check that all required packages are installed.") >> production_server.py
+echo     sys.exit(1) >> production_server.py
 echo. >> production_server.py
 echo if __name__ == "__main__": >> production_server.py
 echo     # Get configuration from environment or use defaults >> production_server.py
@@ -110,6 +152,9 @@ REM Create batch file to run the service
 echo @echo off > run_production.bat
 echo cd /d "%~dp0" >> run_production.bat
 echo call prod_env\Scripts\activate.bat >> run_production.bat
+echo REM Fix for missing packages >> run_production.bat
+echo pip install pdfkit xhtml2pdf reportlab >> run_production.bat
+echo. >> run_production.bat
 echo prod_env\Scripts\python production_server.py >> run_production.bat
 
 REM Create NSSM installation script
@@ -159,6 +204,9 @@ echo echo. >> start_production.bat
 echo echo Press Ctrl+C to stop the server >> start_production.bat
 echo echo. >> start_production.bat
 echo call prod_env\Scripts\activate.bat >> start_production.bat
+echo REM Fix for missing packages >> start_production.bat
+echo pip install pdfkit xhtml2pdf reportlab >> start_production.bat
+echo. >> start_production.bat
 echo prod_env\Scripts\python production_server.py >> start_production.bat
 echo pause >> start_production.bat
 

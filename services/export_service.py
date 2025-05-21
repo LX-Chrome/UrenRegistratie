@@ -37,14 +37,9 @@ if True:  # Force the exception branch
     WEASYPRINT_AVAILABLE = False
     logger.warning("WeasyPrint is NOT available")
 
-# Import pdfkit if available
-try:
-    import pdfkit
-    PDFKIT_AVAILABLE = True
-    logger.info("pdfkit is available for PDF generation")
-except ImportError:
-    PDFKIT_AVAILABLE = False
-    logger.warning("pdfkit is NOT available - PDF generation via wkhtmltopdf will not work")
+# Disable pdfkit since we won't be using wkhtmltopdf
+PDFKIT_AVAILABLE = False
+logger.info("Using ReportLab for PDF generation instead of pdfkit")
 
 class ExportService:
     @staticmethod
