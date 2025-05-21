@@ -1,9 +1,37 @@
 from waitress import serve 
 import os 
+import sys 
 from app import app 
-import routes  # noqa: F401 
-import routes_invoices  # noqa: F401 
-import routes_reports  # noqa: F401 
+ 
+# Configure path for imports 
+current_dir = os.path.dirname(os.path.abspath(__file__)) 
+if current_dir not in sys.path: 
+    sys.path.append(current_dir) 
+ 
+# Configure pdfkit path if wkhtmltopdf is installed 
+try: 
+    import pdfkit 
+    import os.path 
+    wkhtmltopdf_paths = [ 
+        r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe", 
+        r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe" 
+    ] 
+    for path in wkhtmltopdf_paths: 
+        if os.path.exists(path): 
+            os.environ['WKHTMLTOPDF_PATH'] = path 
+            break 
+except ImportError: 
+    print("Warning: pdfkit module not found. PDF export will use alternative methods.") 
+ 
+# Import application routes 
+try: 
+    import routes  # noqa: F401 
+    import routes_invoices  # noqa: F401 
+    import routes_reports  # noqa: F401 
+except ImportError as e: 
+    print(f"Error importing routes: {e}") 
+    print("Please check that all required packages are installed.") 
+    sys.exit(1) 
  
 if __name__ == "__main__": 
     # Get configuration from environment or use defaults 

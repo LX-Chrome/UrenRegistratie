@@ -8,5 +8,8 @@ echo.
 echo Press Ctrl+C to stop the server 
 echo. 
 call prod_env\Scripts\activate.bat 
+REM Fix for missing packages 
+pip install pdfkit xhtml2pdf reportlab 
+ 
 prod_env\Scripts\python production_server.py 
 pause 
