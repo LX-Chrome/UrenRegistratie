@@ -7,7 +7,7 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i data-feather="sun" class="feather-sm"></i>
-                    <span data-translate="Goedendag">Goedendag</span>, {{ current_user.username }}!
+                    <span data-translate="Goedendag">Goedendag</span> {{ current_user.username }}!
                 </h5>
             </div>
             <div class="card-body">
@@ -69,16 +69,7 @@
                                     <h6 class="mb-1">{{ check_in.status|title }}</h6>
                                     <div>
                                         <small class="me-2 utc-time" data-utc-time="{{ check_in.check_in_time.strftime('%Y-%m-%dT%H:%M:%S') }}">{{ check_in.check_in_time.strftime('%H:%M') }}</small>
-                                        <a href="#" class="btn btn-sm btn-outline-primary me-1 edit-checkin-btn" 
-                                           data-id="{{ check_in.id }}" 
-                                           data-bs-target="#editCheckinModal{{ check_in.id }}" 
-                                           data-status="{{ check_in.status }}" 
-                                           data-time="{{ check_in.check_in_time.strftime('%H:%M') }}" 
-                                           data-note="{{ check_in.note or '' }}" 
-                                           data-form-action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}" 
-                                           {% if check_in.opdracht_id %}data-opdracht-id="{{ check_in.opdracht_id }}"{% endif %}
-                                           onclick="if(typeof openStaticCheckinModal === 'function') { event.preventDefault(); openStaticCheckinModal('{{ url_for('edit_check_in', checkin_id=check_in.id) }}', '{{ check_in.status }}', '{{ check_in.check_in_time.strftime('%H:%M') }}', '{{ check_in.note or '' }}', '{% if check_in.opdracht_id %}{{ check_in.opdracht_id }}{% endif %}'); return false; }"
-                                           title="Edit">
+                                        <a href="#" class="btn btn-sm btn-outline-primary me-1 edit-checkin-btn" data-id="{{ check_in.id }}" data-bs-target="#editCheckinModal{{ check_in.id }}" data-status="{{ check_in.status }}" data-time="{{ check_in.check_in_time.strftime('%H:%M') }}" data-note="{{ check_in.note or '' }}" data-form-action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}" title="Edit">
                                             <i data-feather="edit-2" class="feather-sm"></i>
                                         </a>
                                         <a href="{{ url_for('delete_check_in', checkin_id=check_in.id) }}" class="btn btn-sm btn-outline-danger confirm-delete" title="Delete" onclick="return confirm('Weet je zeker dat je deze check-in wilt verwijderen?');">
@@ -321,109 +312,27 @@ function filterDashboardAssignments() {
         assignmentSelect.value = '';
     }
 }
-</script>
 
-<script src="{{ url_for('static', filename='js/fix-custom-modal.js') }}"></script>
-
-<script>
-// Direct fix for check-in edit buttons
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Setting up direct fix for check-in edit buttons");
+    // Debug code for check-in edit buttons
+    console.log("Debug mode active for check-in edit buttons");
     
-    function createEditModal(formAction, status, timeValue, noteValue, opdrachtId) {
-        console.log("Creating edit modal with:", { formAction, status, timeValue, noteValue, opdrachtId });
-        
-        // Create modal container
-        const modalContainer = document.createElement('div');
-        modalContainer.className = 'direct-modal-container';
-        modalContainer.style.position = 'fixed';
-        modalContainer.style.top = '0';
-        modalContainer.style.left = '0';
-        modalContainer.style.width = '100%';
-        modalContainer.style.height = '100%';
-        modalContainer.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        modalContainer.style.zIndex = '9999';
-        modalContainer.style.display = 'flex';
-        modalContainer.style.alignItems = 'center';
-        modalContainer.style.justifyContent = 'center';
-        
-        // Create modal content
-        const modalContent = document.createElement('div');
-        modalContent.className = 'direct-modal-content';
-        modalContent.style.backgroundColor = '#fff';
-        modalContent.style.borderRadius = '5px';
-        modalContent.style.maxWidth = '500px';
-        modalContent.style.width = '90%';
-        modalContent.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
-        
-        // Form HTML
-        modalContent.innerHTML = `
-            <div style="padding: 15px; background-color: #1B3B6F; color: white; border-top-left-radius: 5px; border-top-right-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0;">Edit Check-in</h5>
-                <button type="button" class="direct-modal-close" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <form action="${formAction}" method="POST" style="padding: 15px;">
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-status" style="display: block; margin-bottom: 5px;">Status</label>
-                    <select id="direct-status" name="status" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                        <option value="working" ${status === 'working' ? 'selected' : ''}>Aan het werk</option>
-                        <option value="break" ${status === 'break' ? 'selected' : ''}>Pauze</option>
-                        <option value="done" ${status === 'done' ? 'selected' : ''}>Klaar voor vandaag</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-time" style="display: block; margin-bottom: 5px;">Time</label>
-                    <input type="time" id="direct-time" name="check_in_time" value="${timeValue}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-note" style="display: block; margin-bottom: 5px;">Note</label>
-                    <input type="text" id="direct-note" name="note" value="${noteValue || ''}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                </div>
-                ${opdrachtId ? `<input type="hidden" name="opdracht_id" value="${opdrachtId}">` : ''}
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="direct-modal-cancel" style="margin-right: 10px; padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                    <button type="submit" style="padding: 8px 15px; background-color: #E6007E; color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
-                </div>
-            </form>
-        `;
-        
-        // Add to document
-        modalContainer.appendChild(modalContent);
-        document.body.appendChild(modalContainer);
-        
-        // Add event listeners
-        modalContainer.querySelector('.direct-modal-close').addEventListener('click', function() {
-            modalContainer.remove();
-        });
-        
-        modalContainer.querySelector('.direct-modal-cancel').addEventListener('click', function() {
-            modalContainer.remove();
-        });
-        
-        // Close on backdrop click
-        modalContainer.addEventListener('click', function(e) {
-            if (e.target === modalContainer) {
-                modalContainer.remove();
-            }
-        });
-    }
-    
-    // Add click handlers to all check-in edit buttons
+    // Examine all check-in edit buttons
     document.querySelectorAll('.edit-checkin-btn').forEach(function(btn) {
+        console.log("Found edit button:", btn);
+        console.log("  data-id:", btn.getAttribute('data-id'));
+        console.log("  data-status:", btn.getAttribute('data-status'));
+        console.log("  data-time:", btn.getAttribute('data-time'));
+        console.log("  data-note:", btn.getAttribute('data-note'));
+        console.log("  data-opdracht-id:", btn.getAttribute('data-opdracht-id'));
+        console.log("  data-form-action:", btn.getAttribute('data-form-action'));
+        
+        // Add explicit click handler for debugging
         btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const formAction = this.getAttribute('data-form-action') || '';
-            const status = this.getAttribute('data-status') || 'working';
-            const timeValue = this.getAttribute('data-time') || '';
-            const noteValue = this.getAttribute('data-note') || '';
-            const opdrachtId = this.getAttribute('data-opdracht-id') || '';
-            
-            createEditModal(formAction, status, timeValue, noteValue, opdrachtId);
-            
-            return false;
+            console.log("Edit button clicked:", this);
+            console.log("Using form action:", this.getAttribute('data-form-action'));
+            console.log("Assignment ID:", this.getAttribute('data-opdracht-id'));
         });
     });
-});
+
 </script>
 {% endblock %}

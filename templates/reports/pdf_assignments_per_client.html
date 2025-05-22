@@ -188,7 +188,13 @@
                     <td>{{ client.open_count }}</td>
                     <td>{{ client.in_progress_count }}</td>
                     <td>{{ client.completed_count }}</td>
-                    <td>€ {{ "%.2f"|format(client.average_hourly_rate) }}</td>
+                    <td>
+                        {% if client.average_hourly_rate is not none %}
+                            € {{ "%.2f"|format(client.average_hourly_rate) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             {% else %}

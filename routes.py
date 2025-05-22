@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, time
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login_manager
@@ -56,110 +56,219 @@ def register():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Get the most recent time entries for the user
+    """Show dashboard with user's time entries and check-ins"""
+    # Get 5 most recent time entries
     entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
     
-    # Get today's date for proper comparison
-    today = datetime.utcnow().date()
-    
-    # Use date comparison for check-ins (using imported func for SQL date extraction)
+    # Get today's check-ins for the current user
+    # Using local date (not UTC)
+    today = datetime.now().date()
     check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
         func.date(CheckIn.check_in_time) == today
     ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
     
-    # Log check-ins for debugging
+    # Debug log check-ins
     app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
     for check_in in check_ins:
         app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
-
-    return render_template('dashboard.html', entries=entries, check_ins=check_ins)
+    
+    # Get active clients and open assignments for dropdown selectors
+    clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
+    
+    # If current user has admin or management role, show all assignments
+    if current_user.can_view_all():
+        opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
+    else:
+        # Otherwise, only show assignments from clients this user has worked with
+        user_client_ids = db.session.query(Opdracht.klant_id)\
+            .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
+            .filter(TimeEntry.user_id == current_user.id)\
+            .distinct().all()
+        user_client_ids = [c[0] for c in user_client_ids]
+        opdrachten = Opdracht.query.filter(
+            Opdracht.status.in_(['open', 'in-progress']),
+            Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
+        ).order_by(Opdracht.titel).all()
+    
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
 def time_entries():
-    if request.method == 'POST':
-        try:
-            # Get date from form and handle as local date (not UTC)
-            local_date = datetime.strptime(request.form['date'], '%Y-%m-%d')
-            # Store the date as is - no UTC conversion needed for dates
-            # This keeps the date the user selected locally
-            entry = TimeEntry(
-                date=local_date,
-                hours=float(request.form['hours']),
-                description=request.form['description'],
-                project=request.form['project'],
-                user_id=current_user.id
-            )
-            db.session.add(entry)
-            db.session.commit()
-            flash('Time entry added successfully', 'success')
-            app.logger.info(f"Added time entry for user {current_user.id}: date={local_date}, hours={request.form['hours']}")
-            
-            # Redirect to dashboard to see the entry in the recent list
-            if request.form.get('redirect_to_dashboard') == 'true':
-                return redirect(url_for('dashboard'))
-            return redirect(url_for('time_entries'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error adding time entry: {str(e)}', 'danger')
-            app.logger.error(f"Error adding time entry: {str(e)}")
-            app.logger.error(f"Form data: date={request.form.get('date')}, hours={request.form.get('hours')}, project={request.form.get('project')}")
-
     search = request.args.get('search', '')
+    client_id = request.args.get('client_id', '')
+    opdracht_id = request.args.get('opdracht_id', '')
+    from_dashboard = 'from_dashboard' in request.args
+    new = 'new' in request.args
+    
+    # Get all clients and assignments for the dropdowns
+    clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
+    
+    # If current user has admin or management role, show all assignments
+    if current_user.can_view_all():
+        opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
+    else:
+        # Otherwise, only show assignments from clients this user has worked with
+        user_client_ids = db.session.query(Opdracht.klant_id)\
+            .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
+            .filter(TimeEntry.user_id == current_user.id)\
+            .distinct().all()
+        user_client_ids = [c[0] for c in user_client_ids]
+        opdrachten = Opdracht.query.filter(
+            Opdracht.status.in_(['open', 'in-progress']),
+            Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
+        ).order_by(Opdracht.titel).all()
+    
+    if request.method == 'POST':
+        date_str = request.form.get('date')
+        project = request.form.get('project')
+        hours = request.form.get('hours')
+        description = request.form.get('description')
+        opdracht_id_form = request.form.get('opdracht_id')
+        is_billable = 'is_billable' in request.form
+        
+        # Validate input
+        if not date_str or not project or not hours or not description:
+            flash('All fields are required!', 'error')
+            return redirect(url_for('time_entries'))
+        
+        try:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+            hours_float = float(hours)
+        except ValueError:
+            flash('Invalid date or hours format!', 'error')
+            return redirect(url_for('time_entries'))
+        
+        # Create the time entry
+        entry = TimeEntry(
+            date=date_obj,
+            project=project,
+            hours=hours_float,
+            description=description,
+            user_id=current_user.id,
+            is_billable=is_billable
+        )
+        
+        # Connect to opdracht if provided
+        if opdracht_id_form:
+            try:
+                entry.opdracht_id = int(opdracht_id_form)
+                
+                # Get hourly rate from assignment if billable
+                if is_billable:
+                    opdracht = Opdracht.query.get(int(opdracht_id_form))
+                    if opdracht and opdracht.uurtarief:
+                        entry.hourly_rate = opdracht.uurtarief
+            except ValueError:
+                flash('Invalid assignment selected', 'error')
+                return redirect(url_for('time_entries'))
+        
+        db.session.add(entry)
+        
+        try:
+            db.session.commit()
+            flash('Time entry added successfully!', 'success')
+        except:
+            db.session.rollback()
+            flash('Error adding time entry!', 'error')
+        
+        # Redirect to dashboard if coming from there
+        if request.form.get('redirect_to_dashboard') == 'true':
+            return redirect(url_for('dashboard'))
+        
+        return redirect(url_for('time_entries'))
+    
+    # For GET request, fetch time entries
     entries_query = TimeEntry.query.filter_by(user_id=current_user.id)
+    
     if search:
-        entries_query = entries_query.filter(TimeEntry.description.contains(search) | 
-                                  TimeEntry.project.contains(search))
+        entries_query = entries_query.filter(TimeEntry.description.contains(search) |
+                                         TimeEntry.project.contains(search))
+                                         
+    if client_id:
+        entries_query = entries_query.join(Opdracht, TimeEntry.opdracht_id == Opdracht.id)\
+                                    .filter(Opdracht.klant_id == int(client_id))
+                                    
+    if opdracht_id:
+        entries_query = entries_query.filter(TimeEntry.opdracht_id == int(opdracht_id))
+    
     entries = entries_query.order_by(TimeEntry.date.desc()).all()
     
-    # Debug logging
-    app.logger.debug(f"Found {len(entries)} time entries for user {current_user.id}")
+    return render_template('time_entries.html', 
+                           entries=entries, 
+                           search=search,
+                           client_id=client_id,
+                           opdracht_id=opdracht_id,
+                           clients=clients,
+                           opdrachten=opdrachten,
+                           datetime=datetime,
+                           from_dashboard=from_dashboard,
+                           new=new)
     
-    # Check if user came from dashboard
-    from_dashboard = request.args.get('from_dashboard') == 'true'
-    
-    # Check if we need to edit a specific entry
-    edit_entry_id = request.args.get('edit')
-    show_edit_modal = None
-    if edit_entry_id:
-        try:
-            show_edit_modal = int(edit_entry_id)
-        except ValueError:
-            pass
-    
-    return render_template('time_entries.html', entries=entries, search=search, 
-                          from_dashboard=from_dashboard, datetime=datetime,
-                          show_edit_modal=show_edit_modal)
-
 @app.route('/time-entries/<int:entry_id>/edit', methods=['POST'])
 @login_required
 def edit_time_entry(entry_id):
     entry = TimeEntry.query.get_or_404(entry_id)
-    if entry.user_id != current_user.id:
-        flash('Unauthorized access', 'danger')
-        return redirect(url_for('time_entries'))
-
-    try:
-        # Get the local date from the form without UTC conversion
-        local_date = datetime.strptime(request.form['date'], '%Y-%m-%d')
-        entry.date = local_date
-        entry.hours = float(request.form['hours'])
-        entry.description = request.form['description']
-        entry.project = request.form['project']
-        db.session.commit()
-        flash('Time entry updated successfully', 'success')
-        app.logger.info(f"Updated time entry {entry_id} for user {current_user.id}: date={local_date}, hours={request.form['hours']}")
-    except Exception as e:
-        db.session.rollback()
-        flash('Error updating time entry: ' + str(e), 'danger')
-        app.logger.error(f"Error updating time entry: {str(e)}")
-        app.logger.error(f"Form data: date={request.form.get('date')}, hours={request.form.get('hours')}, project={request.form.get('project')}")
-
-    # Redirect to dashboard if requested
-    if request.form.get('redirect_to_dashboard') == 'true':
-        return redirect(url_for('dashboard'))
     
-    return redirect(url_for('time_entries'))
+    # Check if this entry belongs to the current user
+    if entry.user_id != current_user.id and not current_user.can_edit_all():
+        flash('You do not have permission to edit this entry!', 'error')
+        return redirect(url_for('time_entries'))
+    
+    if request.method == 'POST':
+        date_str = request.form.get('date')
+        project = request.form.get('project')
+        hours = request.form.get('hours')
+        description = request.form.get('description')
+        opdracht_id_form = request.form.get('opdracht_id')
+        is_billable = 'is_billable' in request.form
+        
+        # Validate input
+        if not date_str or not project or not hours or not description:
+            flash('All fields are required!', 'error')
+            return redirect(url_for('time_entries', edit=entry_id))
+        
+        try:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+            hours_float = float(hours)
+        except ValueError:
+            flash('Invalid date or hours format!', 'error')
+            return redirect(url_for('time_entries', edit=entry_id))
+        
+        # Update the entry
+        entry.date = date_obj
+        entry.project = project
+        entry.hours = hours_float
+        entry.description = description
+        entry.is_billable = is_billable
+        
+        # Update assignment connection
+        old_opdracht_id = entry.opdracht_id
+        
+        if opdracht_id_form:
+            try:
+                new_opdracht_id = int(opdracht_id_form)
+                entry.opdracht_id = new_opdracht_id
+                
+                # Update hourly rate if assignment changed and entry is billable
+                if is_billable and (old_opdracht_id != new_opdracht_id):
+                    opdracht = Opdracht.query.get(new_opdracht_id)
+                    if opdracht and opdracht.uurtarief:
+                        entry.hourly_rate = opdracht.uurtarief
+            except ValueError:
+                flash('Invalid assignment selected', 'error')
+                return redirect(url_for('time_entries', edit=entry_id))
+        else:
+            entry.opdracht_id = None
+        
+        try:
+            db.session.commit()
+            flash('Time entry updated successfully!', 'success')
+        except:
+            db.session.rollback()
+            flash('Error updating time entry!', 'error')
+        
+        return redirect(url_for('time_entries'))
 
 @app.route('/time-entries/<int:entry_id>/delete')
 @login_required
@@ -811,29 +920,42 @@ def add_opdracht():
 @app.route('/check-in', methods=['POST'])
 @login_required
 def check_in():
-    # Create a check-in with the current local time, not UTC
-    # Get the local time first (already in UTC+2) and don't use model default
-    local_now = datetime.now()
-    
-    # Log the time details for debugging
-    app.logger.info(f"Current local time: {local_now}, Current UTC time: {datetime.utcnow()}")
-    
-    check_in = CheckIn(
-        user_id=current_user.id,
-        status=request.form['status'],
-        note=request.form.get('note'),
-        check_in_time=local_now  # Explicitly setting local time
-    )
-    db.session.add(check_in)
-    try:
+    """Record a check-in for the current user"""
+    if request.method == 'POST':
+        status = request.form.get('status')
+        note = request.form.get('note', '')
+        opdracht_id = request.form.get('opdracht_id') 
+        
+        if not status:
+            flash('Status is required!', 'error')
+            return redirect(url_for('dashboard'))
+        
+        # Use local time
+        local_now = datetime.now()
+        
+        # Create the check-in
+        check_in = CheckIn(
+            user_id=current_user.id,
+            status=status,
+            note=note,
+            check_in_time=local_now  # Explicitly setting local time
+        )
+        
+        # Link to assignment if provided
+        if opdracht_id:
+            try:
+                check_in.opdracht_id = int(opdracht_id)
+            except ValueError:
+                # Invalid assignment ID, just ignore it
+                pass
+                
+        db.session.add(check_in)
         db.session.commit()
         app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
-        flash('Status succesvol bijgewerkt', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Er is een fout opgetreden bij het bijwerken van je status', 'danger')
-        app.logger.error(f"Error during check-in: {str(e)}")
-
+        
+        flash('Check-in recorded!', 'success')
+        return redirect(url_for('dashboard'))
+        
     return redirect(url_for('dashboard'))
 
 @app.route('/check-in/<int:checkin_id>/delete')
@@ -873,52 +995,67 @@ def delete_check_in(checkin_id):
 @app.route('/check-in/<int:checkin_id>/edit', methods=['POST'])
 @login_required
 def edit_check_in(checkin_id):
-    app.logger.debug(f"Editing check-in {checkin_id}, form data: {request.form}")
+    """Edit an existing check-in"""
     check_in = CheckIn.query.get_or_404(checkin_id)
     if check_in.user_id != current_user.id:
         flash('Unauthorized access', 'danger')
         return redirect(url_for('dashboard'))
-
+    
     try:
-        # Validate required fields
-        if 'status' not in request.form:
-            raise ValueError("Status field is required")
-            
-        # Update fields
+        # Validate values
+        status = request.form.get('status')
+        if not status:
+            flash('Status is required!', 'error')
+            return redirect(url_for('dashboard'))
+        
+        # Update the basic fields
         check_in.status = request.form['status']
         check_in.note = request.form.get('note', '')
         
-        # Update check-in time if provided
+        # Update assignment
+        opdracht_id = request.form.get('opdracht_id')
+        if opdracht_id:
+            try:
+                check_in.opdracht_id = int(opdracht_id)
+            except ValueError:
+                # Invalid assignment ID, just ignore it
+                pass
+        else:
+            check_in.opdracht_id = None
+            
+        # Handle time updates
         if 'check_in_time' in request.form and request.form['check_in_time']:
             try:
-                # Get current date
+                # Get current date from the check-in time (preserve the date)
                 current_date = check_in.check_in_time.date()
-                # Parse time from form
+                
+                # Get the new time from the form
                 time_str = request.form['check_in_time']
-                hours, minutes = map(int, time_str.split(':'))
+                time_parts = time_str.split(':')
                 
-                # Create new datetime object with current date and new time
-                from datetime import datetime, time
-                new_time = time(hour=hours, minute=minutes)
-                new_datetime = datetime.combine(current_date, new_time)
+                if len(time_parts) != 2:
+                    raise ValueError("Invalid time format. Expected HH:MM.")
                 
-                # Store the time (it's already in UTC in the database)
+                hours = int(time_parts[0])
+                minutes = int(time_parts[1])
+                
+                # Create a new datetime with the current date and new time
+                new_datetime = datetime.combine(current_date, time(hours, minutes))
+                
+                # Update the check-in time
                 check_in.check_in_time = new_datetime
-                app.logger.debug(f"Updated check-in time to {new_datetime}")
-            except Exception as time_error:
-                app.logger.error(f"Error parsing time: {str(time_error)}")
-                raise ValueError(f"Invalid time format: {str(time_error)}")
-        
-        # Log what's being updated
+            except Exception as e:
+                flash(f'Invalid time format: {str(e)}', 'danger')
+                return redirect(url_for('dashboard'))
+                
+        db.session.commit()
         app.logger.debug(f"Updating check-in {checkin_id}: status={check_in.status}, note={check_in.note}, time={check_in.check_in_time}")
         
-        db.session.commit()
-        flash('Check-in bijgewerkt', 'success')
+        flash('Check-in updated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error updating check-in {checkin_id}: {str(e)}")
-        flash(f'Fout bij bijwerken check-in: {str(e)}', 'danger')
-
+        flash(f'Error updating check-in: {str(e)}', 'danger')
+        
     return redirect(url_for('dashboard'))
 
 @app.route('/pdf-export-guide')
@@ -1065,6 +1202,15 @@ def admin_set_user_role(user_id):
     
     flash(f'Gebruiker {user.username} heeft de rol: {role.name} toegewezen gekregen', 'success')
     return redirect(url_for('admin_users'))
+
+@app.route('/admin/get_roles_json')
+@login_required
+@admin_required
+def get_roles_json():
+    """Return all available roles in JSON format"""
+    roles = Role.query.all()
+    roles_data = [{'id': role.id, 'name': f"{role.name} - {role.description}" if role.description else role.name} for role in roles]
+    return jsonify({'roles': roles_data})
 
 @app.route('/admin/employee-time-entries', methods=['GET', 'POST'])
 @login_required

@@ -87,9 +87,11 @@ class CheckIn(db.Model):
     check_in_time = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(50), nullable=False)  # 'working', 'break', 'done'
     note = db.Column(db.String(200))
+    opdracht_id = db.Column(db.Integer, db.ForeignKey('opdracht.id'), nullable=True)  # Link to assignment/task
 
     __table_args__ = (
         Index('idx_check_in_user_date', 'user_id', 'check_in_time'),
+        Index('idx_check_in_opdracht', 'opdracht_id'),
     )
 
 class Klant(db.Model):
@@ -160,6 +162,8 @@ class Opdracht(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     werkzaamheden = db.relationship('Werkzaamheid', backref='opdracht', lazy=True)
     facturen = db.relationship('Factuur', backref='opdracht', lazy=True)
+    time_entries = db.relationship('TimeEntry', backref='opdracht', lazy=True)  # Link to time entries
+    check_ins = db.relationship('CheckIn', backref='opdracht', lazy=True)  # Link to check-ins
 
     __table_args__ = (
         Index('idx_opdracht_klant', 'klant_id'),
@@ -303,11 +307,13 @@ class TimeEntry(db.Model):
     is_billable = db.Column(db.Boolean, default=True)
     hourly_rate = db.Column(db.Float, nullable=True)  # For custom rates
     invoice_id = db.Column(db.Integer, db.ForeignKey('factuur.id'), nullable=True)  # Link to invoice if billed
+    opdracht_id = db.Column(db.Integer, db.ForeignKey('opdracht.id'), nullable=True)  # Link to assignment/task
 
     __table_args__ = (
         Index('idx_time_entry_user_date', 'user_id', 'date'),
         Index('idx_time_entry_project', 'project'),
         Index('idx_time_entry_invoice', 'invoice_id'),
+        Index('idx_time_entry_opdracht', 'opdracht_id'),
     )
     
     @classmethod
@@ -332,3 +338,18 @@ class TimeEntry(db.Model):
             query = query.filter(cls.project == project_name)
             
         return query.group_by(cls.project).all()
+    
+    @classmethod
+    def get_billable_hours_per_client(cls, client_id=None):
+        """Get billable hours per client through assignments"""
+        query = db.session.query(
+            Klant.bedrijfsnaam.label('client_name'),
+            func.sum(cls.hours).label('total_hours')
+        ).join(Opdracht, cls.opdracht_id == Opdracht.id) \
+         .join(Klant, Opdracht.klant_id == Klant.id) \
+         .filter(cls.is_billable == True)
+        
+        if client_id:
+            query = query.filter(Klant.id == client_id)
+            
+        return query.group_by(Klant.bedrijfsnaam).all()

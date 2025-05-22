@@ -2,6 +2,9 @@
 
 {% block content %}
 <div class="container">
+    <!-- Add meta tag with current user ID -->
+    <meta name="user-id" content="{{ current_user.id }}">
+    
     <div class="row mb-4">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -65,8 +68,8 @@
                                 </tr>
                                 
                                 <!-- Change Role Modal -->
-                                <div class="modal fade" id="changeRoleModal{{ user.id }}" tabindex="-1" aria-labelledby="changeRoleModalLabel{{ user.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
+                                <div class="modal fade stable-modal hidden-bootstrap-modal" id="changeRoleModal{{ user.id }}" tabindex="-1" aria-labelledby="changeRoleModalLabel{{ user.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="changeRoleModalLabel{{ user.id }}">
@@ -111,4 +114,71 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Prevent scroll wheel events from breaking modals
+function preventScrollOnModals() {
+    // Get all modals
+    const modals = document.querySelectorAll('.modal');
+    
+    // Add event listeners to modals to prevent scroll issues
+    modals.forEach(modal => {
+        // Prevent wheel events from propagating outside the modal
+        modal.addEventListener('wheel', function(e) {
+            const modalBody = this.querySelector('.modal-body');
+            if (modalBody) {
+                const { scrollTop, scrollHeight, clientHeight } = modalBody;
+                // If at top and scrolling up or at bottom and scrolling down
+                if ((scrollTop === 0 && e.deltaY < 0) || 
+                    (scrollTop + clientHeight >= scrollHeight && e.deltaY > 0)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        }, { passive: false });
+        
+        // When modal opens, focus on it to ensure keyboard events go to the modal
+        modal.addEventListener('shown.bs.modal', function() {
+            this.focus();
+        });
+    });
+    
+    // We use custom modals now, so this is not needed
+    // Ensure all role change buttons open stable modals
+    /* 
+    document.querySelectorAll('[data-bs-toggle="modal"]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Delay to allow modal to open
+            setTimeout(() => {
+                if (document.querySelector('.modal.show')) {
+                    document.body.style.overflow = 'hidden';
+                }
+            }, 100);
+        });
+    });
+    */
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Apply modal scroll fix
+    preventScrollOnModals();
+    
+    // Add stable-modal class to all modals
+    document.querySelectorAll('.modal').forEach(modal => {
+        if (!modal.classList.contains('stable-modal')) {
+            modal.classList.add('stable-modal');
+        }
+    });
+});
+</script>
+
+<!-- Add our custom admin-modals.js -->
+<script src="{{ url_for('static', filename='js/admin-modals.js') }}"></script>
 {% endblock %} 
