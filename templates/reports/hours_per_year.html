@@ -43,52 +43,101 @@
     </div>
 
     <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow">
+        <div class="col-md-7">
+            <div class="card shadow mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0"><span data-translate="Uren per medewerker">Uren per medewerker</span></h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <canvas id="employeeHoursChart" height="300"></canvas>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th><span data-translate="Medewerker">Medewerker</span></th>
-                                            <th class="text-end"><span data-translate="Uren">Uren</span></th>
-                                            <th class="text-end"><span data-translate="Percentage">Percentage</span></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% if employee_hours %}
-                                            {% for employee in employee_hours %}
-                                            <tr>
-                                                <td>{{ employee.voornaam }} {{ employee.achternaam }}</td>
-                                                <td class="text-end">{{ "%.1f"|format(employee.aantal_uren) }}</td>
-                                                <td class="text-end">
-                                                    {% if total_hours > 0 %}
-                                                    {{ "%.1f"|format((employee.aantal_uren / total_hours) * 100) }}%
-                                                    {% else %}
-                                                    0.0%
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        {% else %}
-                                            <tr>
-                                                <td colspan="3" class="text-center py-4">
-                                                    <p class="mb-0 text-muted"><span data-translate="Geen gegevens beschikbaar">Geen gegevens beschikbaar</span></p>
-                                                </td>
-                                            </tr>
-                                        {% endif %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <canvas id="employeeHoursChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><span data-translate="Uren per categorie">Uren per categorie</span></h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i data-feather="filter" class="feather-sm"></i> <span data-translate="Filter">Filter</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+                            <li><h6 class="dropdown-header" data-translate="Weergave">Weergave</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('report_hours_per_year', year=selected_year, view='all') }}"><span data-translate="Alle uren">Alle uren</span></a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('report_hours_per_year', year=selected_year, view='billable') }}"><span data-translate="Alleen declarabele uren">Alleen declarabele uren</span></a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('report_hours_per_year', year=selected_year, view='non-billable') }}"><span data-translate="Alleen niet-declarabele uren">Alleen niet-declarabele uren</span></a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header" data-translate="Periode">Periode</h6></li>
+                            {% set quarters = [('Q1', 'Eerste kwartaal'), ('Q2', 'Tweede kwartaal'), ('Q3', 'Derde kwartaal'), ('Q4', 'Vierde kwartaal')] %}
+                            {% for q_code, q_name in quarters %}
+                            <li><a class="dropdown-item" href="{{ url_for('report_hours_per_year', year=selected_year, quarter=q_code) }}"><span data-translate="{{ q_name }}">{{ q_name }}</span></a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="hoursTypeChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><span data-translate="Gedetailleerde urenlijst per medewerker">Gedetailleerde urenlijst per medewerker</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><span data-translate="Medewerker">Medewerker</span></th>
+                                    <th class="text-center"><span data-translate="Totaal uren">Totaal uren</span></th>
+                                    <th class="text-center"><span data-translate="Declarabel">Declarabel</span></th>
+                                    <th class="text-center"><span data-translate="Niet-declarabel">Niet-declarabel</span></th>
+                                    <th class="text-center"><span data-translate="Percentage">Percentage</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if employee_hours %}
+                                    {% for employee in employee_hours %}
+                                    <tr>
+                                        <td>{{ employee.voornaam }} {{ employee.achternaam }}</td>
+                                        <td class="text-center">{{ "%.1f"|format(employee.aantal_uren) }}</td>
+                                        <td class="text-center">
+                                            {% if employee.declarabele_uren is defined %}
+                                                {{ "%.1f"|format(employee.declarabele_uren) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if employee.niet_declarabele_uren is defined %}
+                                                {{ "%.1f"|format(employee.niet_declarabele_uren) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if total_hours > 0 %}
+                                            {{ "%.1f"|format((employee.aantal_uren / total_hours) * 100) }}%
+                                            {% else %}
+                                            0.0%
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <p class="mb-0 text-muted"><span data-translate="Geen gegevens beschikbaar">Geen gegevens beschikbaar</span></p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -130,25 +179,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize feather icons
+        // Set up feather icons
         feather.replace();
         
-        // Define chart colors
+        // Prepare chart colors
         const chartColors = [
-            '#0d6efd', // primary
-            '#198754', // success
-            '#dc3545', // danger
-            '#ffc107', // warning
-            '#0dcaf0', // info
-            '#6f42c1', // purple
-            '#fd7e14', // orange
-            '#20c997', // teal
-            '#6610f2', // indigo
-            '#d63384', // pink
+            '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', 
+            '#ffc107', '#198754', '#20c997', '#0dcaf0', '#6c757d', '#343a40'
         ];
         
-        // Month labels for charts
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        // Prepare monthly data
+        const months = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
         
         // Create monthly hours chart
         const hoursCtx = document.getElementById('monthlyHoursChart').getContext('2d');
@@ -202,38 +243,71 @@
         // Create employee hours chart
         const employeeCtx = document.getElementById('employeeHoursChart').getContext('2d');
         const employeeChart = new Chart(employeeCtx, {
-            type: 'pie',
+            type: 'bar',
             data: {
                 labels: employeeNames,
                 datasets: [{
+                    label: 'Uren per medewerker',
                     data: employeeHours,
                     backgroundColor: employeeColors,
-                    borderColor: '#fff',
+                    borderColor: employeeColors,
                     borderWidth: 1
                 }]
             },
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value.toFixed(1)} uren (${percentage}%)`;
-                            }
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Uren'
                         }
                     }
                 }
             }
         });
         {% endif %}
+        
+        // Create hours type chart
+        const typeCtx = document.getElementById('hoursTypeChart').getContext('2d');
+        const typeData = {
+            labels: ['Declarabel', 'Niet-declarabel'],
+            datasets: [{
+                data: [
+                    {{ billable_hours|default(0) }},
+                    {{ total_hours - billable_hours|default(0) }}
+                ],
+                backgroundColor: ['#198754', '#6c757d'],
+                hoverOffset: 4
+            }]
+        };
+        
+        const typeChart = new Chart(typeCtx, {
+            type: 'pie',
+            data: typeData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

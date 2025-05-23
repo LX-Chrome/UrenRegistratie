@@ -12,24 +12,26 @@
     
     // Function to clean up any modal-related artifacts
     function cleanupModalArtifacts() {
-        // Remove any modal backdrops
-        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-            console.log("Removing stray modal backdrop");
-            backdrop.remove();
-        });
-        
-        // Remove modal-open class from body
-        if (document.body.classList.contains('modal-open')) {
-            console.log("Removing modal-open class from body");
-            document.body.classList.remove('modal-open');
+        // Only remove orphaned backdrops (ones without an active modal)
+        const activeModals = document.querySelectorAll('.modal.show');
+        if (activeModals.length === 0) {
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                console.log("Removing stray modal backdrop");
+                backdrop.remove();
+            });
+            
+            // Remove modal-open class from body only if no modal is active
+            if (document.body.classList.contains('modal-open')) {
+                console.log("Removing modal-open class from body");
+                document.body.classList.remove('modal-open');
+            }
+            
+            // Reset body styles only when no modal is active
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
         }
         
-        // Get saved scroll position
-        const scrollY = window.modalScrollY || 0;
-        
-        // Reset inline styles that Bootstrap might have added
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
+        // These should always be reset to avoid position:fixed issues
         document.body.style.position = '';
         document.body.style.width = '';
         document.body.style.height = '';
@@ -37,19 +39,13 @@
         
         // Restore scroll position if body was fixed
         if (document.body.style.position === 'fixed') {
+            const scrollY = window.modalScrollY || 0;
             window.scrollTo(0, scrollY);
         }
         
         // Ensure all hidden modals stay hidden
-        document.querySelectorAll('.hidden-bootstrap-modal').forEach(modal => {
+        document.querySelectorAll('.modal:not(.show)').forEach(modal => {
             modal.style.display = 'none';
-            modal.style.visibility = 'hidden';
-            modal.style.opacity = '0';
-            modal.style.pointerEvents = 'none';
-            modal.classList.remove('show');
-            
-            // Remove any inline styles that Bootstrap might have added
-            modal.style.paddingRight = '';
         });
     }
     
@@ -60,42 +56,28 @@
         cleanupModalArtifacts();
     }
     
-    // Also run cleanup when window loads and after a short delay
+    // Also run cleanup when window loads
     window.addEventListener('load', cleanupModalArtifacts);
-    setTimeout(cleanupModalArtifacts, 300);
+    
+    // Run cleanup with delay only once to avoid potential conflicts
     setTimeout(cleanupModalArtifacts, 1000);
     
     // Monitor for modal events
     document.addEventListener('click', function(e) {
         // If a data-bs-dismiss="modal" element is clicked, run cleanup
         if (e.target.getAttribute('data-bs-dismiss') === 'modal') {
-            setTimeout(cleanupModalArtifacts, 50);
+            setTimeout(cleanupModalArtifacts, 100);
         }
-    }, true);
+    });
     
     // Handle any "shown.bs.modal" events
     document.addEventListener('shown.bs.modal', function(e) {
-        console.log("Modal shown event detected, checking if it's one we want to suppress");
-        const modal = e.target;
-        
-        if (modal.classList.contains('hidden-bootstrap-modal')) {
-            console.log("Suppressing unwanted modal:", modal.id);
-            
-            // Get any associated Bootstrap modal instance
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                try {
-                    const bootstrapModal = bootstrap.Modal.getInstance(modal);
-                    if (bootstrapModal) {
-                        console.log("Hiding Bootstrap modal instance");
-                        bootstrapModal.hide();
-                    }
-                } catch (err) {
-                    console.error("Error trying to hide modal:", err);
-                }
-            }
-            
-            // Force cleanup
-            setTimeout(cleanupModalArtifacts, 50);
-        }
+        console.log("Modal shown event detected");
+    });
+    
+    // Handle modal hidden events
+    document.addEventListener('hidden.bs.modal', function(e) {
+        console.log("Modal hidden event detected");
+        setTimeout(cleanupModalArtifacts, 100);
     });
 })(); 

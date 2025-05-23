@@ -1,0 +1,68 @@
+/* 
+ * Icon Optimizations CSS
+ * This file contains optimizations for Feather icons to prevent flickering and improve loading
+ */
+
+/* Reserve space for icons to prevent layout shifts */
+[data-feather] {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* For small icons */
+.feather-sm[data-feather] {
+    width: 18px;
+    height: 18px;
+}
+
+/* Set fixed dimensions for specific icons to prevent layout shifts */
+[data-feather="home"],
+[data-feather="clock"],
+[data-feather="users"],
+[data-feather="user"],
+[data-feather="briefcase"],
+[data-feather="file-text"],
+[data-feather="bar-chart-2"],
+[data-feather="shield"],
+[data-feather="moon"],
+[data-feather="sun"],
+[data-feather="log-out"],
+[data-feather="filter"] {
+    width: 24px;
+    height: 24px;
+}
+
+/* Show a placeholder shape until the icon loads */
+[data-feather]:not(.feather) {
+    position: relative;
+}
+
+[data-feather]:not(.feather)::before {
+    content: "";
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    opacity: 0.2;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Apply smooth transitions to icons */
+.feather {
+    transition: all 0.2s ease;
+}
+
+/* Optimize rendering performance */
+.feather {
+    will-change: transform;
+    transform: translateZ(0);
+} 

@@ -567,7 +567,13 @@ function translatePage() {
     
     // Re-init Feather icons after translation to ensure they render properly
     if (typeof feather !== 'undefined') {
-        feather.replace();
+        // Use the optimized feather initialization if available
+        if (typeof initializeFeather === 'function') {
+            initializeFeather();
+        } else {
+            // Fallback to direct call if optimization not available
+            feather.replace();
+        }
     }
 }
 

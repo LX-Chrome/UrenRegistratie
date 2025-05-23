@@ -26,47 +26,114 @@ def reports_dashboard():
 def report_hours_per_year():
     """Report for hours worked per year"""
     selected_year = request.args.get('year', datetime.now().year, type=int)
+    quarter = request.args.get('quarter', None)
+    view_type = request.args.get('view', 'all')
     
     # Get hours by sources for the selected year
     try:
+        # Define start and end dates based on selected quarter
+        start_date = datetime(selected_year, 1, 1)
+        end_date = datetime(selected_year, 12, 31, 23, 59, 59)
+        
+        # Apply quarter filtering if specified
+        if quarter:
+            if quarter == 'Q1':
+                start_date = datetime(selected_year, 1, 1)
+                end_date = datetime(selected_year, 3, 31, 23, 59, 59)
+            elif quarter == 'Q2':
+                start_date = datetime(selected_year, 4, 1)
+                end_date = datetime(selected_year, 6, 30, 23, 59, 59)
+            elif quarter == 'Q3':
+                start_date = datetime(selected_year, 7, 1)
+                end_date = datetime(selected_year, 9, 30, 23, 59, 59)
+            elif quarter == 'Q4':
+                start_date = datetime(selected_year, 10, 1)
+                end_date = datetime(selected_year, 12, 31, 23, 59, 59)
+        
         # From Werkzaamheid
-        werkzaamheid_hours = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
-            .filter(func.extract('year', Werkzaamheid.datum) == selected_year) \
-            .scalar() or 0
+        werkzaamheid_query = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
+            .filter(Werkzaamheid.datum >= start_date, 
+                   Werkzaamheid.datum <= end_date)
+                   
+        # Apply billable filter
+        if view_type == 'billable':
+            werkzaamheid_query = werkzaamheid_query.filter(Werkzaamheid.is_declarabel == True)
+        elif view_type == 'non-billable':
+            werkzaamheid_query = werkzaamheid_query.filter(Werkzaamheid.is_declarabel == False)
+            
+        werkzaamheid_hours = werkzaamheid_query.scalar() or 0
         
         # From TimeEntry
-        time_entry_hours = db.session.query(func.sum(TimeEntry.hours)) \
-            .filter(func.extract('year', TimeEntry.date) == selected_year) \
-            .scalar() or 0
+        time_entry_query = db.session.query(func.sum(TimeEntry.hours)) \
+            .filter(TimeEntry.date >= start_date,
+                   TimeEntry.date <= end_date)
+        
+        # Apply billable filter
+        if view_type == 'billable':
+            time_entry_query = time_entry_query.filter(TimeEntry.is_billable == True)
+        elif view_type == 'non-billable':
+            time_entry_query = time_entry_query.filter(TimeEntry.is_billable == False)
+            
+        time_entry_hours = time_entry_query.scalar() or 0
         
         # Calculate billable hours percentage
-        billable_hours = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
-            .filter(func.extract('year', Werkzaamheid.datum) == selected_year) \
-            .filter(Werkzaamheid.is_declarabel == True) \
+        billable_hours_query = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
+            .filter(Werkzaamheid.datum >= start_date, 
+                   Werkzaamheid.datum <= end_date,
+                   Werkzaamheid.is_declarabel == True)
+                  
+        billable_hours = billable_hours_query.scalar() or 0
+        
+        # Add billable hours from TimeEntry
+        billable_time_entry_hours = db.session.query(func.sum(TimeEntry.hours)) \
+            .filter(TimeEntry.date >= start_date,
+                   TimeEntry.date <= end_date,
+                   TimeEntry.is_billable == True) \
             .scalar() or 0
+            
+        billable_hours += billable_time_entry_hours
         
         total_hours = time_entry_hours + werkzaamheid_hours
     except Exception as e:
         app.logger.error(f"Error getting hours: {str(e)}")
         total_hours = 0
+        billable_hours = 0
     
     # Get hours per month for the selected year
     monthly_hours_time_entries = db.session.query(
         extract('month', TimeEntry.date).label('month'),
         func.sum(TimeEntry.hours).label('hours')
     ).filter(
-        extract('year', TimeEntry.date) == selected_year
-    ).group_by('month').all()
+        TimeEntry.date >= start_date,
+        TimeEntry.date <= end_date
+    )
+    
+    # Apply billable filter
+    if view_type == 'billable':
+        monthly_hours_time_entries = monthly_hours_time_entries.filter(TimeEntry.is_billable == True)
+    elif view_type == 'non-billable':
+        monthly_hours_time_entries = monthly_hours_time_entries.filter(TimeEntry.is_billable == False)
+    
+    monthly_hours_time_entries = monthly_hours_time_entries.group_by('month').all()
     
     monthly_hours_werkzaamheden = db.session.query(
         extract('month', Werkzaamheid.datum).label('month'),
         func.sum(Werkzaamheid.aantal_uren).label('hours')
     ).filter(
-        extract('year', Werkzaamheid.datum) == selected_year
-    ).group_by('month').all()
+        Werkzaamheid.datum >= start_date,
+        Werkzaamheid.datum <= end_date
+    )
+    
+    # Apply billable filter
+    if view_type == 'billable':
+        monthly_hours_werkzaamheden = monthly_hours_werkzaamheden.filter(Werkzaamheid.is_declarabel == True)
+    elif view_type == 'non-billable':
+        monthly_hours_werkzaamheden = monthly_hours_werkzaamheden.filter(Werkzaamheid.is_declarabel == False)
+    
+    monthly_hours_werkzaamheden = monthly_hours_werkzaamheden.group_by('month').all()
     
     # Combine both sources into a single monthly view
-    months = [0] * 12  # Initialize with zeros
+    months = [0] * 12
     
     for month, hours in monthly_hours_time_entries:
         months[int(month)-1] += float(hours)
@@ -74,8 +141,12 @@ def report_hours_per_year():
     for month, hours in monthly_hours_werkzaamheden:
         months[int(month)-1] += float(hours)
     
-    # Get hours per employee
-    employee_hours = Werkzaamheid.get_uren_per_medewerker(selected_year)
+    # Get hours per employee with billable/non-billable split
+    employee_hours = Werkzaamheid.get_uren_per_medewerker(
+        selected_year, 
+        quarter=quarter,
+        view_type=view_type
+    )
     
     # Get available years from TimeEntry
     try:
@@ -107,15 +178,19 @@ def report_hours_per_year():
     if not te_years and not w_years:
         years = [datetime.now().year]
     else:
-        years = te_years + w_years
+        years = list(set(te_years + w_years))
+        years.sort(reverse=True)
     
     return render_template(
         'reports/hours_per_year.html',
         selected_year=selected_year,
         years=years,
         total_hours=total_hours,
+        billable_hours=billable_hours,
         monthly_hours=months,
-        employee_hours=employee_hours
+        employee_hours=employee_hours,
+        quarter=quarter,
+        view_type=view_type
     )
 
 @app.route('/reports/assignments-per-client')
@@ -202,9 +277,37 @@ def report_assignments_per_client():
 def report_annual_revenue():
     """Report for annual revenue"""
     selected_year = request.args.get('year', datetime.now().year, type=int)
+    quarter = request.args.get('quarter', None)
+    sort_by = request.args.get('sort', 'revenue')
     
-    # Get total revenue for the selected year
-    total_revenue = Factuur.get_jaaropbrengst(selected_year)
+    # Define start and end dates based on selected quarter
+    start_date = datetime(selected_year, 1, 1)
+    end_date = datetime(selected_year, 12, 31, 23, 59, 59)
+    
+    # Apply quarter filtering if specified
+    if quarter:
+        if quarter == 'Q1':
+            start_date = datetime(selected_year, 1, 1)
+            end_date = datetime(selected_year, 3, 31, 23, 59, 59)
+        elif quarter == 'Q2':
+            start_date = datetime(selected_year, 4, 1)
+            end_date = datetime(selected_year, 6, 30, 23, 59, 59)
+        elif quarter == 'Q3':
+            start_date = datetime(selected_year, 7, 1)
+            end_date = datetime(selected_year, 9, 30, 23, 59, 59)
+        elif quarter == 'Q4':
+            start_date = datetime(selected_year, 10, 1)
+            end_date = datetime(selected_year, 12, 31, 23, 59, 59)
+    
+    # Get total revenue for the selected year and date range
+    total_revenue_query = db.session.query(func.sum(Factuur.totaal)) \
+        .filter(
+            Factuur.datum >= start_date,
+            Factuur.datum <= end_date,
+            Factuur.betaald == True
+        )
+        
+    total_revenue = total_revenue_query.scalar() or 0
     
     # Get monthly revenue for the selected year
     try:
@@ -212,7 +315,8 @@ def report_annual_revenue():
             func.strftime('%m', Factuur.datum).label('month'),  # Use strftime instead of extract
             func.sum(Factuur.totaal).label('revenue')
         ).filter(
-            func.strftime('%Y', Factuur.datum) == str(selected_year),  # Use strftime instead of extract
+            Factuur.datum >= start_date,
+            Factuur.datum <= end_date,
             Factuur.betaald == True
         ).group_by('month').all()
     except Exception as e:
@@ -224,9 +328,9 @@ def report_annual_revenue():
     for month, revenue in monthly_revenue:
         months[int(month)-1] = float(revenue)
     
-    # Get revenue per client for the selected year
+    # Get revenue per client for the selected year and date range
     try:
-        revenue_per_client = db.session.query(
+        revenue_per_client_query = db.session.query(
             Klant.bedrijfsnaam.label('klant_naam'),
             func.coalesce(func.count(Werkzaamheid.id), 0).label('aantal_werkzaamheden'),
             func.coalesce(func.sum(Werkzaamheid.aantal_uren), 0.0).label('totaal_uren'),
@@ -235,11 +339,23 @@ def report_annual_revenue():
             Factuur, Factuur.klant_id == Klant.id
         ).outerjoin(
             Werkzaamheid, (Werkzaamheid.klant_id == Klant.id) & 
-            (func.strftime('%Y', Werkzaamheid.datum) == str(selected_year))
+            (Werkzaamheid.datum >= start_date) & 
+            (Werkzaamheid.datum <= end_date)
         ).filter(
-            func.strftime('%Y', Factuur.datum) == str(selected_year),
+            Factuur.datum >= start_date,
+            Factuur.datum <= end_date,
             Factuur.betaald == True
-        ).group_by(Klant.bedrijfsnaam).all()
+        ).group_by(Klant.bedrijfsnaam)
+        
+        # Apply sorting
+        if sort_by == 'alpha':
+            revenue_per_client_query = revenue_per_client_query.order_by(Klant.bedrijfsnaam)
+        elif sort_by == 'hours':
+            revenue_per_client_query = revenue_per_client_query.order_by(desc('totaal_uren'))
+        else:  # default to revenue
+            revenue_per_client_query = revenue_per_client_query.order_by(desc('totaal_opbrengst'))
+            
+        revenue_per_client = revenue_per_client_query.all()
     except Exception as e:
         app.logger.error(f"Error getting revenue per client: {str(e)}")
         revenue_per_client = []
@@ -267,7 +383,9 @@ def report_annual_revenue():
         years=years,
         total_revenue=total_revenue,
         monthly_revenue=months,
-        revenue_per_client=revenue_per_client
+        revenue_per_client=revenue_per_client,
+        quarter=quarter,
+        sort_by=sort_by
     )
 
 @app.route('/api/reports/dashboard-stats')

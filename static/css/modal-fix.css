@@ -1,1 +1,82 @@
- 
+/**
+ * Modal Fix - Prevents modal glitching by disabling animations and scroll interactions
+ */
+
+/* Disable all animations and transitions */
+.modal,
+.modal.fade,
+.modal-dialog,
+.modal-content {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    position: fixed;
+}
+
+/* Fix modal position */
+.modal {
+    display: block;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden !important;
+    outline: 0;
+    padding-right: 0 !important; /* Prevent content shift */
+}
+
+/* Stabilize modal dialog */
+.modal-dialog {
+    margin: 1.75rem auto !important;
+    position: relative;
+}
+
+/* Body scroll lock */
+body.modal-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Ensure backdrop covers entire screen */
+.modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1040 !important;
+}
+
+/* Fix animation issues */
+.fade {
+    transition: opacity .15s linear !important;
+    transform: none !important;
+}
+
+.fade.show {
+    opacity: 1 !important;
+}
+
+/* Prevent pointer events issues */
+.modal-content, 
+.modal-header, 
+.modal-body, 
+.modal-footer,
+.modal button,
+.modal select,
+.modal input {
+    pointer-events: auto !important;
+}
+
+/* Fix positioning for iOS Safari */
+@supports (-webkit-overflow-scrolling: touch) {
+    body.modal-open {
+        position: absolute !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        touch-action: none !important;
+    }
+} 

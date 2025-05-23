@@ -94,6 +94,42 @@
                         <h5 class="mb-0"><span data-translate="Factuuritems">Factuuritems</span></h5>
                     </div>
                     <div class="card-body">
+                        <!-- Filter controls -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6><span data-translate="Filters">Filters</span></h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4 col-sm-12">
+                                        <label for="filter_client" class="form-label"><span data-translate="Filter op klant">Filter op klant</span></label>
+                                        <select class="form-select" id="filter_client">
+                                            <option value="all" selected>Alle klanten</option>
+                                            {% for klant in klanten %}
+                                            <option value="{{ klant.id }}">{{ klant.bedrijfsnaam }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 col-sm-12">
+                                        <label for="filter_assignment" class="form-label"><span data-translate="Filter op opdracht">Filter op opdracht</span></label>
+                                        <select class="form-select" id="filter_assignment">
+                                            <option value="all" selected>Alle opdrachten</option>
+                                            {% for opdracht in opdrachten %}
+                                            <option value="{{ opdracht.id }}">{{ opdracht.titel }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 col-sm-12">
+                                        <label for="filter_employee" class="form-label"><span data-translate="Filter op medewerker">Filter op medewerker</span></label>
+                                        <select class="form-select" id="filter_employee">
+                                            <option value="all" selected>Alle medewerkers</option>
+                                            {% for medewerker in medewerkers %}
+                                            <option value="{{ medewerker.id }}">{{ medewerker.voornaam }} {{ medewerker.achternaam }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Werkzaamheden tab -->
                         <div class="mb-4">
                             <h6><span data-translate="Werkzaamheden">Werkzaamheden</span></h6>
@@ -101,7 +137,11 @@
                                 <table class="table table-sm table-hover" id="werkzaamhedenTable">
                                     <thead>
                                         <tr>
-                                            <th width="5%"></th>
+                                            <th width="5%">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="selectAllWerkzaamheden">
+                                                </div>
+                                            </th>
                                             <th><span data-translate="Omschrijving">Omschrijving</span></th>
                                             <th class="d-none d-md-table-cell"><span data-translate="Medewerker">Medewerker</span></th>
                                             <th><span data-translate="Datum">Datum</span></th>
@@ -119,7 +159,10 @@
                                                            name="werkzaamheid_ids" value="{{ w.id }}" id="werkzaamheid_{{ w.id }}"
                                                            {% if factuur and w.factuur_id == factuur.id %}checked{% endif %}
                                                            data-uren="{{ w.aantal_uren }}"
-                                                           data-tarief="{{ w.uurtarief_override or w.opdracht.uurtarief or 0 }}">
+                                                           data-tarief="{{ w.uurtarief_override or w.opdracht.uurtarief or 0 }}"
+                                                           data-client-id="{{ w.opdracht.klant_id }}"
+                                                           data-opdracht-id="{{ w.opdracht_id }}"
+                                                           data-medewerker-id="{{ w.medewerker_id }}">
                                                 </div>
                                             </td>
                                             <td class="text-truncate" style="max-width: 150px;">{{ w.omschrijving }}</td>
@@ -147,12 +190,19 @@
                                         </tr>
                                         {% endfor %}
                                         {% if not werkzaamheden %}
-                                        <tr>
+                                        <tr id="werkzaamheden-no-results">
                                             <td colspan="7" class="text-center py-3">
                                                 <span class="text-muted"><span data-translate="Geen declarabele werkzaamheden beschikbaar">Geen declarabele werkzaamheden beschikbaar</span></span>
                                             </td>
                                         </tr>
                                         {% endif %}
+                                        
+                                        <!-- This row will be shown when all data is filtered out -->
+                                        <tr id="werkzaamheden-all-filtered" style="display:none;">
+                                            <td colspan="7" class="text-center py-3">
+                                                <span class="text-muted"><span data-translate="Geen werkzaamheden gevonden met de geselecteerde filters">Geen werkzaamheden gevonden met de geselecteerde filters</span></span>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -165,7 +215,11 @@
                                 <table class="table table-sm table-hover" id="timeEntriesTable">
                                     <thead>
                                         <tr>
-                                            <th width="5%"></th>
+                                            <th width="5%">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="selectAllTimeEntries">
+                                                </div>
+                                            </th>
                                             <th><span data-translate="Omschrijving">Omschrijving</span></th>
                                             <th class="d-none d-md-table-cell"><span data-translate="Project">Project</span></th>
                                             <th><span data-translate="Datum">Datum</span></th>
@@ -183,7 +237,10 @@
                                                            name="time_entry_ids" value="{{ te.id }}" id="time_entry_{{ te.id }}"
                                                            {% if factuur and te.invoice_id == factuur.id %}checked{% endif %}
                                                            data-uren="{{ te.hours }}"
-                                                           data-tarief="{{ te.hourly_rate or 0 }}">
+                                                           data-tarief="{{ te.hourly_rate or 0 }}"
+                                                           data-client-id="{{ te.opdracht.klant_id if te.opdracht else '' }}"
+                                                           data-opdracht-id="{{ te.opdracht_id if te.opdracht else '' }}"
+                                                           data-user-id="{{ te.user_id }}">
                                                 </div>
                                             </td>
                                             <td>{{ te.description }}</td>
@@ -207,12 +264,19 @@
                                         </tr>
                                         {% endfor %}
                                         {% if not time_entries %}
-                                        <tr>
+                                        <tr id="time-entries-no-results">
                                             <td colspan="7" class="text-center py-3">
                                                 <span class="text-muted"><span data-translate="Geen declarabele tijdsregistraties beschikbaar">Geen declarabele tijdsregistraties beschikbaar</span></span>
                                             </td>
                                         </tr>
                                         {% endif %}
+                                        
+                                        <!-- This row will be shown when all data is filtered out -->
+                                        <tr id="time-entries-all-filtered" style="display:none;">
+                                            <td colspan="7" class="text-center py-3">
+                                                <span class="text-muted"><span data-translate="Geen tijdsregistraties gevonden met de geselecteerde filters">Geen tijdsregistraties gevonden met de geselecteerde filters</span></span>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -458,6 +522,242 @@
             }
             form.classList.add('was-validated');
         });
+
+        // =========== FILTERING FUNCTIONALITY ===========
+        
+        // Get filter elements
+        const filterClient = document.getElementById('filter_client');
+        const filterAssignment = document.getElementById('filter_assignment');
+        const filterEmployee = document.getElementById('filter_employee');
+        
+        // Apply filters to werkzaamheden rows
+        function applyFiltersToWerkzaamheden() {
+            const clientId = filterClient.value;
+            const assignmentId = filterAssignment.value;
+            const employeeId = filterEmployee.value;
+            
+            console.log('Applying filters:', {clientId, assignmentId, employeeId});
+            
+            // Get all werkzaamheden rows
+            const rows = document.querySelectorAll('#werkzaamhedenTable tbody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                // Skip message rows (those with colspan)
+                if (row.querySelector('td[colspan]')) {
+                    return;
+                }
+                
+                const checkbox = row.querySelector('.werkzaamheid-check');
+                if (!checkbox) return;
+                
+                // Get data attributes added to checkboxes
+                const rowClientId = checkbox.getAttribute('data-client-id');
+                const rowAssignmentId = checkbox.getAttribute('data-opdracht-id');
+                const rowEmployeeId = checkbox.getAttribute('data-medewerker-id');
+                
+                // Apply filters (show if all filters match or if filter is "all")
+                const clientMatch = clientId === 'all' || rowClientId === clientId;
+                const assignmentMatch = assignmentId === 'all' || rowAssignmentId === assignmentId;
+                const employeeMatch = employeeId === 'all' || rowEmployeeId === employeeId;
+                
+                // Show or hide based on filter matches
+                if (clientMatch && assignmentMatch && employeeMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // If no visible rows, show a message
+            const noResultsRow = document.getElementById('werkzaamheden-no-results');
+            const allDataHiddenRow = document.getElementById('werkzaamheden-all-filtered');
+            
+            if (noResultsRow) {
+                noResultsRow.style.display = (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) ? '' : 'none';
+            }
+            
+            if (allDataHiddenRow) {
+                allDataHiddenRow.style.display = (rows.length > 0 && visibleCount === 0) ? '' : 'none';
+            }
+        }
+        
+        // Apply filters to time entries rows
+        function applyFiltersToTimeEntries() {
+            const clientId = filterClient.value;
+            const assignmentId = filterAssignment.value;
+            const employeeId = filterEmployee.value;
+            
+            // Get all time entry rows
+            const rows = document.querySelectorAll('#timeEntriesTable tbody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                // Skip message rows (those with colspan)
+                if (row.querySelector('td[colspan]')) {
+                    return;
+                }
+                
+                const checkbox = row.querySelector('.time-entry-check');
+                if (!checkbox) return;
+                
+                // Get data attributes added to checkboxes
+                const rowClientId = checkbox.getAttribute('data-client-id');
+                const rowAssignmentId = checkbox.getAttribute('data-opdracht-id');
+                const rowEmployeeId = checkbox.getAttribute('data-user-id');
+                
+                // Apply filters (show if all filters match or if filter is "all")
+                const clientMatch = clientId === 'all' || rowClientId === clientId;
+                const assignmentMatch = assignmentId === 'all' || rowAssignmentId === assignmentId;
+                const employeeMatch = employeeId === 'all' || rowEmployeeId === employeeId;
+                
+                // Show or hide based on filter matches
+                if (clientMatch && assignmentMatch && employeeMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // If no visible rows, show a message
+            const noResultsRow = document.getElementById('time-entries-no-results');
+            const allDataHiddenRow = document.getElementById('time-entries-all-filtered');
+            
+            if (noResultsRow) {
+                noResultsRow.style.display = (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) ? '' : 'none';
+            }
+            
+            if (allDataHiddenRow) {
+                allDataHiddenRow.style.display = (rows.length > 0 && visibleCount === 0) ? '' : 'none';
+            }
+        }
+        
+        // Apply all filters
+        function applyAllFilters() {
+            applyFiltersToWerkzaamheden();
+            applyFiltersToTimeEntries();
+        }
+        
+        // Add event listeners to filter elements
+        if (filterClient) filterClient.addEventListener('change', applyAllFilters);
+        if (filterAssignment) filterAssignment.addEventListener('change', applyAllFilters);
+        if (filterEmployee) filterEmployee.addEventListener('change', applyAllFilters);
+        
+        // Initialize filters
+        applyAllFilters();
+        
+        // Dynamically filter opdrachten based on selected klant
+        filterClient.addEventListener('change', function() {
+            const clientId = this.value;
+            const opdrachtenSelect = document.getElementById('filter_assignment');
+            
+            // Skip if "all" is selected or if the opdrachten select doesn't exist
+            if (clientId === 'all' || !opdrachtenSelect) return;
+            
+            // Reset to "all" first
+            opdrachtenSelect.value = 'all';
+            
+            // Optionally, you could hide opdrachten options that don't match the selected client
+            // This requires additional data attributes on the opdracht options
+        });
+        
+        // =========== SELECT ALL FUNCTIONALITY ===========
+        
+        // Select all werkzaamheden functionality
+        const selectAllWerkzaamhedenCheckbox = document.getElementById('selectAllWerkzaamheden');
+        if (selectAllWerkzaamhedenCheckbox) {
+            selectAllWerkzaamhedenCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                
+                // Select or deselect all visible werkzaamheden
+                document.querySelectorAll('#werkzaamhedenTable tbody tr').forEach(row => {
+                    // Skip if row is hidden (filtered out or message row)
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    const checkbox = row.querySelector('.werkzaamheid-check');
+                    if (checkbox) {
+                        checkbox.checked = isChecked;
+                    }
+                });
+                
+                // Recalculate totals
+                calculateTotals();
+            });
+        }
+        
+        // Select all time entries functionality
+        const selectAllTimeEntriesCheckbox = document.getElementById('selectAllTimeEntries');
+        if (selectAllTimeEntriesCheckbox) {
+            selectAllTimeEntriesCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                
+                // Select or deselect all visible time entries
+                document.querySelectorAll('#timeEntriesTable tbody tr').forEach(row => {
+                    // Skip if row is hidden (filtered out or message row)
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    const checkbox = row.querySelector('.time-entry-check');
+                    if (checkbox) {
+                        checkbox.checked = isChecked;
+                    }
+                });
+                
+                // Recalculate totals
+                calculateTotals();
+            });
+        }
+        
+        // Update select all checkbox state when filters are applied
+        function updateSelectAllCheckboxes() {
+            // Update werkzaamheden select all checkbox
+            if (selectAllWerkzaamhedenCheckbox) {
+                const visibleWerkzaamhedenRows = Array.from(document.querySelectorAll('#werkzaamhedenTable tbody tr')).filter(
+                    row => row.style.display !== 'none' && !row.querySelector('td[colspan]')
+                );
+                
+                const allChecked = visibleWerkzaamhedenRows.length > 0 && 
+                                 visibleWerkzaamhedenRows.every(row => row.querySelector('.werkzaamheid-check')?.checked);
+                
+                selectAllWerkzaamhedenCheckbox.checked = allChecked;
+                selectAllWerkzaamhedenCheckbox.indeterminate = !allChecked && 
+                                                       visibleWerkzaamhedenRows.some(row => row.querySelector('.werkzaamheid-check')?.checked);
+            }
+            
+            // Update time entries select all checkbox
+            if (selectAllTimeEntriesCheckbox) {
+                const visibleTimeEntryRows = Array.from(document.querySelectorAll('#timeEntriesTable tbody tr')).filter(
+                    row => row.style.display !== 'none' && !row.querySelector('td[colspan]')
+                );
+                
+                const allChecked = visibleTimeEntryRows.length > 0 && 
+                                 visibleTimeEntryRows.every(row => row.querySelector('.time-entry-check')?.checked);
+                
+                selectAllTimeEntriesCheckbox.checked = allChecked;
+                selectAllTimeEntriesCheckbox.indeterminate = !allChecked && 
+                                                     visibleTimeEntryRows.some(row => row.querySelector('.time-entry-check')?.checked);
+            }
+        }
+        
+        // Modify the applyAllFilters function to update select all checkboxes after filtering
+        const originalApplyAllFilters = applyAllFilters;
+        applyAllFilters = function() {
+            originalApplyAllFilters();
+            updateSelectAllCheckboxes();
+        };
+        
+        // Add event listeners to all checkboxes to update the select all state
+        document.querySelectorAll('.werkzaamheid-check, .time-entry-check').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckboxes);
+        });
+        
+        // Initialize select all checkboxes
+        updateSelectAllCheckboxes();
     });
 </script>
 {% endblock %}

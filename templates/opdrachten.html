@@ -3,17 +3,20 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0" data-translate="Opdrachten Overzicht">Opdrachten Overzicht</h5>
+        <div class="card shadow">
+            <div class="card-header bg-gradient">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h5 class="mb-0">
+                        <i data-feather="briefcase" class="feather-sm me-2"></i>
+                        <span data-translate="Opdrachten Overzicht">Opdrachten Overzicht</span>
+                    </h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
                         <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
                             </button>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('export_data', entity='opdrachten', format='pdf') }}">
                                     <i data-feather="file-text"></i> PDF
                                 </a></li>
@@ -34,6 +37,54 @@
             </div>
             <div class="card-body">
                 {% if not export_mode %}
+                <!-- Advanced filter section -->
+                <div class="filter-section mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false">
+                                <i data-feather="filter" class="feather-sm me-2"></i>
+                                <span data-translate="Filters">Filters</span>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="filterCollapse">
+                            <div class="card-body">
+                                <form method="GET" class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="search" class="form-label" data-translate="Zoekterm">Zoekterm</label>
+                                        <input type="text" class="form-control" id="search" name="search" 
+                                               placeholder="Zoek op titel of omschrijving..." 
+                                               value="{{ search }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="status" class="form-label" data-translate="Status">Status</label>
+                                        <select class="form-select" id="status" name="status">
+                                            <option value="" data-translate="Alle statussen">Alle statussen</option>
+                                            <option value="open" {% if status == 'open' %}selected{% endif %} data-translate="Open">Open</option>
+                                            <option value="in-progress" {% if status == 'in-progress' %}selected{% endif %} data-translate="In uitvoering">In uitvoering</option>
+                                            <option value="completed" {% if status == 'completed' %}selected{% endif %} data-translate="Afgerond">Afgerond</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="klant" class="form-label" data-translate="Klant">Klant</label>
+                                        <select class="form-select" id="klant" name="klant_id">
+                                            <option value="" data-translate="Alle klanten">Alle klanten</option>
+                                            {% for klant in klanten %}
+                                            <option value="{{ klant.id }}" {% if klant_id|int == klant.id %}selected{% endif %}>
+                                                {{ klant.bedrijfsnaam }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <a href="{{ url_for('opdrachten') }}" class="btn btn-outline-secondary me-2" data-translate="Reset">Reset</a>
+                                        <button type="submit" class="btn btn-primary" data-translate="Toepassen">Toepassen</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick search bar - always visible -->
                 <form class="mb-4" method="GET">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search"
@@ -45,36 +96,85 @@
                 </form>
                 {% endif %}
 
+                <!-- Selected actions row -->
+                <div class="row mb-3 selected-actions d-none">
+                    <div class="col">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3"><span id="selectedCount">0</span> <span data-translate="selected">geselecteerd</span></span>
+                            <button class="btn btn-sm btn-outline-danger me-2" id="bulkDeleteBtn">
+                                <i data-feather="trash-2" class="feather-sm"></i> <span data-translate="Verwijderen">Verwijderen</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearSelectionBtn">
+                                <i data-feather="x" class="feather-sm"></i> <span data-translate="Selectie wissen">Selectie wissen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th width="5%">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                    </div>
+                                </th>
                                 <th data-translate="Datum">Datum</th>
                                 <th data-translate="Klant">Klant</th>
                                 <th data-translate="Titel">Titel</th>
-                                <th data-translate="Omschrijving">Omschrijving</th>
-                                <th data-translate="Benodigde Kennis">Benodigde Kennis</th>
+                                <th class="d-none d-md-table-cell" data-translate="Omschrijving">Omschrijving</th>
+                                <th class="d-none d-md-table-cell" data-translate="Status">Status</th>
+                                <th class="text-end" data-translate="Acties">Acties</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for opdracht in opdrachten %}
-                            <tr>
+                            <tr data-id="{{ opdracht.id }}">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input opdracht-check" type="checkbox" value="{{ opdracht.id }}">
+                                    </div>
+                                </td>
                                 <td>{{ opdracht.aanvraagdatum.strftime('%d-%m-%Y') }}</td>
                                 <td>{{ opdracht.klant.bedrijfsnaam }}</td>
                                 <td>{{ opdracht.titel }}</td>
-                                <td>{{ opdracht.omschrijving }}</td>
-                                <td>{{ opdracht.benodigde_kennis or '-' }}</td>
+                                <td class="d-none d-md-table-cell">
+                                    <span class="text-truncate d-inline-block" style="max-width: 250px;">{{ opdracht.omschrijving }}</span>
+                                </td>
+                                <td class="d-none d-md-table-cell">
+                                    {% if opdracht.status == 'open' %}
+                                    <span class="badge bg-primary" data-translate="Open">Open</span>
+                                    {% elif opdracht.status == 'in-progress' %}
+                                    <span class="badge bg-warning" data-translate="In uitvoering">In uitvoering</span>
+                                    {% else %}
+                                    <span class="badge bg-success" data-translate="Afgerond">Afgerond</span>
+                                    {% endif %}
+                                </td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('edit_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-primary">
-                                        <i data-feather="edit-2"></i> <span data-translate="Bewerken">Bewerken</span>
-                                    </a>
-                                    <a href="{{ url_for('delete_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-danger" 
-                                       onclick="return confirm('Weet je zeker dat je deze opdracht wilt verwijderen?')">
-                                        <i data-feather="trash-2"></i> <span data-translate="Verwijderen">Verwijderen</span>
-                                    </a>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('edit_opdracht', id=opdracht.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i data-feather="edit-2"></i> <span class="d-none d-lg-inline" data-translate="Bewerken">Bewerken</span>
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger delete-opdracht" 
+                                           data-url="{{ url_for('delete_opdracht', id=opdracht.id) }}" 
+                                           data-title="{{ opdracht.titel }}">
+                                            <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Verwijderen</span>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% if not opdrachten %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <p data-translate="Geen opdrachten gevonden">Geen opdrachten gevonden</p>
+                                    <a href="{{ url_for('add_opdracht') }}" class="btn btn-sm btn-primary">
+                                        <i data-feather="plus-circle"></i> <span data-translate="Voeg je eerste opdracht toe">Voeg je eerste opdracht toe</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -82,4 +182,129 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" data-translate="Bevestig verwijderen">Bevestig verwijderen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteConfirmText">Weet je zeker dat je deze opdracht wilt verwijderen?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Annuleren">Annuleren</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger" data-translate="Verwijderen">Verwijderen</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.opdracht-check');
+    const selectedActions = document.querySelector('.selected-actions');
+    const selectedCountElement = document.getElementById('selectedCount');
+    
+    // Handle select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            
+            updateSelectedItemsCount();
+        });
+    }
+    
+    // Handle individual checkbox changes
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedItemsCount();
+            
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+                
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+    
+    // Update selected items count
+    function updateSelectedItemsCount() {
+        const selectedCount = document.querySelectorAll('.opdracht-check:checked').length;
+        
+        if (selectedCount > 0) {
+            selectedActions.classList.remove('d-none');
+            selectedCountElement.textContent = selectedCount;
+        } else {
+            selectedActions.classList.add('d-none');
+        }
+    }
+    
+    // Clear all selections
+    document.getElementById('clearSelectionBtn')?.addEventListener('click', function() {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        
+        updateSelectedItemsCount();
+    });
+    
+    // Handle bulk delete
+    document.getElementById('bulkDeleteBtn')?.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.opdracht-check:checked'))
+                                 .map(cb => cb.value);
+        
+        if (selectedIds.length > 0) {
+            const modal = document.getElementById('deleteConfirmModal');
+            const modalInstance = new bootstrap.Modal(modal);
+            
+            document.getElementById('deleteConfirmText').textContent = 
+                `Weet je zeker dat je ${selectedIds.length} geselecteerde opdrachten wilt verwijderen?`;
+            
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+            deleteBtn.href = `/opdrachten/bulk-delete?ids=${selectedIds.join(',')}`;
+            
+            modalInstance.show();
+        }
+    });
+
+    // Handle individual deletes with confirmation modal
+    document.querySelectorAll('.delete-opdracht').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const url = this.getAttribute('data-url');
+            const title = this.getAttribute('data-title');
+            const modal = document.getElementById('deleteConfirmModal');
+            const modalInstance = new bootstrap.Modal(modal);
+            
+            document.getElementById('deleteConfirmText').textContent = 
+                `Weet je zeker dat je de opdracht "${title}" wilt verwijderen?`;
+            
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+            deleteBtn.href = url;
+            
+            modalInstance.show();
+        });
+    });
+});
+</script>
 {% endblock %}

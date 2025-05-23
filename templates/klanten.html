@@ -3,17 +3,20 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0" data-translate="Klanten Overzicht">Klanten Overzicht</h5>
+        <div class="card shadow">
+            <div class="card-header bg-gradient">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h5 class="mb-0">
+                        <i data-feather="users" class="feather-sm me-2"></i>
+                        <span data-translate="Klanten Overzicht">Klanten Overzicht</span>
+                    </h5>
                     {% if not export_mode %}
                     <div class="d-flex gap-2">
                         <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
                             </button>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('export_data', entity='klanten', format='pdf') }}">
                                     <i data-feather="file-text"></i> PDF
                                 </a></li>
@@ -34,6 +37,50 @@
             </div>
             <div class="card-body">
                 {% if not export_mode %}
+                <!-- Advanced filter section -->
+                <div class="filter-section mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false">
+                                <i data-feather="filter" class="feather-sm me-2"></i>
+                                <span data-translate="Filters">Filters</span>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="filterCollapse">
+                            <div class="card-body">
+                                <form method="GET" class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="search" class="form-label" data-translate="Zoekterm">Zoekterm</label>
+                                        <input type="text" class="form-control" id="search" name="search" 
+                                               placeholder="Bedrijfsnaam, email of achternaam..." 
+                                               value="{{ search }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="status" class="form-label" data-translate="Status">Status</label>
+                                        <select class="form-select" id="status" name="status">
+                                            <option value="" data-translate="Alle statussen">Alle statussen</option>
+                                            <option value="actief" {% if status == 'actief' %}selected{% endif %} data-translate="Actief">Actief</option>
+                                            <option value="inactief" {% if status == 'inactief' %}selected{% endif %} data-translate="Inactief">Inactief</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="sort" class="form-label" data-translate="Sorteren">Sorteren</label>
+                                        <select class="form-select" id="sort" name="sort">
+                                            <option value="name" {% if sort == 'name' %}selected{% endif %} data-translate="Bedrijfsnaam">Bedrijfsnaam</option>
+                                            <option value="newest" {% if sort == 'newest' %}selected{% endif %} data-translate="Nieuwste eerst">Nieuwste eerst</option>
+                                            <option value="oldest" {% if sort == 'oldest' %}selected{% endif %} data-translate="Oudste eerst">Oudste eerst</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <a href="{{ url_for('klanten') }}" class="btn btn-outline-secondary me-2" data-translate="Reset">Reset</a>
+                                        <button type="submit" class="btn btn-primary" data-translate="Toepassen">Toepassen</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick search bar - always visible -->
                 <form class="mb-4" method="GET">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" 
@@ -45,20 +92,46 @@
                 </form>
                 {% endif %}
                 
+                <!-- Selected actions row -->
+                <div class="row mb-3 selected-actions d-none">
+                    <div class="col">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3"><span id="selectedCount">0</span> <span data-translate="selected">geselecteerd</span></span>
+                            <button class="btn btn-sm btn-outline-danger me-2" id="bulkDeleteBtn">
+                                <i data-feather="trash-2" class="feather-sm"></i> <span data-translate="Verwijderen">Verwijderen</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearSelectionBtn">
+                                <i data-feather="x" class="feather-sm"></i> <span data-translate="Selectie wissen">Selectie wissen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th width="5%">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                    </div>
+                                </th>
                                 <th data-translate="Bedrijfsnaam">Bedrijfsnaam</th>
                                 <th data-translate="Naam">Naam</th>
-                                <th data-translate="Functie">Functie</th>
-                                <th data-translate="Email">Email</th>
-                                <th data-translate="Telefoon">Telefoon</th>
+                                <th class="d-none d-md-table-cell" data-translate="Functie">Functie</th>
+                                <th class="d-none d-md-table-cell" data-translate="Email">Email</th>
+                                <th class="d-none d-md-table-cell" data-translate="Telefoon">Telefoon</th>
+                                <th class="text-end" data-translate="Acties">Acties</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for klant in klanten %}
-                            <tr>
+                            <tr data-id="{{ klant.id }}">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input klant-check" type="checkbox" value="{{ klant.id }}">
+                                    </div>
+                                </td>
                                 <td>{{ klant.bedrijfsnaam }}</td>
                                 <td>
                                     {{ klant.voornaam }}
@@ -67,20 +140,33 @@
                                     {% endif %}
                                     {{ klant.achternaam }}
                                 </td>
-                                <td>{{ klant.functie or '-' }}</td>
-                                <td>{{ klant.email }}</td>
-                                <td>{{ klant.telefoonnummer or '-' }}</td>
+                                <td class="d-none d-md-table-cell">{{ klant.functie or '-' }}</td>
+                                <td class="d-none d-md-table-cell">{{ klant.email }}</td>
+                                <td class="d-none d-md-table-cell">{{ klant.telefoonnummer or '-' }}</td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('edit_klant', id=klant.id) }}" class="btn btn-sm btn-primary">
-                                        <i data-feather="edit-2"></i> <span data-translate="Bewerken">Bewerken</span>
-                                    </a>
-                                    <a href="{{ url_for('delete_klant', id=klant.id) }}" class="btn btn-sm btn-danger" 
-                                       onclick="return confirm('Weet je zeker dat je deze klant wilt verwijderen?')">
-                                        <i data-feather="trash-2"></i> <span data-translate="Verwijderen">Verwijderen</span>
-                                    </a>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('edit_klant', id=klant.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i data-feather="edit-2"></i> <span class="d-none d-lg-inline" data-translate="Bewerken">Bewerken</span>
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger delete-klant" 
+                                           data-url="{{ url_for('delete_klant', id=klant.id) }}" 
+                                           data-name="{{ klant.bedrijfsnaam }}">
+                                            <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Verwijderen</span>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% if not klanten %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <p data-translate="Geen klanten gevonden">Geen klanten gevonden</p>
+                                    <a href="{{ url_for('add_klant') }}" class="btn btn-sm btn-primary">
+                                        <i data-feather="plus-circle"></i> <span data-translate="Voeg je eerste klant toe">Voeg je eerste klant toe</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -88,4 +174,129 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" data-translate="Bevestig verwijderen">Bevestig verwijderen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteConfirmText">Weet je zeker dat je deze klant wilt verwijderen?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="Annuleren">Annuleren</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger" data-translate="Verwijderen">Verwijderen</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.klant-check');
+    const selectedActions = document.querySelector('.selected-actions');
+    const selectedCountElement = document.getElementById('selectedCount');
+    
+    // Handle select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            
+            updateSelectedItemsCount();
+        });
+    }
+    
+    // Handle individual checkbox changes
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedItemsCount();
+            
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+                
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+    
+    // Update selected items count
+    function updateSelectedItemsCount() {
+        const selectedCount = document.querySelectorAll('.klant-check:checked').length;
+        
+        if (selectedCount > 0) {
+            selectedActions.classList.remove('d-none');
+            selectedCountElement.textContent = selectedCount;
+        } else {
+            selectedActions.classList.add('d-none');
+        }
+    }
+    
+    // Clear all selections
+    document.getElementById('clearSelectionBtn')?.addEventListener('click', function() {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        
+        updateSelectedItemsCount();
+    });
+    
+    // Handle bulk delete
+    document.getElementById('bulkDeleteBtn')?.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.klant-check:checked'))
+                                 .map(cb => cb.value);
+        
+        if (selectedIds.length > 0) {
+            const modal = document.getElementById('deleteConfirmModal');
+            const modalInstance = new bootstrap.Modal(modal);
+            
+            document.getElementById('deleteConfirmText').textContent = 
+                `Weet je zeker dat je ${selectedIds.length} geselecteerde klanten wilt verwijderen?`;
+            
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+            deleteBtn.href = `/klanten/bulk-delete?ids=${selectedIds.join(',')}`;
+            
+            modalInstance.show();
+        }
+    });
+
+    // Handle individual deletes with confirmation modal
+    document.querySelectorAll('.delete-klant').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const url = this.getAttribute('data-url');
+            const name = this.getAttribute('data-name');
+            const modal = document.getElementById('deleteConfirmModal');
+            const modalInstance = new bootstrap.Modal(modal);
+            
+            document.getElementById('deleteConfirmText').textContent = 
+                `Weet je zeker dat je klant "${name}" wilt verwijderen?`;
+            
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+            deleteBtn.href = url;
+            
+            modalInstance.show();
+        });
+    });
+});
+</script>
 {% endblock %}

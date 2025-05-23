@@ -7,7 +7,7 @@ import os
 from flask import render_template, redirect, url_for, request, flash, make_response, jsonify, send_file
 from flask_login import login_required, current_user
 from app import app, db
-from models import Factuur, Klant, Opdracht, Werkzaamheid, TimeEntry
+from models import Factuur, Klant, Opdracht, Werkzaamheid, TimeEntry, Medewerker
 from auth_helpers import invoice_creation_required, view_all_required, edit_all_required
 import pdfkit
 from io import BytesIO
@@ -160,6 +160,9 @@ def nieuwe_factuur():
     klanten = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
     opdrachten = Opdracht.query.filter_by(status='open').order_by(Opdracht.aanvraagdatum.desc()).all()
     
+    # Get all employees for filtering
+    medewerkers = Medewerker.query.order_by(Medewerker.voornaam, Medewerker.achternaam).all()
+    
     # Get unbilled activities and time entries
     unbilled_werkzaamheden = Werkzaamheid.query.filter_by(factuur_id=None, is_declarabel=True).all()
     unbilled_time_entries = TimeEntry.query.filter_by(invoice_id=None, is_billable=True).all()
@@ -168,6 +171,7 @@ def nieuwe_factuur():
         'factuur_form.html', 
         klanten=klanten, 
         opdrachten=opdrachten,
+        medewerkers=medewerkers,
         werkzaamheden=unbilled_werkzaamheden,
         time_entries=unbilled_time_entries,
         factuur=None,
@@ -235,6 +239,9 @@ def bewerk_factuur(factuur_id):
     klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
     opdrachten = Opdracht.query.order_by(Opdracht.aanvraagdatum.desc()).all()
     
+    # Get all employees for filtering
+    medewerkers = Medewerker.query.order_by(Medewerker.voornaam, Medewerker.achternaam).all()
+    
     # Get all billable items, both billed to this invoice and unbilled
     werkzaamheden = Werkzaamheid.query.filter(
         (Werkzaamheid.factuur_id == factuur.id) | 
@@ -248,11 +255,12 @@ def bewerk_factuur(factuur_id):
     
     return render_template(
         'factuur_form.html', 
-        factuur=factuur,
         klanten=klanten, 
         opdrachten=opdrachten,
+        medewerkers=medewerkers,
         werkzaamheden=werkzaamheden,
         time_entries=time_entries,
+        factuur=factuur,
         today=today
     )
 

@@ -756,19 +756,42 @@ def delete_opdracht(id):
 @app.route('/klanten')
 @login_required
 def klanten():
+    """Show all clients with search functionality"""
     search = request.args.get('search', '')
+    status = request.args.get('status', '')
+    sort = request.args.get('sort', 'name')  # Default sort by name
+    
+    # Start with base query
     query = Klant.query
+    
+    # Apply search filter
     if search:
         query = query.filter(
-            db.or_(
-                Klant.bedrijfsnaam.ilike(f'%{search}%'),
-                Klant.email.ilike(f'%{search}%'),
-                Klant.achternaam.ilike(f'%{search}%')
-            )
+            Klant.bedrijfsnaam.ilike(f'%{search}%') | 
+            Klant.email.ilike(f'%{search}%') | 
+            Klant.achternaam.ilike(f'%{search}%')
         )
-    klanten = query.order_by(Klant.bedrijfsnaam).all()
-    return render_template('klanten.html', klanten=klanten, search=search)
-
+    
+    # Apply status filter if specified
+    if status:
+        query = query.filter(Klant.status == status)
+    
+    # Apply sorting
+    if sort == 'newest':
+        query = query.order_by(Klant.created_at.desc())
+    elif sort == 'oldest':
+        query = query.order_by(Klant.created_at.asc())
+    else:  # Default sort by bedrijfsnaam
+        query = query.order_by(Klant.bedrijfsnaam)
+    
+    # Execute query
+    klanten = query.all()
+    
+    # Check if export mode requested (for PDF/Excel export)
+    export_mode = 'export' in request.args
+    
+    return render_template('klanten.html', klanten=klanten, search=search, status=status, 
+                          sort=sort, export_mode=export_mode)
 
 @app.route('/klanten/add', methods=['GET', 'POST'])
 @login_required
@@ -881,17 +904,55 @@ def add_medewerker():
 @app.route('/opdrachten')
 @login_required
 def opdrachten():
+    """Show all assignments with search and filter functionality"""
     search = request.args.get('search', '')
-    query = Opdracht.query
+    status = request.args.get('status', '')
+    klant_id = request.args.get('klant_id', '')
+    sort = request.args.get('sort', 'newest')  # Default sort by newest first
+    
+    # Start with base query with join to klant
+    query = Opdracht.query.join(Klant)
+    
+    # Apply search filter
     if search:
         query = query.filter(
-            db.or_(
-                Opdracht.titel.ilike(f'%{search}%'),
-                Opdracht.omschrijving.ilike(f'%{search}%')
-            )
+            Opdracht.titel.ilike(f'%{search}%') | 
+            Opdracht.omschrijving.ilike(f'%{search}%')
         )
-    opdrachten = query.order_by(Opdracht.aanvraagdatum.desc()).all()
-    return render_template('opdrachten.html', opdrachten=opdrachten, search=search)
+    
+    # Apply status filter if specified
+    if status:
+        query = query.filter(Opdracht.status == status)
+    
+    # Apply client filter if specified
+    if klant_id:
+        try:
+            query = query.filter(Opdracht.klant_id == int(klant_id))
+        except ValueError:
+            pass
+    
+    # Apply sorting
+    if sort == 'oldest':
+        query = query.order_by(Opdracht.aanvraagdatum.asc())
+    elif sort == 'title':
+        query = query.order_by(Opdracht.titel.asc())
+    elif sort == 'client':
+        query = query.order_by(Klant.bedrijfsnaam.asc(), Opdracht.aanvraagdatum.desc())
+    else:  # Default sort by newest
+        query = query.order_by(Opdracht.aanvraagdatum.desc())
+    
+    # Execute query
+    opdrachten = query.all()
+    
+    # Get all clients for filter dropdown
+    klanten = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
+    
+    # Check if export mode requested (for PDF/Excel export)
+    export_mode = 'export' in request.args
+    
+    return render_template('opdrachten.html', opdrachten=opdrachten, klanten=klanten, 
+                          search=search, status=status, klant_id=klant_id, sort=sort,
+                          export_mode=export_mode)
 
 @app.route('/opdrachten/add', methods=['GET', 'POST'])
 @login_required
@@ -1321,7 +1382,11 @@ def admin_edit_employee_time_entry(entry_id):
     try:
         entry.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
         entry.hours = float(request.form['hours'])
-        entry.description = request.form['description']
+        
+        # Make sure description field exists in the form submission
+        if 'description' in request.form:
+            entry.description = request.form['description']
+            
         entry.project = request.form['project']
         
         # Only admin and department heads can change the user assignment
@@ -1358,3 +1423,88 @@ def admin_delete_employee_time_entry(entry_id):
         app.logger.error(f"Error deleting time entry: {str(e)}")
     
     return redirect(url_for('admin_employee_time_entries'))
+
+@app.route('/klanten/bulk-delete')
+@login_required
+def bulk_delete_klanten():
+    """Delete multiple selected clients at once"""
+    if not current_user.can_edit_all():
+        flash('Je hebt geen rechten om deze actie uit te voeren', 'danger')
+        return redirect(url_for('klanten'))
+    
+    ids_str = request.args.get('ids', '')
+    if not ids_str:
+        flash('Geen klanten geselecteerd', 'warning')
+        return redirect(url_for('klanten'))
+    
+    try:
+        # Parse the comma-separated IDs
+        ids = [int(id) for id in ids_str.split(',')]
+        
+        deleted_count = 0
+        for klant_id in ids:
+            klant = Klant.query.get(klant_id)
+            if klant:
+                # Check for associations before deleting
+                has_opdrachten = Opdracht.query.filter_by(klant_id=klant_id).first() is not None
+                
+                if has_opdrachten:
+                    flash(f'Klant {klant.bedrijfsnaam} kon niet worden verwijderd omdat er nog opdrachten aan gekoppeld zijn', 'warning')
+                    continue
+                
+                db.session.delete(klant)
+                deleted_count += 1
+        
+        db.session.commit()
+        if deleted_count > 0:
+            flash(f'{deleted_count} klanten succesvol verwijderd', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting clients: {e}")
+        flash('Er is een fout opgetreden bij het verwijderen van klanten', 'danger')
+    
+    return redirect(url_for('klanten'))
+
+@app.route('/opdrachten/bulk-delete')
+@login_required
+def bulk_delete_opdrachten():
+    """Delete multiple selected assignments at once"""
+    if not current_user.can_edit_all():
+        flash('Je hebt geen rechten om deze actie uit te voeren', 'danger')
+        return redirect(url_for('opdrachten'))
+    
+    ids_str = request.args.get('ids', '')
+    if not ids_str:
+        flash('Geen opdrachten geselecteerd', 'warning')
+        return redirect(url_for('opdrachten'))
+    
+    try:
+        # Parse the comma-separated IDs
+        ids = [int(id) for id in ids_str.split(',')]
+        
+        deleted_count = 0
+        for opdracht_id in ids:
+            opdracht = Opdracht.query.get(opdracht_id)
+            if opdracht:
+                # Check for associations before deleting
+                has_werkzaamheden = Werkzaamheid.query.filter_by(opdracht_id=opdracht_id).first() is not None
+                has_time_entries = TimeEntry.query.filter_by(opdracht_id=opdracht_id).first() is not None
+                
+                if has_werkzaamheden or has_time_entries:
+                    flash(f'Opdracht "{opdracht.titel}" kon niet worden verwijderd omdat er nog werkzaamheden of tijdsregistraties aan gekoppeld zijn', 'warning')
+                    continue
+                
+                db.session.delete(opdracht)
+                deleted_count += 1
+        
+        db.session.commit()
+        if deleted_count > 0:
+            flash(f'{deleted_count} opdrachten succesvol verwijderd', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting assignments: {e}")
+        flash('Er is een fout opgetreden bij het verwijderen van opdrachten', 'danger')
+    
+    return redirect(url_for('opdrachten'))

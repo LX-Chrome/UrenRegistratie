@@ -1,6 +1,25 @@
+// Global tracker for Feather icons initialization
+let featherInitialized = false;
+
+// Optimize Feather initialization - only call when needed
+function initializeFeather() {
+    if (window.feather && !featherInitialized) {
+        feather.replace();
+        featherInitialized = true;
+        console.log('Feather icons initialized');
+    }
+}
+
+// Update individual icon - more efficient than replacing all
+function updateFeatherIcon(element) {
+    if (window.feather && element) {
+        feather.replace(element);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
-    feather.replace();
+    initializeFeather();
     
     // Theme toggle functionality
     const themeToggle = document.getElementById('themeToggle');
@@ -24,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('theme', theme);
             if (themeIcon) {
                 themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
-                feather.replace();
+                updateFeatherIcon(themeIcon);
             }
             
             // Fix for search box text colors in light mode
@@ -96,6 +115,107 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make all buttons in card headers mobile-friendly
     makeMobileCardButtons();
+
+    // Modal Fix for UI Glitches
+    // Modified solution that doesn't block all interactivity
+    (function() {
+        let scrollPosition;
+        const body = document.body;
+        
+        // Disable all scroll events when modal is open
+        function disableScroll() {
+            scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            body.style.overflow = 'hidden';
+            // Remove fixed positioning which causes issues with click events
+            // body.style.position = 'fixed';
+            // body.style.top = `-${scrollPosition}px`;
+            body.style.width = '100%';
+            
+            // Only prevent wheel events on the body, not inside modals
+            document.addEventListener('wheel', preventBodyScroll, { passive: false });
+            document.addEventListener('touchmove', preventBodyScroll, { passive: false });
+        }
+        
+        // Re-enable scrolling when modal is closed
+        function enableScroll() {
+            body.style.overflow = '';
+            body.style.position = '';
+            body.style.top = '';
+            body.style.width = '';
+            window.scrollTo(0, scrollPosition);
+            
+            // Remove event listeners
+            document.removeEventListener('wheel', preventBodyScroll);
+            document.removeEventListener('touchmove', preventBodyScroll);
+        }
+        
+        // Only prevent scroll on body, not in modals
+        function preventBodyScroll(e) {
+            // Check if the target is inside a modal
+            let target = e.target;
+            while (target && target !== document.body) {
+                if (target.classList.contains('modal') || 
+                    target.classList.contains('modal-dialog') || 
+                    target.classList.contains('modal-content')) {
+                    // Let the scroll happen inside modals
+                    return true;
+                }
+                target = target.parentNode;
+            }
+            
+            // Otherwise prevent scroll on body
+            e.preventDefault();
+            return false;
+        }
+        
+        // Watch for modals opening and closing using Bootstrap events
+        document.body.addEventListener('show.bs.modal', function() {
+            disableScroll();
+        });
+        
+        document.body.addEventListener('hidden.bs.modal', function() {
+            enableScroll();
+        });
+        
+        // Fix all existing modals
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (!modal.classList.contains('scroll-fixed')) {
+                modal.classList.add('scroll-fixed');
+                modal.classList.add('stable-modal');
+            }
+        });
+    })();
+
+    // Remove global wheel event prevention that blocks all interaction
+    /* 
+    window.addEventListener('wheel', function(e) {
+        if (document.body.classList.contains('modal-open')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, { passive: false, capture: true });
+    
+    // Block touch movements too
+    window.addEventListener('touchmove', function(e) {
+        if (document.body.classList.contains('modal-open')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, { passive: false, capture: true });
+    
+    // Disable keyboard scrolling
+    window.addEventListener('keydown', function(e) {
+        if (document.body.classList.contains('modal-open')) {
+            // Prevent arrow keys, page up, page down, home, end
+            if ([32, 33, 34, 35, 36, 37, 38, 39, 40].includes(e.keyCode)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    }, { capture: true });
+    */
 });
 
 // Function to enhance responsive tables
@@ -126,7 +246,12 @@ function enhanceResponsiveTables() {
             indicator.className = 'swipe-indicator d-block d-md-none mb-2 text-muted small';
             indicator.innerHTML = '<i data-feather="chevrons-right"></i> <span data-translate="Swipe to see more">Swipe to see more</span>';
             container.prepend(indicator);
-            feather.replace();
+            
+            // Update only the newly added icon
+            const featherIcon = indicator.querySelector('[data-feather]');
+            if (featherIcon) {
+                updateFeatherIcon(featherIcon);
+            }
             
             // Hide indicator after user has swiped
             container.addEventListener('scroll', function() {
@@ -165,22 +290,15 @@ function setupMobileNavbar() {
     }
 }
 
-// Function to make card header buttons mobile-friendly
 function makeMobileCardButtons() {
     if (window.innerWidth < 768) {
-        const cardHeaders = document.querySelectorAll('.card-header');
-        cardHeaders.forEach(header => {
-            const buttonContainer = header.querySelector('.d-flex');
-            if (buttonContainer) {
-                buttonContainer.classList.add('flex-wrap', 'gap-2');
-                
-                const buttons = buttonContainer.querySelectorAll('.btn');
-                buttons.forEach(button => {
-                    if (!button.classList.contains('dropdown-toggle')) {
-                        button.classList.add('w-100', 'mb-2');
-                    }
-                });
-            }
+        document.querySelectorAll('.card-header .btn-group').forEach(btnGroup => {
+            btnGroup.classList.add('d-flex', 'flex-wrap');
+            
+            btnGroup.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.add('flex-grow-1', 'mb-1');
+                btn.style.minWidth = '80px';
+            });
         });
     }
 }
