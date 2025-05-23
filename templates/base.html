@@ -5,21 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>gildeDevOps Solutions</title>
-    <!-- Preload key assets to improve performance -->
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js" as="script">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" as="style">
-    
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/modal-fix.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/icon-optimizations.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='logo-small.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ url_for('static', filename='logo.webp') }}" type="image/webp">
-    
-    <!-- Load Feather icons early to prevent flicker -->
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    
     <style>
         /* Verbeterde navigatie styling */
         .navbar {
@@ -323,6 +314,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script>
     // Global modal fix to prevent UI glitches
     document.addEventListener('DOMContentLoaded', function() {
@@ -399,7 +391,6 @@
     <script src="{{ url_for('static', filename='js/timezone-handler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/custom-modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/fix-modal-glitches.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/time-entry-modal-fix.js') }}"></script>
 
     <footer class="mt-5 py-3 text-center text-muted">
         <div class="container">

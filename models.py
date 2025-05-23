@@ -2,7 +2,7 @@ from datetime import datetime
 from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Index, func, extract, case, desc
+from sqlalchemy import Index, func, extract, case
 from enum import Enum
 
 # Define roles as an Enum for type safety
@@ -236,143 +236,19 @@ class Werkzaamheid(db.Model):
         return 0.0
     
     @classmethod
-    def get_uren_per_medewerker(cls, year=None, quarter=None, view_type='all'):
-        """
-        Get sum of hours per employee, with optional filters
-        
-        Args:
-            year: Filter by year (int)
-            quarter: Filter by quarter (Q1, Q2, Q3, Q4)
-            view_type: Filter by billable status (all, billable, non-billable)
-        """
-        # First, get hours from Werkzaamheid model
+    def get_uren_per_medewerker(cls, year=None):
+        """Get sum of hours per employee, optionally for a specific year"""
         query = db.session.query(
-            Medewerker.id,
             Medewerker.voornaam,
             Medewerker.tussenvoegsel,
             Medewerker.achternaam,
-            func.sum(cls.aantal_uren).label('aantal_uren'),
-            func.sum(case((cls.is_declarabel == True, cls.aantal_uren), else_=0)).label('declarabele_uren'),
-            func.sum(case((cls.is_declarabel == False, cls.aantal_uren), else_=0)).label('niet_declarabele_uren')
+            func.sum(cls.aantal_uren).label('aantal_uren')
         ).join(Medewerker)
         
-        # Apply year filter
         if year:
             query = query.filter(func.extract('year', cls.datum) == year)
             
-        # Apply quarter filter if specified
-        if quarter:
-            if quarter == 'Q1':
-                query = query.filter(
-                    func.extract('month', cls.datum).between(1, 3)
-                )
-            elif quarter == 'Q2':
-                query = query.filter(
-                    func.extract('month', cls.datum).between(4, 6)
-                )
-            elif quarter == 'Q3':
-                query = query.filter(
-                    func.extract('month', cls.datum).between(7, 9)
-                )
-            elif quarter == 'Q4':
-                query = query.filter(
-                    func.extract('month', cls.datum).between(10, 12)
-                )
-                
-        # Apply billable filter
-        if view_type == 'billable':
-            query = query.filter(cls.is_declarabel == True)
-        elif view_type == 'non-billable':
-            query = query.filter(cls.is_declarabel == False)
-            
-        werkzaamheden_hours = query.group_by(
-            Medewerker.id,
-            Medewerker.voornaam, 
-            Medewerker.tussenvoegsel, 
-            Medewerker.achternaam
-        ).all()
-        
-        # Convert to dictionary for easier merging
-        employee_hours_dict = {}
-        for emp in werkzaamheden_hours:
-            employee_hours_dict[emp.id] = {
-                'id': emp.id,
-                'voornaam': emp.voornaam,
-                'tussenvoegsel': emp.tussenvoegsel,
-                'achternaam': emp.achternaam,
-                'aantal_uren': float(emp.aantal_uren) if emp.aantal_uren else 0.0,
-                'declarabele_uren': float(emp.declarabele_uren) if emp.declarabele_uren else 0.0,
-                'niet_declarabele_uren': float(emp.niet_declarabele_uren) if emp.niet_declarabele_uren else 0.0
-            }
-            
-        # Now get hours from TimeEntry model
-        # Access TimeEntry and User through the db model registry to avoid circular imports
-        TimeEntry = db.Model._decl_class_registry.get('TimeEntry')
-        User = db.Model._decl_class_registry.get('User')
-        
-        if TimeEntry and User:
-            time_entries_query = db.session.query(
-                User.medewerker_id,
-                func.sum(TimeEntry.hours).label('aantal_uren'),
-                func.sum(case((TimeEntry.is_billable == True, TimeEntry.hours), else_=0)).label('declarabele_uren'),
-                func.sum(case((TimeEntry.is_billable == False, TimeEntry.hours), else_=0)).label('niet_declarabele_uren')
-            ).join(User, TimeEntry.user_id == User.id).filter(User.medewerker_id != None)
-            
-            # Define date ranges for time entries
-            if year:
-                time_entries_query = time_entries_query.filter(func.extract('year', TimeEntry.date) == year)
-                
-            # Apply quarter filter
-            if quarter:
-                if quarter == 'Q1':
-                    time_entries_query = time_entries_query.filter(
-                        func.extract('month', TimeEntry.date).between(1, 3)
-                    )
-                elif quarter == 'Q2':
-                    time_entries_query = time_entries_query.filter(
-                        func.extract('month', TimeEntry.date).between(4, 6)
-                    )
-                elif quarter == 'Q3':
-                    time_entries_query = time_entries_query.filter(
-                        func.extract('month', TimeEntry.date).between(7, 9)
-                    )
-                elif quarter == 'Q4':
-                    time_entries_query = time_entries_query.filter(
-                        func.extract('month', TimeEntry.date).between(10, 12)
-                    )
-                    
-            # Apply billable filter for time entries
-            if view_type == 'billable':
-                time_entries_query = time_entries_query.filter(TimeEntry.is_billable == True)
-            elif view_type == 'non-billable':
-                time_entries_query = time_entries_query.filter(TimeEntry.is_billable == False)
-                
-            time_entries_hours = time_entries_query.group_by(User.medewerker_id).all()
-            
-            # Merge time entries with werkzaamheden hours
-            for te in time_entries_hours:
-                if te.medewerker_id not in employee_hours_dict:
-                    # Fetch employee details
-                    employee = Medewerker.query.get(te.medewerker_id)
-                    if employee:
-                        employee_hours_dict[te.medewerker_id] = {
-                            'id': te.medewerker_id,
-                            'voornaam': employee.voornaam,
-                            'tussenvoegsel': employee.tussenvoegsel,
-                            'achternaam': employee.achternaam,
-                            'aantal_uren': float(te.aantal_uren) if te.aantal_uren else 0.0,
-                            'declarabele_uren': float(te.declarabele_uren) if te.declarabele_uren else 0.0,
-                            'niet_declarabele_uren': float(te.niet_declarabele_uren) if te.niet_declarabele_uren else 0.0
-                        }
-                else:
-                    # Add time entry hours to existing employee
-                    employee_hours_dict[te.medewerker_id]['aantal_uren'] += float(te.aantal_uren) if te.aantal_uren else 0.0
-                    employee_hours_dict[te.medewerker_id]['declarabele_uren'] += float(te.declarabele_uren) if te.declarabele_uren else 0.0
-                    employee_hours_dict[te.medewerker_id]['niet_declarabele_uren'] += float(te.niet_declarabele_uren) if te.niet_declarabele_uren else 0.0
-        
-        # Convert back to list and sort by hours (descending)
-        result = list(employee_hours_dict.values())
-        return sorted(result, key=lambda x: x['aantal_uren'], reverse=True)
+        return query.group_by(Medewerker.voornaam, Medewerker.tussenvoegsel, Medewerker.achternaam).all()
 
 class Factuur(db.Model):
     __tablename__ = 'factuur'

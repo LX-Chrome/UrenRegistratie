@@ -113,7 +113,7 @@ if (typeof window.openStaticCheckinModal !== 'function') {
 // Wait for page load and add direct click handlers
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Setting up direct click handlers for check-in edit buttons");
-        
+    
     // Directly attach click handlers
     document.querySelectorAll('.edit-checkin-btn').forEach(function(btn) {
         console.log("Found edit button:", btn);
@@ -121,29 +121,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Replace with a new button to avoid any previous handlers
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
-            
-            // Add new click handler
+        
+        // Add new click handler
         newBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const formAction = this.getAttribute('data-form-action') || '';
-                const status = this.getAttribute('data-status') || 'working';
-                const timeValue = this.getAttribute('data-time') || '';
-                const noteValue = this.getAttribute('data-note') || '';
-                const opdrachtId = this.getAttribute('data-opdracht-id') || '';
-                
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const formAction = this.getAttribute('data-form-action') || '';
+            const status = this.getAttribute('data-status') || 'working';
+            const timeValue = this.getAttribute('data-time') || '';
+            const noteValue = this.getAttribute('data-note') || '';
+            const opdrachtId = this.getAttribute('data-opdracht-id') || '';
+            
             console.log("Button clicked with data:", {
                 formAction, status, timeValue, noteValue, opdrachtId
-                });
-                
-                if (typeof window.openStaticCheckinModal === 'function') {
-                    window.openStaticCheckinModal(formAction, status, timeValue, noteValue, opdrachtId);
-                } else {
-                console.error("openStaticCheckinModal function not available!");
-                }
-                
-                return false;
             });
+            
+            if (typeof window.openStaticCheckinModal === 'function') {
+                window.openStaticCheckinModal(formAction, status, timeValue, noteValue, opdrachtId);
+            } else {
+                console.error("openStaticCheckinModal function not available!");
+            }
+            
+            return false;
         });
+    });
 });

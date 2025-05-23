@@ -43,49 +43,10 @@
     </div>
 
     <div class="row">
-        <div class="col-md-7">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><span data-translate="Opbrengst per klant">Opbrengst per klant</span></h5>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i data-feather="filter" class="feather-sm"></i> <span data-translate="Filter">Filter</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-                            <li><h6 class="dropdown-header" data-translate="Periode">Periode</h6></li>
-                            {% set quarters = [('Q1', 'Eerste kwartaal'), ('Q2', 'Tweede kwartaal'), ('Q3', 'Derde kwartaal'), ('Q4', 'Vierde kwartaal')] %}
-                            {% for q_code, q_name in quarters %}
-                            <li><a class="dropdown-item" href="{{ url_for('report_annual_revenue', year=selected_year, quarter=q_code) }}"><span data-translate="{{ q_name }}">{{ q_name }}</span></a></li>
-                            {% endfor %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('report_annual_revenue', year=selected_year, sort='revenue') }}"><span data-translate="Sorteer op opbrengst">Sorteer op opbrengst</span></a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('report_annual_revenue', year=selected_year, sort='hours') }}"><span data-translate="Sorteer op uren">Sorteer op uren</span></a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('report_annual_revenue', year=selected_year, sort='alpha') }}"><span data-translate="Sorteer op naam">Sorteer op naam</span></a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <canvas id="clientRevenueChart" height="300"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-5">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><span data-translate="Maandelijkse verdeling">Maandelijkse verdeling</span></h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="quarterRevenueChart" height="300"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><span data-translate="Opbrengstdetails per klant">Opbrengstdetails per klant</span></h5>
+                    <h5 class="mb-0"><span data-translate="Opbrengst per klant">Opbrengst per klant</span></h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -93,9 +54,9 @@
                             <thead class="table-light">
                                 <tr>
                                     <th><span data-translate="Klant">Klant</span></th>
-                                    <th class="text-end"><span data-translate="Aantal werkzaamheden">Aantal werkzaamheden</span></th>
+                                    <th class="text-end"><span data-translate="Aantal opdrachten">Aantal opdrachten</span></th>
                                     <th class="text-end"><span data-translate="Totaal uren">Totaal uren</span></th>
-                                    <th class="text-end"><span data-translate="Totaal opbrengst">Totaal opbrengst</span></th>
+                                    <th class="text-end"><span data-translate="Opbrengst">Opbrengst</span></th>
                                     <th class="text-end"><span data-translate="Percentage">Percentage</span></th>
                                 </tr>
                             </thead>
@@ -166,17 +127,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Set up feather icons
+        // Initialize feather icons
         feather.replace();
         
-        // Prepare chart colors
+        // Define chart colors
         const chartColors = [
-            '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', 
-            '#ffc107', '#198754', '#20c997', '#0dcaf0', '#6c757d', '#343a40'
+            '#0d6efd', // primary
+            '#dc3545', // danger
+            '#198754', // success
+            '#ffc107', // warning
+            '#0dcaf0', // info
+            '#6f42c1', // purple
+            '#fd7e14', // orange
+            '#20c997', // teal
+            '#6610f2', // indigo
+            '#d63384', // pink
         ];
         
-        // Prepare monthly data
-        const months = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        // Month labels for charts
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
         
         // Create monthly revenue chart
         const monthlyCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
@@ -217,88 +186,6 @@
                 }
             }
         });
-        
-        // Create quarterly revenue chart
-        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
-        const quarterlyCtx = document.getElementById('quarterRevenueChart').getContext('2d');
-        
-        // Calculate quarterly totals
-        const q1 = {{ monthly_revenue[0:3]|sum }};
-        const q2 = {{ monthly_revenue[3:6]|sum }};
-        const q3 = {{ monthly_revenue[6:9]|sum }};
-        const q4 = {{ monthly_revenue[9:12]|sum }};
-        
-        const quarterChart = new Chart(quarterlyCtx, {
-            type: 'pie',
-            data: {
-                labels: quarters,
-                datasets: [{
-                    data: [q1, q2, q3, q4],
-                    backgroundColor: ['#0d6efd', '#20c997', '#ffc107', '#dc3545'],
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: € ${value.toFixed(2)} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Create client revenue chart
-        {% if revenue_per_client %}
-        const clientNames = [{% for client in revenue_per_client %}{% if loop.index <= 10 %}'{{ client.klant_naam }}'{% if not loop.last and loop.index < 10 %}, {% endif %}{% endif %}{% endfor %}];
-        const clientRevenue = [{% for client in revenue_per_client %}{% if loop.index <= 10 %}{{ client.totaal_opbrengst }}{% if not loop.last and loop.index < 10 %}, {% endif %}{% endif %}{% endfor %}];
-        
-        const clientCtx = document.getElementById('clientRevenueChart').getContext('2d');
-        const clientChart = new Chart(clientCtx, {
-            type: 'bar',
-            data: {
-                labels: clientNames,
-                datasets: [{
-                    label: 'Opbrengst per klant',
-                    data: clientRevenue,
-                    backgroundColor: chartColors.slice(0, clientNames.length),
-                    borderColor: chartColors.slice(0, clientNames.length),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Opbrengst (€)'
-                        }
-                    }
-                }
-            }
-        });
-        {% endif %}
     });
 </script>
 {% endblock %} 

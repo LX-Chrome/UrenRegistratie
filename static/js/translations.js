@@ -51,7 +51,7 @@ const translations = {
         "Pauze": "Break",
         "Klaar voor vandaag": "Done for today",
         "Notitie": "Note",
-        "Waar ben je mee bezig?": "What are you working on?",
+        "Waar ben je mee bezig?": "What are you busy with?",
         "Check In": "Check In",
         "Recente Check-ins": "Recent Check-ins",
         "Recente Urenregistraties": "Recent Time Entries",
@@ -567,13 +567,7 @@ function translatePage() {
     
     // Re-init Feather icons after translation to ensure they render properly
     if (typeof feather !== 'undefined') {
-        // Use the optimized feather initialization if available
-        if (typeof initializeFeather === 'function') {
-            initializeFeather();
-        } else {
-            // Fallback to direct call if optimization not available
-            feather.replace();
-        }
+        feather.replace();
     }
 }
 
