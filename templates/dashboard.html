@@ -76,7 +76,6 @@
                                            data-note="{{ check_in.note or '' }}" 
                                            data-form-action="{{ url_for('edit_check_in', checkin_id=check_in.id) }}" 
                                            {% if check_in.opdracht_id %}data-opdracht-id="{{ check_in.opdracht_id }}"{% endif %}
-                                           onclick="if(typeof openStaticCheckinModal === 'function') { event.preventDefault(); openStaticCheckinModal('{{ url_for('edit_check_in', checkin_id=check_in.id) }}', '{{ check_in.status }}', '{{ check_in.check_in_time.strftime('%H:%M') }}', '{{ check_in.note or '' }}', '{% if check_in.opdracht_id %}{{ check_in.opdracht_id }}{% endif %}'); return false; }"
                                            title="Edit">
                                             <i data-feather="edit-2" class="feather-sm"></i>
                                         </a>
@@ -236,6 +235,9 @@ function convertUTCTimesToLocal() {
     });
 }
 
+// Store check-in data globally to avoid template syntax issues
+var checkInsData = [];
+
 // Initialize everything when the document is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded, initializing dashboard functionality");
@@ -253,36 +255,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Add check-in assignment data to edit buttons
+    // Prepare check-ins data
     {% for check_in in check_ins %}
-    {% if check_in.opdracht_id %}
-    var editBtn{{ check_in.id }} = document.querySelector('.edit-checkin-btn[data-id="{{ check_in.id }}"]');
-    if (editBtn{{ check_in.id }}) {
-        editBtn{{ check_in.id }}.setAttribute('data-opdracht-id', "{{ check_in.opdracht_id }}");
-    }
-    {% endif %}
+    checkInsData.push({
+        id: "{{ check_in.id }}",
+        status: "{{ check_in.status }}",
+        time: "{{ check_in.check_in_time.strftime('%H:%M') }}",
+        note: "{{ check_in.note or '' }}",
+        formAction: "{{ url_for('edit_check_in', checkin_id=check_in.id) }}",
+        opdrachtId: "{% if check_in.opdracht_id %}{{ check_in.opdracht_id }}{% endif %}"
+    });
     {% endfor %}
     
-    // Pass client and assignment data to modal system
+    // Attach event listeners to edit buttons using cleaner approach
+    document.querySelectorAll('.edit-checkin-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const checkInId = this.getAttribute('data-id');
+            const formAction = this.getAttribute('data-form-action');
+            const status = this.getAttribute('data-status');
+            const timeValue = this.getAttribute('data-time');
+            const noteValue = this.getAttribute('data-note');
+            const opdrachtId = this.getAttribute('data-opdracht-id') || '';
+            
+            if (typeof openStaticCheckinModal === 'function') {
+                openStaticCheckinModal(formAction, status, timeValue, noteValue, opdrachtId);
+            }
+            
+            return false;
+        });
+    });
+    
+    // Store clients and assignments data
+    var clientData = [];
+    var assignmentData = [];
+    
+    {% for client in clients %}
+    clientData.push({
+        id: "{{ client.id }}",
+        name: "{{ client.bedrijfsnaam }}"
+    });
+    {% endfor %}
+    
+    {% for opdracht in opdrachten %}
+    assignmentData.push({
+        id: "{{ opdracht.id }}",
+        titel: "{{ opdracht.titel }}",
+        klant_id: "{{ opdracht.klant_id }}"
+    });
+    {% endfor %}
+    
+    // Pass client and assignment data to modal system if available
     if (typeof window.setupClientAndAssignmentData === 'function') {
-        var clientData = [];
-        var assignmentData = [];
-        
-        {% for client in clients %}
-        clientData.push({
-            id: "{{ client.id }}",
-            name: "{{ client.bedrijfsnaam }}"
-        });
-        {% endfor %}
-        
-        {% for opdracht in opdrachten %}
-        assignmentData.push({
-            id: "{{ opdracht.id }}",
-            titel: "{{ opdracht.titel }}",
-            klant_id: "{{ opdracht.klant_id }}"
-        });
-        {% endfor %}
-        
         window.setupClientAndAssignmentData(clientData, assignmentData);
     }
 });
@@ -358,26 +382,30 @@ document.addEventListener('DOMContentLoaded', function() {
         modalContent.style.width = '90%';
         modalContent.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
         
-        // Get clients and assignments data
+        // Get clients and assignments data directly from element
         let clientsHtml = '<option value="" data-translate="Select Client">Select Client</option>';
         let assignmentsHtml = '<option value="" data-translate="Select Assignment">Select Assignment</option>';
         
-        // Add clients options
-        const clients = document.querySelectorAll('#dashboard-client-select option');
-        clients.forEach(function(option) {
-            if (option.value) {
-                clientsHtml += `<option value="${option.value}">${option.textContent}</option>`;
-            }
-        });
+        // Add clients options from the stored data
+        const clientSelect = document.getElementById('dashboard-client-select');
+        if (clientSelect) {
+            Array.from(clientSelect.options).forEach(function(option) {
+                if (option.value) {
+                    clientsHtml += `<option value="${option.value}">${option.textContent}</option>`;
+                }
+            });
+        }
         
-        // Add assignments options
-        const assignments = document.querySelectorAll('#opdracht_id option');
-        assignments.forEach(function(option) {
-            if (option.value) {
-                const clientId = option.getAttribute('data-client');
-                assignmentsHtml += `<option value="${option.value}" data-client="${clientId}" ${option.value === opdrachtId ? 'selected' : ''}>${option.textContent}</option>`;
-            }
-        });
+        // Add assignments options from the stored data
+        const assignmentSelect = document.getElementById('opdracht_id');
+        if (assignmentSelect) {
+            Array.from(assignmentSelect.options).forEach(function(option) {
+                if (option.value) {
+                    const clientId = option.getAttribute('data-client');
+                    assignmentsHtml += `<option value="${option.value}" data-client="${clientId}" ${option.value === opdrachtId ? 'selected' : ''}>${option.textContent}</option>`;
+                }
+            });
+        }
         
         // Form HTML with updated color scheme
         modalContent.innerHTML = `
@@ -436,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Filter assignments based on client selection
+        // Filter assignments based on client selection - improved version
         window.filterModalAssignments = function() {
             const clientSelect = modalContainer.querySelector('#direct-client');
             const assignmentSelect = modalContainer.querySelector('#direct-opdracht');

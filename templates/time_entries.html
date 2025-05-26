@@ -25,7 +25,7 @@
                                 </a></li>
                             </ul>
                         </div>
-                        <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importEntriesModal">
+                        <button class="btn btn-info import-entries-btn">
                             <i data-feather="upload"></i> <span class="d-none d-md-inline" data-translate="Import">Import</span>
                         </button>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
@@ -98,9 +98,8 @@
                                 {% if not export_mode %}
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#editEntryModal{{ entry.id }}"
+                                        <button class="btn btn-sm btn-outline-primary edit-entry-btn" 
+                                                data-entry-id="{{ entry.id }}"
                                                 title="Edit">
                                             <i data-feather="edit-2"></i> <span class="d-none d-lg-inline" data-translate="Bewerken">Edit</span>
                                         </button>
@@ -138,7 +137,7 @@
 
 <!-- Import Entries Modal -->
 <div class="modal fade" id="importEntriesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" data-translate="Import Time Entries">Import Time Entries</h5>
@@ -149,21 +148,14 @@
                     <div class="mb-3">
                         <label for="import_file" class="form-label" data-translate="Select File">Select File</label>
                         <input type="file" class="form-control" id="import_file" name="import_file" accept=".csv,.xlsx,.xls" required>
-                        <div class="form-text" data-translate="Supported formats: CSV, Excel (.xlsx, .xls)">
-                            Supported formats: CSV, Excel (.xlsx, .xls)
-                        </div>
                     </div>
                     
-                    <div class="alert alert-info">
-                        <h6 data-translate="CSV Format Instructions">CSV Format Instructions</h6>
-                        <p data-translate="Your CSV file should have the following columns:">
-                            Your CSV file should have the following columns:
-                        </p>
-                        <code>Date,Project,Hours,Description,Assignment ID</code>
-                        <p class="mt-2 mb-0" data-translate="Example:">Example:</p>
-                        <code>2023-05-01,Project A,8.5,Working on feature X,12</code>
-                        <p class="mt-2 mb-0" data-translate="Date format:">Date format:</p>
-                        <code>YYYY-MM-DD</code>
+                    <div class="alert alert-info py-2">
+                        <small>
+                            <strong data-translate="Format">Format</strong>: CSV/Excel with columns:<br>
+                            <code>Date,Project,Hours,Description,Assignment ID</code><br>
+                            <strong data-translate="Example">Example</strong>: <code>2023-05-01,Project A,8.5,Working on feature X,12</code>
+                        </small>
                     </div>
                     
                     <!-- Add hidden field to determine where to redirect after submission -->
@@ -391,21 +383,151 @@ function loadAssignmentsForEdit(clientId, entryId) {
     assignmentSelect.value = '';
 }
 
-{% if from_dashboard %}
+// Store active modals to properly dispose them
+let activeModals = {};
+
+// Function to open edit modal with proper cleanup
+function openEditModal(entryId) {
+    // First clean up any existing modal
+    if (activeModals[entryId]) {
+        try {
+            activeModals[entryId].dispose();
+        } catch (e) {
+            console.log("Error disposing modal:", e);
+        }
+        delete activeModals[entryId];
+    }
+
+    // Clean up modal backdrop artifacts
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Remove modal-open class from body
+    if (document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+    }
+    
+    // Reset body styles
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Now create a fresh modal instance
+    const modalElement = document.getElementById('editEntryModal' + entryId);
+    if (modalElement) {
+        const modalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // Store the instance for later cleanup
+        activeModals[entryId] = modalInstance;
+        
+        // Add event listeners for proper cleanup
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            if (activeModals[entryId]) {
+                delete activeModals[entryId];
+            }
+            
+            // Additional cleanup after modal is hidden
+            setTimeout(function() {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.remove();
+                });
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                }
+                
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }, { once: true });
+        
+        // Show the modal
+        modalInstance.show();
+    }
+}
+
+// Function to open import modal with proper cleanup
+function openImportModal() {
+    // Clean up modal backdrop artifacts
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Remove modal-open class from body
+    if (document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+    }
+    
+    // Reset body styles
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Now create a fresh modal instance
+    const modalElement = document.getElementById('importEntriesModal');
+    if (modalElement) {
+        const modalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // Add event listeners for proper cleanup
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            // Additional cleanup after modal is hidden
+            setTimeout(function() {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.remove();
+                });
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                }
+                
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }, { once: true });
+        
+        // Show the modal
+        modalInstance.show();
+    }
+}
+
+// Add event listeners after DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Attach click handlers to all edit buttons
+    document.querySelectorAll('.edit-entry-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const entryId = this.getAttribute('data-entry-id');
+            if (entryId) {
+                openEditModal(entryId);
+            }
+        });
+    });
+    
+    // Add click handler for import button
+    document.querySelector('.import-entries-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        openImportModal();
+    });
+    
+    {% if from_dashboard %}
     document.getElementById('redirect_to_dashboard').value = 'true';
     {% if new %}
     var addEntryModal = new bootstrap.Modal(document.getElementById('addEntryModal'));
     addEntryModal.show();
     {% endif %}
+    {% endif %}
+    
+    {% if edit %}
+    // Use the improved modal opening function
+    openEditModal('{{ edit }}');
+    {% endif %}
 });
-{% endif %}
-
-{% if edit %}
-document.addEventListener('DOMContentLoaded', function() {
-    var editEntryModal = new bootstrap.Modal(document.getElementById('editEntryModal{{ edit }}'));
-    editEntryModal.show();
-});
-{% endif %}
 </script>
 {% endblock %}
