@@ -109,9 +109,20 @@
                                                 title="Delete">
                                             <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Delete</span>
                                         </button>
-                                        <button class="'btn btn-sm btn-outline-secondary"
-                                                title="Export">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                            <i data-feather="download"></i> <span class="d-none d-md-inline" data-translate="Exporteren">Exporteren</span>
                                         </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='pdf') }}">
+                                                    <i data-feather="file-text"></i> PDF
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='excel') }}">
+                                                    <i data-feather="file"></i> Excel
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='csv') }}">
+                                                    <i data-feather="file"></i> CSV
+                                                </a></li>
+                                            </ul>
                                     </div>
                                 </td>
                                 {% endif %}
