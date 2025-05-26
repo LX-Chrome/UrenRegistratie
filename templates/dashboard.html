@@ -71,7 +71,6 @@
                                         <small class="me-2 utc-time" data-utc-time="{{ check_in.check_in_time.strftime('%Y-%m-%dT%H:%M:%S') }}">{{ check_in.check_in_time.strftime('%H:%M') }}</small>
                                         <a href="#" class="btn btn-sm btn-outline-primary me-1 edit-checkin-btn" 
                                            data-id="{{ check_in.id }}" 
-                                           data-bs-target="#editCheckinModal{{ check_in.id }}" 
                                            data-status="{{ check_in.status }}" 
                                            data-time="{{ check_in.check_in_time.strftime('%H:%M') }}" 
                                            data-note="{{ check_in.note or '' }}" 
@@ -85,10 +84,6 @@
                                             <i data-feather="trash-2" class="feather-sm"></i>
                                         </a>
                                     </div>
-                                    
-                                    <!-- Original Bootstrap Modal (hidden) -->
-                                    <div class="modal" id="editCheckinModal{{ check_in.id }}" style="display:none"></div>
-                                    
                                 </div>
                                 {% if check_in.note %}
                                 <p class="mb-1 text-break">{{ check_in.note }}</p>
@@ -334,6 +329,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openStaticCheckinModal = function(formAction, status, timeValue, noteValue, opdrachtId) {
         console.log("Creating edit modal with:", { formAction, status, timeValue, noteValue, opdrachtId });
         
+        // Remove any existing modals to prevent stacking
+        document.querySelectorAll('.direct-modal-container').forEach(function(modal) {
+            modal.remove();
+        });
+        
         // Create modal container
         const modalContainer = document.createElement('div');
         modalContainer.className = 'direct-modal-container';
@@ -351,7 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create modal content
         const modalContent = document.createElement('div');
         modalContent.className = 'direct-modal-content';
-        modalContent.style.backgroundColor = '#fff';
+        modalContent.style.backgroundColor = '#2C3E50';
+        modalContent.style.color = '#fff';
         modalContent.style.borderRadius = '5px';
         modalContent.style.maxWidth = '500px';
         modalContent.style.width = '90%';
@@ -378,38 +379,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Form HTML
+        // Form HTML with updated color scheme
         modalContent.innerHTML = `
             <div style="padding: 15px; background-color: #1B3B6F; color: white; border-top-left-radius: 5px; border-top-right-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
                 <h5 style="margin: 0;">Edit Check-in</h5>
                 <button type="button" class="direct-modal-close" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
             </div>
-            <form action="${formAction}" method="POST" style="padding: 15px;">
+            <form action="${formAction}" method="POST" style="padding: 15px; background-color: #2C3E50; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
                 <div style="margin-bottom: 15px;">
-                    <label for="direct-status" style="display: block; margin-bottom: 5px;">Status</label>
-                    <select id="direct-status" name="status" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <label for="direct-status" style="display: block; margin-bottom: 5px; color: white;">Status</label>
+                    <select id="direct-status" name="status" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
                         <option value="working" ${status === 'working' ? 'selected' : ''}>Aan het werk</option>
                         <option value="break" ${status === 'break' ? 'selected' : ''}>Pauze</option>
                         <option value="done" ${status === 'done' ? 'selected' : ''}>Klaar voor vandaag</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label for="direct-time" style="display: block; margin-bottom: 5px;">Tijd</label>
-                    <input type="time" id="direct-time" name="check_in_time" value="${timeValue}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <label for="direct-time" style="display: block; margin-bottom: 5px; color: white;">Tijd</label>
+                    <input type="time" id="direct-time" name="check_in_time" value="${timeValue}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label for="direct-note" style="display: block; margin-bottom: 5px;">Notitie</label>
-                    <input type="text" id="direct-note" name="note" value="${noteValue || ''}" placeholder="Waar ben je mee bezig?" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <label for="direct-note" style="display: block; margin-bottom: 5px; color: white;">Notitie</label>
+                    <input type="text" id="direct-note" name="note" value="${noteValue || ''}" placeholder="Waar ben je mee bezig?" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label for="direct-client" style="display: block; margin-bottom: 5px;">Client</label>
-                    <select id="direct-client" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;" onchange="filterModalAssignments()">
+                    <label for="direct-client" style="display: block; margin-bottom: 5px; color: white;">Client</label>
+                    <select id="direct-client" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;" onchange="filterModalAssignments()">
                         ${clientsHtml}
                     </select>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label for="direct-opdracht" style="display: block; margin-bottom: 5px;">Opdracht</label>
-                    <select id="direct-opdracht" name="opdracht_id" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <label for="direct-opdracht" style="display: block; margin-bottom: 5px; color: white;">Opdracht</label>
+                    <select id="direct-opdracht" name="opdracht_id" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
                         ${assignmentsHtml}
                     </select>
                 </div>
@@ -469,25 +470,37 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial filtering of assignments
         window.filterModalAssignments();
         
-        // Add event listeners
-        modalContainer.querySelector('.direct-modal-close').addEventListener('click', function() {
+        // Function to close the modal
+        function closeModal() {
             modalContainer.remove();
-        });
+        }
         
-        modalContainer.querySelector('.direct-modal-cancel').addEventListener('click', function() {
-            modalContainer.remove();
-        });
+        // Add improved event listeners with stopPropagation
+        const closeButton = modalContainer.querySelector('.direct-modal-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+            });
+        }
         
-        // Close on backdrop click
+        const cancelButton = modalContainer.querySelector('.direct-modal-cancel');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+            });
+        }
+        
+        // Close on backdrop click - improved event handling
         modalContainer.addEventListener('click', function(e) {
             if (e.target === modalContainer) {
-                modalContainer.remove();
+                closeModal();
             }
         });
     }
-    
-    // REMOVED: The duplicate event listeners for edit buttons
-    // Now relying only on the onclick attribute in the HTML
 });
 </script>
 {% endblock %}

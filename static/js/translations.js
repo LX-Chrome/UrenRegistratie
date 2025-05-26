@@ -150,8 +150,7 @@ const translations = {
         "Are you sure you want to delete this entry? This action cannot be undone.": "Are you sure you want to delete this entry? This action cannot be undone.",
         
         // Other common elements
-        "gildeDevOps Solutions": "gildeDevOps Solutions",
-        "Alle rechten voorbehouden": "All rights reserved",
+        "alle rechten voorbehouden.": "all rights reserved.",
         
         // No entries message
         "No recent time entries": "No recent time entries",
