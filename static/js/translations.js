@@ -51,7 +51,7 @@ const translations = {
         "Pauze": "Break",
         "Klaar voor vandaag": "Done for today",
         "Notitie": "Note",
-        "Waar ben je mee bezig?": "What are you working on?",
+        "Waar ben je mee bezig?": "What are you busy with?",
         "Check In": "Check In",
         "Recente Check-ins": "Recent Check-ins",
         "Recente Urenregistraties": "Recent Time Entries",

@@ -8,6 +8,7 @@
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/modal-fix.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='logo-small.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ url_for('static', filename='logo.webp') }}" type="image/webp">
     <style>
@@ -170,7 +171,35 @@
                 padding-top: 65px;
             }
         }
+
+        /* Fix for modal problems */
+        .modal {
+            transition: none !important;
+            transform: none !important;
+        }
+        .modal-dialog {
+            transition: none !important;
+            transform: none !important;
+            animation: none !important;
+            margin: 1.75rem auto !important;
+        }
+        body.modal-open {
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100% !important;
+        }
     </style>
+    <script>
+        // Prevent wheel events when modals are open
+        window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('wheel', function(e) {
+                if (document.body.classList.contains('modal-open')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }, { passive: false, capture: true });
+        });
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
@@ -286,9 +315,82 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script>
+    // Global modal fix to prevent UI glitches
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fix modals immediately when DOM loads
+        const fixModals = function() {
+            // Find all modal triggers
+            document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
+                trigger.addEventListener('click', function(e) {
+                    // Store current scroll position before fixing body position
+                    window.modalScrollY = window.scrollY;
+                    
+                    // Disable scroll immediately
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.width = '100%';
+                    document.body.style.height = '100%';
+                    document.body.style.top = `-${window.modalScrollY}px`;
+                    
+                    // Force modal to appear after a slight delay to allow CSS to load
+                    setTimeout(() => {
+                        const modalId = this.getAttribute('data-bs-target');
+                        const modal = document.querySelector(modalId);
+                        if (modal) {
+                            // Ensure modal has proper classes
+                            modal.classList.add('scroll-fixed');
+                            
+                            // Force recalculation of modal position
+                            const modalDialog = modal.querySelector('.modal-dialog');
+                            if (modalDialog) {
+                                modalDialog.style.transform = 'none';
+                                modalDialog.style.transition = 'none';
+                            }
+                        }
+                    }, 10);
+                });
+            });
+            
+            // Fix closing modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('hidden.bs.modal', function() {
+                    // Restore body position and scroll
+                    const scrollY = window.modalScrollY || 0;
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.width = '';
+                    document.body.style.height = '';
+                    document.body.style.top = '';
+                    
+                    // Restore scroll position
+                    window.scrollTo(0, scrollY);
+                });
+            });
+            
+            // Prevent wheel events on modals
+            window.addEventListener('wheel', function(e) {
+                if (document.body.classList.contains('modal-open')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, { passive: false, capture: true });
+        };
+        
+        // Run fix immediately
+        fixModals();
+        
+        // Reapply fix after dynamic content loads
+        const observer = new MutationObserver(fixModals);
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+    </script>
     <script src="{{ url_for('static', filename='js/translations.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/timezone-handler.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom-modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/fix-modal-glitches.js') }}"></script>
 
     <footer class="mt-5 py-3 text-center text-muted">
         <div class="container">

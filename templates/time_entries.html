@@ -37,12 +37,38 @@
             </div>
             <div class="card-body">
                 <form class="mb-4" method="GET">
-                    <div class="input-group">
-                        <input type="text" class="form-control" name="search" 
-                               data-placeholder="Search entries..."
-                               placeholder="Search entries..." 
-                               value="{{ search }}">
-                        <button class="btn btn-outline-secondary" type="submit" data-translate="Search">Search</button>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="search" 
+                                       data-placeholder="Search entries..."
+                                       placeholder="Search entries..." 
+                                       value="{{ search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="client_id">
+                                <option value="" data-translate="All Clients">All Clients</option>
+                                {% for client in clients %}
+                                <option value="{{ client.id }}" {% if client_id == client.id|string %}selected{% endif %}>
+                                    {{ client.bedrijfsnaam }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="opdracht_id">
+                                <option value="" data-translate="All Assignments">All Assignments</option>
+                                {% for opdracht in opdrachten %}
+                                <option value="{{ opdracht.id }}" {% if opdracht_id == opdracht.id|string %}selected{% endif %}>
+                                    {{ opdracht.titel }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-secondary w-100" type="submit" data-translate="Filter">Filter</button>
+                        </div>
                     </div>
                 </form>
                 <div class="table-responsive">
@@ -50,6 +76,8 @@
                         <thead>
                             <tr>
                                 <th data-translate="Date">Date</th>
+                                <th data-translate="Client">Client</th>
+                                <th data-translate="Assignment">Assignment</th>
                                 <th data-translate="Project">Project</th>
                                 <th data-translate="Hours">Hours</th>
                                 <th class="d-none d-md-table-cell" data-translate="Description">Description</th>
@@ -62,6 +90,8 @@
                             {% for entry in entries %}
                             <tr>
                                 <td>{{ entry.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{% if entry.opdracht %}{{ entry.opdracht.klant.bedrijfsnaam }}{% else %}-{% endif %}</td>
+                                <td>{% if entry.opdracht %}{{ entry.opdracht.titel }}{% else %}-{% endif %}</td>
                                 <td>{{ entry.project }}</td>
                                 <td>{{ entry.hours }}</td>
                                 <td class="d-none d-md-table-cell text-truncate" style="max-width: 200px;">{{ entry.description }}</td>
@@ -79,6 +109,20 @@
                                                 title="Delete">
                                             <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Delete</span>
                                         </button>
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                            <i data-feather="download"></i> <span class="d-none d-md-inline" data-translate="Exporteren">Exporteren</span>
+                                        </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='pdf') }}">
+                                                    <i data-feather="file-text"></i> PDF
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='excel') }}">
+                                                    <i data-feather="file"></i> Excel
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='time-entries', format='csv') }}">
+                                                    <i data-feather="file"></i> CSV
+                                                </a></li>
+                                            </ul>
                                     </div>
                                 </td>
                                 {% endif %}
@@ -115,9 +159,9 @@
                         <p data-translate="Your CSV file should have the following columns:">
                             Your CSV file should have the following columns:
                         </p>
-                        <code>Date,Project,Hours,Description</code>
+                        <code>Date,Project,Hours,Description,Assignment ID</code>
                         <p class="mt-2 mb-0" data-translate="Example:">Example:</p>
-                        <code>2023-05-01,Project A,8.5,Working on feature X</code>
+                        <code>2023-05-01,Project A,8.5,Working on feature X,12</code>
                         <p class="mt-2 mb-0" data-translate="Date format:">Date format:</p>
                         <code>YYYY-MM-DD</code>
                     </div>
@@ -149,6 +193,24 @@
                         <input type="date" class="form-control" id="date" name="date" value="{{ datetime.utcnow().strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
+                        <label for="client_select" class="form-label" data-translate="Client">Client</label>
+                        <select class="form-select" id="client_select" onchange="loadAssignments(this.value)">
+                            <option value="" data-translate="Select Client">Select Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.bedrijfsnaam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="opdracht_id" class="form-label" data-translate="Assignment">Assignment</label>
+                        <select class="form-select" id="opdracht_id" name="opdracht_id">
+                            <option value="" data-translate="Select Assignment">Select Assignment</option>
+                            {% for opdracht in opdrachten %}
+                            <option value="{{ opdracht.id }}" data-client="{{ opdracht.klant_id }}">{{ opdracht.titel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label for="project" class="form-label" data-translate="Project">Project</label>
                         <input type="text" class="form-control" id="project" name="project" required>
                     </div>
@@ -159,6 +221,10 @@
                     <div class="mb-3">
                         <label for="description" class="form-label" data-translate="Description">Description</label>
                         <textarea class="form-control" id="description" name="description" required></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_billable" name="is_billable" value="1" checked>
+                        <label class="form-check-label" for="is_billable" data-translate="Billable">Billable</label>
                     </div>
                     
                     <!-- Add hidden field to determine where to redirect after submission -->
@@ -190,6 +256,29 @@
                                value="{{ entry.date.strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
+                        <label for="client_select{{ entry.id }}" class="form-label" data-translate="Client">Client</label>
+                        <select class="form-select" id="client_select{{ entry.id }}" onchange="loadAssignmentsForEdit(this.value, '{{ entry.id }}')">
+                            <option value="" data-translate="Select Client">Select Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" {% if entry.opdracht and entry.opdracht.klant_id == client.id %}selected{% endif %}>
+                                {{ client.bedrijfsnaam }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="opdracht_id{{ entry.id }}" class="form-label" data-translate="Assignment">Assignment</label>
+                        <select class="form-select" id="opdracht_id{{ entry.id }}" name="opdracht_id">
+                            <option value="" data-translate="Select Assignment">Select Assignment</option>
+                            {% for opdracht in opdrachten %}
+                            <option value="{{ opdracht.id }}" data-client="{{ opdracht.klant_id }}" 
+                                    {% if entry.opdracht_id == opdracht.id %}selected{% endif %}>
+                                {{ opdracht.titel }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label for="project{{ entry.id }}" class="form-label" data-translate="Project">Project</label>
                         <input type="text" class="form-control" id="project{{ entry.id }}" name="project" 
                                value="{{ entry.project }}" required>
@@ -202,6 +291,11 @@
                     <div class="mb-3">
                         <label for="description{{ entry.id }}" class="form-label" data-translate="Description">Description</label>
                         <textarea class="form-control" id="description{{ entry.id }}" name="description" required>{{ entry.description }}</textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_billable{{ entry.id }}" name="is_billable" value="1"
+                               {% if entry.is_billable %}checked{% endif %}>
+                        <label class="form-check-label" for="is_billable{{ entry.id }}" data-translate="Billable">Billable</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -245,6 +339,56 @@ function confirmDelete(deleteUrl) {
     
     // Show the modal
     modal.show();
+}
+
+function loadAssignments(clientId) {
+    const assignmentSelect = document.getElementById('opdracht_id');
+    
+    // First, hide all options
+    for (let i = 0; i < assignmentSelect.options.length; i++) {
+        const option = assignmentSelect.options[i];
+        
+        if (option.value === '') {
+            // Always show the placeholder option
+            option.style.display = '';
+        } else {
+            const optionClientId = option.getAttribute('data-client');
+            
+            if (!clientId || optionClientId === clientId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    }
+    
+    // Reset the assignment selection
+    assignmentSelect.value = '';
+}
+
+function loadAssignmentsForEdit(clientId, entryId) {
+    const assignmentSelect = document.getElementById('opdracht_id' + entryId);
+    
+    // First, hide all options
+    for (let i = 0; i < assignmentSelect.options.length; i++) {
+        const option = assignmentSelect.options[i];
+        
+        if (option.value === '') {
+            // Always show the placeholder option
+            option.style.display = '';
+        } else {
+            const optionClientId = option.getAttribute('data-client');
+            
+            if (!clientId || optionClientId === clientId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    }
+    
+    // Reset the assignment selection
+    assignmentSelect.value = '';
 }
 
 {% if from_dashboard %}
