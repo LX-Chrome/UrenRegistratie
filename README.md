@@ -1,15 +1,4 @@
-Database URI: sqlite:///database.db
-API Key: your_api_key
-Traceback (most recent call last):
-  File "C:\Users\Administrator\Documents\GitHub\UrenRegistratie\production_server.py", line 4, in <module>
-    import routes  # noqa: F401
-    ^^^^^^^^^^^^^
-  File "C:\Users\Administrator\Documents\GitHub\UrenRegistratie\routes.py", line 7, in <module>
-    from services.export_service import ExportService
-  File "C:\Users\Administrator\Documents\GitHub\UrenRegistratie\services\export_service.py", line 4, in <module>
-    import pdfkit
-ModuleNotFoundError: No module named 'pdfkit'
-Press any key to continue# Time Registrator
+
 
 A comprehensive web-based time tracking and project management application built with Flask. This application allows users to track their working hours, manage clients, projects, and employees, and generate detailed reports.
 
