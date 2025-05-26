@@ -44,10 +44,11 @@ echo Installing production dependencies...
 call prod_env\Scripts\activate.bat
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python -m pip install pdfkit
 python -m pip install waitress
 
 REM Ensure all critical packages are installed
-for %%p in (flask flask-login flask-sqlalchemy xhtml2pdf reportlab waitress python-dotenv) do (
+for %%p in (flask flask-login flask-sqlalchemy reportlab waitress python-dotenv) do (
     python -m pip install %%p
 )
 
@@ -80,6 +81,13 @@ echo             ip = socket.gethostbyname(hostname) >> production_server.py
 echo             print(f"http://{ip}:{port} (from your network)") >> production_server.py
 echo         except: >> production_server.py
 echo             pass >> production_server.py
+echo. >> production_server.py
+echo     # Configure for PDF generation with ReportLab >> production_server.py
+echo     try: >> production_server.py
+echo         import reportlab >> production_server.py
+echo         print("ReportLab is available for PDF generation") >> production_server.py
+echo     except ImportError: >> production_server.py
+echo         print("Warning: ReportLab module not found. Please install it for PDF export.") >> production_server.py
 echo. >> production_server.py
 echo     # Start production server with waitress >> production_server.py
 echo     serve(app, host=host, port=port, threads=threads) >> production_server.py
