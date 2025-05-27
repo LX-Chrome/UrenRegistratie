@@ -33,9 +33,9 @@
             </div>
             <div class="card-body">
                 <!-- Employee Filter -->
-                <form class="mb-4" method="GET">
-                    <div class="row">
-                        <div class="col-md-6">
+                <form class="mb-4" method="GET" id="filterForm">
+                    <div class="row g-2">
+                        <div class="col-md-5">
                             <div class="input-group">
                                 <label class="input-group-text" for="employee_id" data-translate="Medewerker">Medewerker</label>
                                 <select class="form-select" name="employee_id" id="employee_id" onchange="this.form.submit()">
@@ -46,6 +46,36 @@
                                     </option>
                                     {% endfor %}
                                 </select>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <label class="input-group-text" for="assignment_id" data-translate="Assignment">Opdracht</label>
+                                <select class="form-select" name="assignment_id" id="assignment_id" onchange="this.form.submit()">
+                                    <option value="" data-translate="Alle opdrachten">Alle opdrachten</option>
+                                    {% for opdracht in opdrachten %}
+                                    <option value="{{ opdracht.id }}" {% if selected_assignment and selected_assignment|int == opdracht.id %}selected{% endif %}>
+                                        {{ opdracht.titel }} 
+                                        {% if opdracht.klant %}
+                                        ({{ opdracht.klant.bedrijfsnaam }})
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()" data-translate="Clear Filters">Filters wissen</button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Zoek in beschrijvingen..." data-translate="Search in descriptions...">
+                                <button class="btn btn-outline-primary" type="button" id="searchButton">
+                                    <i data-feather="search"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -147,7 +177,7 @@
                     <!-- Client field -->
                     <div class="mb-3">
                         <label for="client_select_add" class="form-label" data-translate="Client">Client</label>
-                        <select class="form-select" id="client_select_add" onchange="loadAssignmentsForAdd(this.value)">
+                        <select class="form-select" id="client_select_add">
                             <option value="" data-translate="Select Client">Selecteer Client</option>
                             {% for client in clients %}
                             <option value="{{ client.id }}">
@@ -218,7 +248,7 @@
                     <!-- Client field -->
                     <div class="mb-3">
                         <label for="client_select{{ item.entry.id }}" class="form-label" data-translate="Client">Client</label>
-                        <select class="form-select" id="client_select{{ item.entry.id }}" onchange="loadAssignmentsForEdit(this.value, '{{ item.entry.id }}')">
+                        <select class="form-select" id="client_select{{ item.entry.id }}">
                             <option value="" data-translate="Select Client">Selecteer Client</option>
                             {% for client in clients %}
                             <option value="{{ client.id }}" {% if item.entry.opdracht and item.entry.opdracht.klant_id == client.id %}selected{% endif %}>
@@ -306,53 +336,73 @@ function confirmDelete(deleteUrl) {
 }
 
 function loadAssignmentsForAdd(clientId) {
-    const assignmentSelect = document.getElementById('opdracht_id_add');
-    
-    // First, hide all options
-    for (let i = 0; i < assignmentSelect.options.length; i++) {
-        const option = assignmentSelect.options[i];
-        
-        if (option.value === '') {
-            // Always show the placeholder option
-            option.style.display = '';
-        } else {
-            const optionClientId = option.getAttribute('data-client');
-            
-            if (!clientId || optionClientId === clientId) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        }
+    if (!clientId) {
+        return; // No client selected, nothing to filter
     }
     
-    // Reset the assignment selection
-    assignmentSelect.value = '';
+    const assignmentSelect = document.getElementById('opdracht_id_add');
+    if (!assignmentSelect) {
+        return;
+    }
+    
+    const selectedClientId = String(clientId);
+    
+    // First set display style on all options based on client
+    Array.from(assignmentSelect.options).forEach(option => {
+        if (!option.value) {
+            // Always show the placeholder option
+            option.style.display = '';
+            return;
+        }
+        
+        const optionClientId = String(option.getAttribute('data-client') || '');
+        option.style.display = (optionClientId === selectedClientId) ? '' : 'none';
+    });
+    
+    // Reset to placeholder if current selection is hidden
+    const selectedOption = assignmentSelect.options[assignmentSelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        assignmentSelect.value = '';
+    }
 }
 
 function loadAssignmentsForEdit(clientId, entryId) {
-    const assignmentSelect = document.getElementById('opdracht_id' + entryId);
-    
-    // First, hide all options
-    for (let i = 0; i < assignmentSelect.options.length; i++) {
-        const option = assignmentSelect.options[i];
-        
-        if (option.value === '') {
-            // Always show the placeholder option
-            option.style.display = '';
-        } else {
-            const optionClientId = option.getAttribute('data-client');
-            
-            if (!clientId || optionClientId === clientId) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        }
+    if (!entryId) {
+        return;
     }
     
-    // Reset the assignment selection
-    assignmentSelect.value = '';
+    const assignmentSelect = document.getElementById('opdracht_id' + entryId);
+    if (!assignmentSelect) {
+        return;
+    }
+    
+    if (!clientId) {
+        // If no client is selected, show all options
+        Array.from(assignmentSelect.options).forEach(option => {
+            option.style.display = '';
+        });
+        return;
+    }
+    
+    const selectedClientId = String(clientId);
+    
+    // First set display style on all options based on client
+    Array.from(assignmentSelect.options).forEach(option => {
+        if (!option.value) {
+            // Always show the placeholder option
+            option.style.display = '';
+            return;
+        }
+        
+        const optionClientId = String(option.getAttribute('data-client') || '');
+        option.style.display = (optionClientId === selectedClientId) ? '' : 'none';
+    });
+    
+    // Reset to placeholder if current selection is hidden
+    const selectedOption = assignmentSelect.options[assignmentSelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        assignmentSelect.value = '';
+    }
 }
 
 // Store active modals to properly dispose them
@@ -419,6 +469,37 @@ function openAddModal() {
         
         // Show the modal
         modalInstance.show();
+        
+        // Initialize filtering once modal is shown
+        modalElement.addEventListener('shown.bs.modal', function() {
+            // Set up client selection event handler
+            const clientSelect = document.getElementById('client_select_add');
+            if (clientSelect) {
+                // Apply initial filtering
+                if (clientSelect.value) {
+                    loadAssignmentsForAdd(clientSelect.value);
+                }
+                
+                // Remove old event listener if any
+                clientSelect.removeEventListener('change', clientSelectAddChangeHandler);
+                
+                // Add new event listener
+                clientSelect.addEventListener('change', clientSelectAddChangeHandler);
+            }
+        }, { once: true });
+    }
+}
+
+// External handler function for the change event
+function clientSelectAddChangeHandler(event) {
+    loadAssignmentsForAdd(event.target.value);
+}
+
+// External handler function for edit modal
+function clientSelectEditChangeHandler(event, entryId) {
+    const id = entryId || event.target.getAttribute('data-entry-id');
+    if (id) {
+        loadAssignmentsForEdit(event.target.value, id);
     }
 }
 
@@ -483,6 +564,29 @@ function openEditModal(entryId) {
         
         // Show the modal
         modalInstance.show();
+        
+        // Initialize filtering once modal is shown
+        modalElement.addEventListener('shown.bs.modal', function() {
+            // Set up client selection event handler
+            const clientSelect = document.getElementById('client_select' + entryId);
+            if (clientSelect) {
+                // Apply initial filtering
+                if (clientSelect.value) {
+                    loadAssignmentsForEdit(clientSelect.value, entryId);
+                }
+                
+                // Remove old event listener if any
+                clientSelect.removeEventListener('change', function(e) {
+                    clientSelectEditChangeHandler(e, entryId);
+                });
+                
+                // Add new event listener
+                clientSelect.setAttribute('data-entry-id', entryId);
+                clientSelect.addEventListener('change', function(e) {
+                    clientSelectEditChangeHandler(e, entryId);
+                });
+            }
+        }, { once: true });
     }
 }
 
@@ -504,6 +608,92 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         openAddModal();
     });
+    
+    // Apply initial filtering for each edit modal select on page load
+    document.querySelectorAll('[id^=client_select]').forEach(select => {
+        if (select.id === 'client_select_add') return; // Skip add form
+        
+        if (select.value) {
+            const entryId = select.id.replace('client_select', '');
+            if (entryId) {
+                const assignmentSelect = document.getElementById('opdracht_id' + entryId);
+                if (assignmentSelect) {
+                    // Pre-filter assignments based on the selected client
+                    loadAssignmentsForEdit(select.value, entryId);
+                }
+            }
+        }
+    });
+    
+    // Set up search functionality
+    const searchButton = document.getElementById('searchButton');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (searchButton && searchInput) {
+        // Search when button is clicked
+        searchButton.addEventListener('click', function() {
+            performSearch(searchInput.value.trim());
+        });
+        
+        // Search when Enter key is pressed
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch(searchInput.value.trim());
+            }
+        });
+    }
 });
+
+// Function to clear all filters
+function clearFilters() {
+    const form = document.getElementById('filterForm');
+    const employeeSelect = document.getElementById('employee_id');
+    const assignmentSelect = document.getElementById('assignment_id');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (employeeSelect) employeeSelect.value = '';
+    if (assignmentSelect) assignmentSelect.value = '';
+    if (searchInput) searchInput.value = '';
+    
+    // Reset any client-side filtering
+    resetTableFiltering();
+    
+    // Submit the form to clear server-side filters
+    if (form) form.submit();
+}
+
+// Function to reset any client-side table filtering
+function resetTableFiltering() {
+    document.querySelectorAll('table tbody tr').forEach(row => {
+        row.style.display = '';
+    });
+}
+
+// Function to perform search across the table
+function performSearch(query) {
+    if (!query) {
+        resetTableFiltering();
+        return;
+    }
+    
+    // Convert to lowercase for case-insensitive search
+    query = query.toLowerCase();
+    
+    // Search through table rows
+    document.querySelectorAll('table tbody tr').forEach(row => {
+        let foundMatch = false;
+        
+        // Search all cells in this row
+        row.querySelectorAll('td').forEach(cell => {
+            if (cell.textContent.toLowerCase().includes(query)) {
+                foundMatch = true;
+            }
+        });
+        
+        // Show/hide row based on search result
+        row.style.display = foundMatch ? '' : 'none';
+    });
+}
 </script>
 {% endblock %} 

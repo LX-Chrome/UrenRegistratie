@@ -982,17 +982,69 @@ def edit_medewerker(id):
 @login_required
 def delete_medewerker(id):
     medewerker = Medewerker.query.get_or_404(id)
+    medewerker_name = f"{medewerker.voornaam} {medewerker.achternaam}"
+    
     try:
-        # Eerst verwijder alle gekoppelde werkzaamheden
-        Werkzaamheid.query.filter_by(medewerker_id=id).delete()
-        # Dan de medewerker zelf
+        app.logger.info(f"Starting deletion process for employee ID {id}: {medewerker_name}")
+        
+        # Check if there are User accounts linked to this employee
+        linked_users = User.query.filter_by(medewerker_id=id).all()
+        
+        if linked_users:
+            user_info = [f"{user.username} (ID: {user.id})" for user in linked_users]
+            app.logger.info(f"Found {len(linked_users)} linked user accounts: {', '.join(user_info)}")
+            
+            # Remove the reference to this employee from user accounts
+            for user in linked_users:
+                user.medewerker_id = None
+                app.logger.info(f"Removed medewerker reference from user {user.id} ({user.username})")
+            
+            db.session.flush()  # Flush changes to ensure references are updated
+            
+        # Delete related check-ins
+        try:
+            check_in_count = CheckIn.query.filter(CheckIn.user_id.in_([user.id for user in linked_users])).count() if linked_users else 0
+            if check_in_count > 0:
+                app.logger.info(f"Deleting {check_in_count} related check-ins")
+                CheckIn.query.filter(CheckIn.user_id.in_([user.id for user in linked_users])).delete(synchronize_session=False)
+        except Exception as ce:
+            app.logger.warning(f"Non-critical error while handling check-ins: {str(ce)}")
+        
+        # Delete related time entries
+        try:
+            time_entry_count = TimeEntry.query.filter(TimeEntry.user_id.in_([user.id for user in linked_users])).count() if linked_users else 0
+            if time_entry_count > 0:
+                app.logger.info(f"Deleting {time_entry_count} related time entries")
+                TimeEntry.query.filter(TimeEntry.user_id.in_([user.id for user in linked_users])).delete(synchronize_session=False)
+        except Exception as te:
+            app.logger.warning(f"Non-critical error while handling time entries: {str(te)}")
+            
+        # Delete all associated werkzaamheden
+        try:
+            werkzaamheid_count = Werkzaamheid.query.filter_by(medewerker_id=id).count()
+            if werkzaamheid_count > 0:
+                app.logger.info(f"Deleting {werkzaamheid_count} related werkzaamheden")
+                Werkzaamheid.query.filter_by(medewerker_id=id).delete(synchronize_session=False)
+        except Exception as we:
+            app.logger.warning(f"Non-critical error while handling werkzaamheden: {str(we)}")
+        
+        # Then delete the employee record
         db.session.delete(medewerker)
         db.session.commit()
-        flash('Medewerker succesvol verwijderd')
+        
+        app.logger.info(f"Successfully deleted employee {medewerker_name} (ID: {id})")
+        flash(f'Medewerker {medewerker_name} is succesvol verwijderd', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash('Error bij verwijderen medewerker')
-        app.logger.error(f"Error deleting medewerker: {str(e)}")
+        app.logger.error(f"Failed to delete employee {medewerker_name} (ID: {id}): {str(e)}", exc_info=True)
+        
+        # Provide more helpful error message based on error type
+        if "foreign key constraint fails" in str(e).lower():
+            flash(f'Kan medewerker {medewerker_name} niet verwijderen omdat er nog gerelateerde gegevens aanwezig zijn. Probeer eerst alle urenregistraties te verwijderen.', 'danger')
+        else:
+            flash(f'Fout bij verwijderen medewerker: {str(e)}', 'danger')
+    
     return redirect(url_for('medewerkers'))
 
 @app.route('/medewerkers/add', methods=['GET', 'POST'])
@@ -1427,13 +1479,20 @@ def admin_employee_time_entries():
     
     # Get all entries for display - or filter if an employee is selected
     selected_employee = request.args.get('employee_id', '')
+    selected_assignment = request.args.get('assignment_id', '')
     
     entries_query = TimeEntry.query
+    
+    # Apply employee filter if specified
     if selected_employee:
         # Filter by user_id where medewerker_id matches
         user_ids = [user.id for user in users if user.medewerker_id == int(selected_employee)]
         if user_ids:
             entries_query = entries_query.filter(TimeEntry.user_id.in_(user_ids))
+    
+    # Apply assignment filter if specified
+    if selected_assignment:
+        entries_query = entries_query.filter(TimeEntry.opdracht_id == int(selected_assignment))
     
     # Join with Opdracht to get assignment and client details
     entries = entries_query.outerjoin(Opdracht, TimeEntry.opdracht_id == Opdracht.id)\
@@ -1465,6 +1524,7 @@ def admin_employee_time_entries():
                            clients=clients,  # Pass clients to template
                            opdrachten=opdrachten,  # Pass assignments to template
                            selected_employee=selected_employee,
+                           selected_assignment=selected_assignment,
                            datetime=datetime)
 
 # Add route to edit employee time entries
