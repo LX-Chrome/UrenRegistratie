@@ -29,9 +29,31 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4 text-center">
-                            <h2 class="display-4 mb-2">{{ "%.1f"|format(total_hours) }}</h2>
-                            <p class="text-muted"><span data-translate="Totaal aantal uren">Totaal aantal uren</span></p>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <h2 class="display-4 mb-1">{{ "%.1f"|format(total_hours) }}</h2>
+                                <p class="text-muted mb-0"><span data-translate="Totaal aantal uren">Totaal aantal uren</span></p>
+                            </div>
+                            <div class="d-flex justify-content-between border-top pt-2 mb-2">
+                                <div class="text-center">
+                                    <h4 class="mb-1">{{ "%.1f"|format(billable_hours) }}</h4>
+                                    <p class="text-muted small mb-0"><span data-translate="Factureerbaar">Factureerbaar</span></p>
+                                </div>
+                                <div class="text-center">
+                                    <h4 class="mb-1">{{ "%.1f"|format(non_billable_hours) }}</h4>
+                                    <p class="text-muted small mb-0"><span data-translate="Niet-factureerbaar">Niet-factureerbaar</span></p>
+                                </div>
+                            </div>
+                            {% if total_hours > 0 %}
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ (billable_hours / total_hours) * 100 }}%" 
+                                     aria-valuenow="{{ billable_hours }}" aria-valuemin="0" aria-valuemax="{{ total_hours }}">
+                                    {{ "%.1f"|format((billable_hours / total_hours) * 100) }}%
+                                </div>
+                            </div>
+                            <p class="text-center mt-1 small"><span data-translate="Percentage factureerbaar">Percentage factureerbaar</span></p>
+                            {% endif %}
                         </div>
                         <div class="col-md-8">
                             <canvas id="monthlyHoursChart" height="200"></canvas>

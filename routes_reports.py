@@ -39,16 +39,27 @@ def report_hours_per_year():
             .filter(func.extract('year', TimeEntry.date) == selected_year) \
             .scalar() or 0
         
-        # Calculate billable hours percentage
-        billable_hours = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
+        # Calculate billable hours from Werkzaamheid
+        billable_hours_werkzaamheid = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
             .filter(func.extract('year', Werkzaamheid.datum) == selected_year) \
             .filter(Werkzaamheid.is_declarabel == True) \
             .scalar() or 0
+            
+        # Calculate billable hours from TimeEntry
+        billable_hours_time_entry = db.session.query(func.sum(TimeEntry.hours)) \
+            .filter(func.extract('year', TimeEntry.date) == selected_year) \
+            .filter(TimeEntry.is_billable == True) \
+            .scalar() or 0
         
+        # Calculate total billable and non-billable hours
+        billable_hours = billable_hours_werkzaamheid + billable_hours_time_entry
         total_hours = time_entry_hours + werkzaamheid_hours
+        non_billable_hours = total_hours - billable_hours
     except Exception as e:
         app.logger.error(f"Error getting hours: {str(e)}")
         total_hours = 0
+        billable_hours = 0
+        non_billable_hours = 0
     
     # Get hours per month for the selected year
     monthly_hours_time_entries = db.session.query(
@@ -114,6 +125,8 @@ def report_hours_per_year():
         selected_year=selected_year,
         years=years,
         total_hours=total_hours,
+        billable_hours=billable_hours,
+        non_billable_hours=non_billable_hours,
         monthly_hours=months,
         employee_hours=employee_hours
     )

@@ -317,7 +317,7 @@ function filterDashboardAssignments() {
     
     if (!clientSelect || !assignmentSelect) return;
     
-    const selectedClientId = clientSelect.value;
+    const selectedClientId = String(clientSelect.value);
     
     // Show/hide assignment options based on client selection
     Array.from(assignmentSelect.options).forEach(function(option) {
@@ -325,7 +325,7 @@ function filterDashboardAssignments() {
             // Always show the default option
             option.style.display = '';
         } else {
-            const optionClientId = option.getAttribute('data-client');
+            const optionClientId = String(option.getAttribute('data-client'));
             if (!selectedClientId || optionClientId === selectedClientId) {
                 option.style.display = '';
             } else {
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!clientSelect || !assignmentSelect) return;
             
-            const selectedClientId = clientSelect.value;
+            const selectedClientId = String(clientSelect.value);
             
             // Show/hide assignment options based on client selection
             Array.from(assignmentSelect.options).forEach(function(option) {
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Always show the default option
                     option.style.display = '';
                 } else {
-                    const optionClientId = option.getAttribute('data-client');
+                    const optionClientId = String(option.getAttribute('data-client'));
                     if (!selectedClientId || optionClientId === selectedClientId) {
                         option.style.display = '';
                     } else {

@@ -177,10 +177,12 @@
                     <i data-feather="x" class="feather-sm me-1"></i>
                     <span data-translate="Annuleren">Annuleren</span>
                 </button>
-                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">
-                    <i data-feather="trash-2" class="feather-sm me-1"></i>
-                    <span data-translate="Verwijderen">Verwijderen</span>
-                </a>
+                <form id="deleteForm" method="GET" action="#">
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i data-feather="trash-2" class="feather-sm me-1"></i>
+                        <span data-translate="Verwijderen">Verwijderen</span>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -193,19 +195,48 @@
         // Initialize feather icons
         feather.replace();
         
-        // Setup delete modal
+        // Setup delete modal with improved error handling
         const deleteModal = document.getElementById('deleteModal');
-        if (deleteModal) {
+        const deleteForm = document.getElementById('deleteForm');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        
+        if (deleteModal && deleteForm) {
             deleteModal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                const id = button.getAttribute('data-id');
-                const name = button.getAttribute('data-name');
-                
-                const nameSpan = document.getElementById('medewerkernaam');
-                const deleteBtn = document.getElementById('confirmDeleteBtn');
-                
-                nameSpan.textContent = name;
-                deleteBtn.href = "{{ url_for('delete_medewerker', id=0) }}".replace('0', id);
+                try {
+                    const button = event.relatedTarget;
+                    if (!button) {
+                        console.error("No related target found for modal event");
+                        return;
+                    }
+                    
+                    const id = button.getAttribute('data-id');
+                    const name = button.getAttribute('data-name');
+                    
+                    if (!id) {
+                        console.error("No ID found in button data attributes");
+                        return;
+                    }
+                    
+                    // Set the name in the modal
+                    const nameSpan = document.getElementById('medewerkernaam');
+                    if (nameSpan) {
+                        nameSpan.textContent = name || "deze medewerker";
+                    }
+                    
+                    // Set the form action directly
+                    const deleteUrl = "{{ url_for('delete_medewerker', id=0) }}".replace('0', id);
+                    deleteForm.action = deleteUrl;
+                    
+                    console.log("Delete button set up with URL: " + deleteUrl);
+                    
+                    // Also add a direct click handler as backup
+                    confirmDeleteBtn.onclick = function(e) {
+                        // Let the form handle submission normally
+                        return true;
+                    };
+                } catch (err) {
+                    console.error("Error in delete modal setup: ", err);
+                }
             });
         }
         
@@ -281,6 +312,22 @@
     
     .alert-icon {
         margin-bottom: 1rem;
+    }
+    
+    /* Ensure the modal and buttons are clickable */
+    .modal {
+        z-index: 1050 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    
+    .modal-footer button,
+    .modal-footer form,
+    .modal-footer form button {
+        position: relative;
+        z-index: 1060 !important;
     }
     
     @keyframes slideIn {

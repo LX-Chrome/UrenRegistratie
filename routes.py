@@ -313,6 +313,130 @@ def export_data(entity, format):
             else:  # csv
                 content, filename, mimetype = export_service.to_csv(rows, headers, 'time_entries')
 
+    elif entity == 'employee-time-entries':
+        # Check if user is admin or manager
+        if not current_user.has_role(RoleEnum.ADMIN) and not current_user.has_role(RoleEnum.AFDELINGSHOOFD) and not current_user.has_role(RoleEnum.VERKOOP):
+            flash('Je hebt geen toegang tot deze export.', 'danger')
+            return redirect(url_for('dashboard'))
+            
+        # Get employee time entries for export
+        entries_query = TimeEntry.query
+        
+        # Get selected employee filter if present
+        selected_employee = request.args.get('employee_id', '')
+        if selected_employee:
+            # Find users with this employee ID
+            user_ids = [user.id for user in User.query.filter_by(medewerker_id=int(selected_employee)).all()]
+            if user_ids:
+                entries_query = entries_query.filter(TimeEntry.user_id.in_(user_ids))
+                
+        # Get all entries
+        entries = entries_query.order_by(TimeEntry.date.desc()).all()
+        
+        # Calculate total hours, billable hours, and non-billable hours
+        total_hours = 0
+        billable_hours = 0
+        non_billable_hours = 0
+        
+        # Prepare data with employee names and assignment details
+        formatted_entries = []
+        
+        # Create a dictionary to track hours per employee
+        employee_hours_dict = {}
+        
+        for entry in entries:
+            # Get employee name
+            user = User.query.get(entry.user_id)
+            employee_name = "Unknown"
+            employee_id = None
+            
+            if user and user.medewerker_id:
+                medewerker = Medewerker.query.get(user.medewerker_id)
+                if medewerker:
+                    employee_name = f"{medewerker.voornaam} {medewerker.tussenvoegsel + ' ' if medewerker.tussenvoegsel else ''}{medewerker.achternaam}"
+                    employee_id = medewerker.id
+            elif user:
+                employee_name = user.username
+                employee_id = f"user_{user.id}"
+                
+            # Get client and assignment info
+            client_name = "-"
+            assignment_title = "-"
+            if entry.opdracht_id:
+                opdracht = Opdracht.query.get(entry.opdracht_id)
+                if opdracht:
+                    assignment_title = opdracht.titel
+                    if opdracht.klant:
+                        client_name = opdracht.klant.bedrijfsnaam
+            
+            # Calculate hours
+            hours = float(entry.hours)
+            total_hours += hours
+            
+            # Check if entry is billable
+            is_billable = entry.is_billable if hasattr(entry, 'is_billable') else False
+            if is_billable:
+                billable_hours += hours
+            else:
+                non_billable_hours += hours
+                
+            # Track hours per employee
+            if employee_id not in employee_hours_dict:
+                employee_hours_dict[employee_id] = {
+                    'name': employee_name,
+                    'total_hours': 0,
+                    'billable_hours': 0,
+                    'non_billable_hours': 0
+                }
+                
+            employee_hours_dict[employee_id]['total_hours'] += hours
+            if is_billable:
+                employee_hours_dict[employee_id]['billable_hours'] += hours
+            else:
+                employee_hours_dict[employee_id]['non_billable_hours'] += hours
+            
+            # Create formatted entry
+            formatted_entries.append({
+                'employee_name': employee_name,
+                'date': entry.date.strftime('%Y-%m-%d'),
+                'client': client_name,
+                'assignment': assignment_title,
+                'project': entry.project,
+                'hours': hours,
+                'is_billable': is_billable,
+                'description': entry.description
+            })
+        
+        # Convert employee hours dictionary to list for the template
+        employee_hours = list(employee_hours_dict.values())
+        
+        if format == 'pdf':
+            data = {
+                'entries': formatted_entries,
+                'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'total_hours': total_hours,
+                'billable_hours': billable_hours,
+                'non_billable_hours': non_billable_hours,
+                'employee_count': len(employee_hours_dict),
+                'employee_hours': employee_hours
+            }
+            # Use direct PDF generation with xhtml2pdf
+            content, filename, mimetype = generate_pdf_from_template('admin/pdf_employee_time_entries.html', data, 'employee_time_entries')
+            # Check if PDF generation failed
+            if not content:
+                flash('Fout bij genereren PDF.', 'danger')
+                return redirect(url_for('admin_employee_time_entries'))
+        else:
+            headers = ['Medewerker', 'Datum', 'Client', 'Opdracht', 'Project', 'Uren', 'Factureerbaar', 'Omschrijving']
+            rows = [
+                [e['employee_name'], e['date'], e['client'], e['assignment'], e['project'], e['hours'], "Ja" if e['is_billable'] else "Nee", e['description']] 
+                for e in formatted_entries
+            ]
+            if format == 'excel':
+                content, filename, mimetype = export_service.to_excel(rows, headers, 'employee_time_entries')
+            else:  # csv
+                content, filename, mimetype = export_service.to_csv(rows, headers, 'employee_time_entries')
+
     elif entity == 'klanten':
         klanten = Klant.query.order_by(Klant.bedrijfsnaam).all()
         if format == 'pdf':
@@ -399,7 +523,22 @@ def export_data(entity, format):
                 .filter(func.extract('year', TimeEntry.date) == year) \
                 .scalar() or 0
             
+            # Calculate billable hours from Werkzaamheid
+            billable_hours_werkzaamheid = db.session.query(func.sum(Werkzaamheid.aantal_uren)) \
+                .filter(func.extract('year', Werkzaamheid.datum) == year) \
+                .filter(Werkzaamheid.is_declarabel == True) \
+                .scalar() or 0
+                
+            # Calculate billable hours from TimeEntry
+            billable_hours_time_entry = db.session.query(func.sum(TimeEntry.hours)) \
+                .filter(func.extract('year', TimeEntry.date) == year) \
+                .filter(TimeEntry.is_billable == True) \
+                .scalar() or 0
+            
+            # Calculate total billable and non-billable hours
+            billable_hours = billable_hours_werkzaamheid + billable_hours_time_entry
             total_hours = time_entry_hours + werkzaamheid_hours
+            non_billable_hours = total_hours - billable_hours
             
             # Get hours per month for the selected year
             monthly_hours_time_entries = db.session.query(
@@ -432,8 +571,11 @@ def export_data(entity, format):
                 data = {
                     'selected_year': year,
                     'total_hours': total_hours,
+                    'billable_hours': billable_hours,
+                    'non_billable_hours': non_billable_hours,
                     'monthly_hours': monthly_hours,
-                    'employee_hours': employee_hours
+                    'employee_hours': employee_hours,
+                    'now': datetime.now()
                 }
                 content, filename, mimetype = generate_pdf_from_template('reports/pdf_hours_per_year.html', data, f'uren_per_jaar_{year}')
                 if not content:
@@ -840,17 +982,69 @@ def edit_medewerker(id):
 @login_required
 def delete_medewerker(id):
     medewerker = Medewerker.query.get_or_404(id)
+    medewerker_name = f"{medewerker.voornaam} {medewerker.achternaam}"
+    
     try:
-        # Eerst verwijder alle gekoppelde werkzaamheden
-        Werkzaamheid.query.filter_by(medewerker_id=id).delete()
-        # Dan de medewerker zelf
+        app.logger.info(f"Starting deletion process for employee ID {id}: {medewerker_name}")
+        
+        # Check if there are User accounts linked to this employee
+        linked_users = User.query.filter_by(medewerker_id=id).all()
+        
+        if linked_users:
+            user_info = [f"{user.username} (ID: {user.id})" for user in linked_users]
+            app.logger.info(f"Found {len(linked_users)} linked user accounts: {', '.join(user_info)}")
+            
+            # Remove the reference to this employee from user accounts
+            for user in linked_users:
+                user.medewerker_id = None
+                app.logger.info(f"Removed medewerker reference from user {user.id} ({user.username})")
+            
+            db.session.flush()  # Flush changes to ensure references are updated
+            
+        # Delete related check-ins
+        try:
+            check_in_count = CheckIn.query.filter(CheckIn.user_id.in_([user.id for user in linked_users])).count() if linked_users else 0
+            if check_in_count > 0:
+                app.logger.info(f"Deleting {check_in_count} related check-ins")
+                CheckIn.query.filter(CheckIn.user_id.in_([user.id for user in linked_users])).delete(synchronize_session=False)
+        except Exception as ce:
+            app.logger.warning(f"Non-critical error while handling check-ins: {str(ce)}")
+        
+        # Delete related time entries
+        try:
+            time_entry_count = TimeEntry.query.filter(TimeEntry.user_id.in_([user.id for user in linked_users])).count() if linked_users else 0
+            if time_entry_count > 0:
+                app.logger.info(f"Deleting {time_entry_count} related time entries")
+                TimeEntry.query.filter(TimeEntry.user_id.in_([user.id for user in linked_users])).delete(synchronize_session=False)
+        except Exception as te:
+            app.logger.warning(f"Non-critical error while handling time entries: {str(te)}")
+            
+        # Delete all associated werkzaamheden
+        try:
+            werkzaamheid_count = Werkzaamheid.query.filter_by(medewerker_id=id).count()
+            if werkzaamheid_count > 0:
+                app.logger.info(f"Deleting {werkzaamheid_count} related werkzaamheden")
+                Werkzaamheid.query.filter_by(medewerker_id=id).delete(synchronize_session=False)
+        except Exception as we:
+            app.logger.warning(f"Non-critical error while handling werkzaamheden: {str(we)}")
+        
+        # Then delete the employee record
         db.session.delete(medewerker)
         db.session.commit()
-        flash('Medewerker succesvol verwijderd')
+        
+        app.logger.info(f"Successfully deleted employee {medewerker_name} (ID: {id})")
+        flash(f'Medewerker {medewerker_name} is succesvol verwijderd', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash('Error bij verwijderen medewerker')
-        app.logger.error(f"Error deleting medewerker: {str(e)}")
+        app.logger.error(f"Failed to delete employee {medewerker_name} (ID: {id}): {str(e)}", exc_info=True)
+        
+        # Provide more helpful error message based on error type
+        if "foreign key constraint fails" in str(e).lower():
+            flash(f'Kan medewerker {medewerker_name} niet verwijderen omdat er nog gerelateerde gegevens aanwezig zijn. Probeer eerst alle urenregistraties te verwijderen.', 'danger')
+        else:
+            flash(f'Fout bij verwijderen medewerker: {str(e)}', 'danger')
+    
     return redirect(url_for('medewerkers'))
 
 @app.route('/medewerkers/add', methods=['GET', 'POST'])
@@ -1224,6 +1418,10 @@ def admin_employee_time_entries():
     medewerkers = Medewerker.query.order_by(Medewerker.achternaam).all()
     users = User.query.join(Role).filter(Role.name != RoleEnum.ADMIN).all()
     
+    # Get all clients and assignments for the dropdowns
+    clients = Klant.query.order_by(Klant.bedrijfsnaam).all()
+    opdrachten = Opdracht.query.all()
+    
     # Load all user and employee IDs for mapping
     user_medewerker_map = {}
     for user in users:
@@ -1253,13 +1451,21 @@ def admin_employee_time_entries():
                 user_id = int(user_id)
                 description = request.form['description']
                 
+            # Get the opdracht_id (assignment) if provided
+            opdracht_id = request.form.get('opdracht_id')
+            if opdracht_id and opdracht_id.strip():
+                opdracht_id = int(opdracht_id)
+            else:
+                opdracht_id = None
+                
             # Create the time entry
             entry = TimeEntry(
                 date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
                 hours=float(request.form['hours']),
                 description=description,
                 project=request.form['project'],
-                user_id=user_id
+                user_id=user_id,
+                opdracht_id=opdracht_id  # Add the assignment link
             )
             db.session.add(entry)
             db.session.commit()
@@ -1273,15 +1479,26 @@ def admin_employee_time_entries():
     
     # Get all entries for display - or filter if an employee is selected
     selected_employee = request.args.get('employee_id', '')
+    selected_assignment = request.args.get('assignment_id', '')
     
     entries_query = TimeEntry.query
+    
+    # Apply employee filter if specified
     if selected_employee:
         # Filter by user_id where medewerker_id matches
         user_ids = [user.id for user in users if user.medewerker_id == int(selected_employee)]
         if user_ids:
             entries_query = entries_query.filter(TimeEntry.user_id.in_(user_ids))
     
-    entries = entries_query.order_by(TimeEntry.date.desc()).all()
+    # Apply assignment filter if specified
+    if selected_assignment:
+        entries_query = entries_query.filter(TimeEntry.opdracht_id == int(selected_assignment))
+    
+    # Join with Opdracht to get assignment and client details
+    entries = entries_query.outerjoin(Opdracht, TimeEntry.opdracht_id == Opdracht.id)\
+                          .outerjoin(Klant, Opdracht.klant_id == Klant.id)\
+                          .order_by(TimeEntry.date.desc())\
+                          .all()
     
     # Associate entries with employee names
     entries_with_employee = []
@@ -1304,7 +1521,10 @@ def admin_employee_time_entries():
                            entries=entries_with_employee, 
                            medewerkers=medewerkers,
                            users=users,
+                           clients=clients,  # Pass clients to template
+                           opdrachten=opdrachten,  # Pass assignments to template
                            selected_employee=selected_employee,
+                           selected_assignment=selected_assignment,
                            datetime=datetime)
 
 # Add route to edit employee time entries
@@ -1327,6 +1547,13 @@ def admin_edit_employee_time_entry(entry_id):
         # Only admin and department heads can change the user assignment
         if (current_user.has_role(RoleEnum.ADMIN) or current_user.has_role(RoleEnum.AFDELINGSHOOFD)) and 'user_id' in request.form:
             entry.user_id = int(request.form['user_id'])
+        
+        # Handle the assignment link
+        opdracht_id = request.form.get('opdracht_id')
+        if opdracht_id and opdracht_id.strip():
+            entry.opdracht_id = int(opdracht_id)
+        else:
+            entry.opdracht_id = None
         
         db.session.commit()
         flash('Time entry bijgewerkt', 'success')

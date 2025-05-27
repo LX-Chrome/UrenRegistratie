@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Uren per jaar {{ selected_year }}</title>
+    <title>Urenregistratie Medewerkers</title>
     <style>
         @page {
             size: 21cm 29.7cm;
@@ -60,33 +60,16 @@
             color: #777;
             margin-top: 30px;
         }
-        .monthly-chart {
+        .employee-chart {
             background-color: #f9f9f9;
             border: 1px solid #eee;
             padding: 10px;
             margin-bottom: 20px;
         }
-        .monthly-hours {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-        }
-        .month-item {
-            width: 23%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f1f1f1;
-            border-radius: 4px;
-            text-align: center;
-        }
-        .month-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
     </style>
 </head>
 <body>
-    <h1>Uren per jaar {{ selected_year }}</h1>
+    <h1>Urenregistratie Medewerkers</h1>
     
     <div class="summary">
         <h2>Samenvatting</h2>
@@ -102,81 +85,93 @@
             <span class="summary-label">Niet-factureerbare uren:</span>
             <span>{{ "%.1f"|format(non_billable_hours) }}</span>
         </div>
+        <div class="summary-item">
+            <span class="summary-label">Aantal medewerkers:</span>
+            <span>{{ employee_count }}</span>
+        </div>
+        
+        {% if employee_count > 0 and total_hours > 0 %}
+        <div class="summary-item">
+            <span class="summary-label">Gemiddelde uren per medewerker:</span>
+            <span>{{ "%.1f"|format(total_hours / employee_count) }}</span>
+        </div>
+        {% endif %}
+        
         {% if total_hours > 0 %}
         <div class="summary-item">
             <span class="summary-label">Percentage factureerbaar:</span>
             <span>{{ "%.1f"|format((billable_hours / total_hours) * 100) }}%</span>
         </div>
         {% endif %}
-        <div class="summary-item">
-            <span class="summary-label">Aantal medewerkers:</span>
-            <span>{{ employee_hours|length }}</span>
-        </div>
-        
-        {% set avg_monthly_hours = total_hours / 12 if total_hours > 0 else 0 %}
-        <div class="summary-item">
-            <span class="summary-label">Gemiddelde uren per maand:</span>
-            <span>{{ "%.1f"|format(avg_monthly_hours) }}</span>
-        </div>
-        
-        {% if total_hours > 0 %}
-            {% set avg_employee_hours = total_hours / employee_hours|length if employee_hours|length > 0 else 0 %}
-            <div class="summary-item">
-                <span class="summary-label">Gemiddelde uren per medewerker:</span>
-                <span>{{ "%.1f"|format(avg_employee_hours) }}</span>
-            </div>
-        {% endif %}
     </div>
     
-    <div class="monthly-chart">
-        <h2>Uren per maand</h2>
-        <div class="monthly-hours">
-            {% set months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'] %}
-            {% for month in range(12) %}
-            <div class="month-item">
-                <div class="month-name">{{ months[month] }}</div>
-                <div>{{ "%.1f"|format(monthly_hours[month]) }}</div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    
-    <h2>Uren per medewerker</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Medewerker</th>
-                <th>Uren</th>
-                <th>Percentage</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if employee_hours %}
+    {% if employee_hours %}
+    <div class="employee-chart">
+        <h2>Uren per medewerker</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Medewerker</th>
+                    <th>Totaal Uren</th>
+                    <th>Factureerbaar</th>
+                    <th>Niet-factureerbaar</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
                 {% for employee in employee_hours %}
                 <tr>
-                    <td>{{ employee.voornaam }} {{ employee.achternaam }}</td>
-                    <td>{{ "%.1f"|format(employee.aantal_uren) }}</td>
+                    <td>{{ employee.name }}</td>
+                    <td>{{ "%.1f"|format(employee.total_hours) }}</td>
+                    <td>{{ "%.1f"|format(employee.billable_hours) }}</td>
+                    <td>{{ "%.1f"|format(employee.non_billable_hours) }}</td>
                     <td>
                         {% if total_hours > 0 %}
-                        {{ "%.1f"|format((employee.aantal_uren / total_hours) * 100) }}%
+                        {{ "%.1f"|format((employee.total_hours / total_hours) * 100) }}%
                         {% else %}
                         0.0%
                         {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="3" class="text-center">Geen gegevens beschikbaar</td>
-                </tr>
-            {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <h2>Details per urenregistratie</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Medewerker</th>
+                <th>Datum</th>
+                <th>Client</th>
+                <th>Opdracht</th>
+                <th>Project</th>
+                <th>Uren</th>
+                <th>Factureerbaar</th>
+                <th>Omschrijving</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.employee_name }}</td>
+                <td>{{ entry.date }}</td>
+                <td>{{ entry.client }}</td>
+                <td>{{ entry.assignment }}</td>
+                <td>{{ entry.project }}</td>
+                <td>{{ entry.hours }}</td>
+                <td>{{ "Ja" if entry.is_billable else "Nee" }}</td>
+                <td>{{ entry.description }}</td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
     
     <div class="footer">
-        <p>UrenRegistratie Uren per Jaar Overzicht</p>
-        <p>Gegenereerd op {{ now.strftime('%d-%m-%Y %H:%M') }}</p>
-        <p>Jaar: {{ selected_year }}</p>
+        <p>UrenRegistratie Medewerkers Overzicht</p>
+        <p>Gegenereerd op {{ generated_at }}</p>
         <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
         <p>Adres: Bredeweg 235, 6042 GE Roermond | Telefoon: 088 468 2000 | Provincie: Limburg</p>
         <p>Openingstijden: Maandag-Vrijdag 8:00–17:00 | Zaterdag-Zondag Gesloten</p>
