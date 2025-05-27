@@ -8,7 +8,24 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0" data-translate="Urenregistratie voor medewerkers">Urenregistratie voor medewerkers</h5>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+                        <!-- Export Dropdown -->
+                        <div class="dropdown me-2">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='pdf') }}">
+                                    <i data-feather="file-text"></i> PDF
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='excel') }}">
+                                    <i data-feather="file-text"></i> Excel
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='csv') }}">
+                                    <i data-feather="file-text"></i> CSV
+                                </a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-primary add-entry-btn">
                             <i data-feather="plus"></i> <span data-translate="Uren Registreren">Uren Registreren</span>
                         </button>
                     </div>
@@ -41,6 +58,8 @@
                             <tr>
                                 <th data-translate="Medewerker">Medewerker</th>
                                 <th data-translate="Date">Datum</th>
+                                <th data-translate="Client">Client</th>
+                                <th data-translate="Assignment">Opdracht</th>
                                 <th data-translate="Project">Project</th>
                                 <th data-translate="Hours">Uren</th>
                                 <th data-translate="Description">Omschrijving</th>
@@ -52,14 +71,27 @@
                             <tr>
                                 <td>{{ item.employee_name }}</td>
                                 <td>{{ item.entry.date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if item.entry.opdracht and item.entry.opdracht.klant %}
+                                        {{ item.entry.opdracht.klant.bedrijfsnaam }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.entry.opdracht %}
+                                        {{ item.entry.opdracht.titel }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td>{{ item.entry.project }}</td>
                                 <td>{{ item.entry.hours }}</td>
                                 <td>{{ item.entry.description }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#editEntryModal{{ item.entry.id }}"
+                                        <button class="btn btn-sm btn-outline-primary edit-entry-btn" 
+                                                data-entry-id="{{ item.entry.id }}"
                                                 title="Edit">
                                             <i data-feather="edit-2"></i> <span class="d-none d-md-inline" data-translate="Bewerken">Bewerken</span>
                                         </button>
@@ -112,6 +144,32 @@
                         <input type="date" class="form-control" id="date" name="date" value="{{ datetime.utcnow().strftime('%Y-%m-%d') }}" required>
                     </div>
                     
+                    <!-- Client field -->
+                    <div class="mb-3">
+                        <label for="client_select_add" class="form-label" data-translate="Client">Client</label>
+                        <select class="form-select" id="client_select_add" onchange="loadAssignmentsForAdd(this.value)">
+                            <option value="" data-translate="Select Client">Selecteer Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">
+                                {{ client.bedrijfsnaam }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Assignment field -->
+                    <div class="mb-3">
+                        <label for="opdracht_id_add" class="form-label" data-translate="Assignment">Opdracht</label>
+                        <select class="form-select" id="opdracht_id_add" name="opdracht_id">
+                            <option value="" data-translate="Select Assignment">Selecteer Opdracht</option>
+                            {% for opdracht in opdrachten %}
+                            <option value="{{ opdracht.id }}" data-client="{{ opdracht.klant_id }}">
+                                {{ opdracht.titel }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
                     <!-- Project field -->
                     <div class="mb-3">
                         <label for="project" class="form-label" data-translate="Project">Project</label>
@@ -155,6 +213,33 @@
                         <label for="date{{ item.entry.id }}" class="form-label" data-translate="Date">Datum</label>
                         <input type="date" class="form-control" id="date{{ item.entry.id }}" name="date" 
                                value="{{ item.entry.date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+
+                    <!-- Client field -->
+                    <div class="mb-3">
+                        <label for="client_select{{ item.entry.id }}" class="form-label" data-translate="Client">Client</label>
+                        <select class="form-select" id="client_select{{ item.entry.id }}" onchange="loadAssignmentsForEdit(this.value, '{{ item.entry.id }}')">
+                            <option value="" data-translate="Select Client">Selecteer Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" {% if item.entry.opdracht and item.entry.opdracht.klant_id == client.id %}selected{% endif %}>
+                                {{ client.bedrijfsnaam }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Assignment field -->
+                    <div class="mb-3">
+                        <label for="opdracht_id{{ item.entry.id }}" class="form-label" data-translate="Assignment">Opdracht</label>
+                        <select class="form-select" id="opdracht_id{{ item.entry.id }}" name="opdracht_id">
+                            <option value="" data-translate="Select Assignment">Selecteer Opdracht</option>
+                            {% for opdracht in opdrachten %}
+                            <option value="{{ opdracht.id }}" data-client="{{ opdracht.klant_id }}" 
+                                    {% if item.entry.opdracht_id == opdracht.id %}selected{% endif %}>
+                                {{ opdracht.titel }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
                     
                     <!-- Project field -->
@@ -219,5 +304,206 @@ function confirmDelete(deleteUrl) {
     // Show the modal
     modal.show();
 }
+
+function loadAssignmentsForAdd(clientId) {
+    const assignmentSelect = document.getElementById('opdracht_id_add');
+    
+    // First, hide all options
+    for (let i = 0; i < assignmentSelect.options.length; i++) {
+        const option = assignmentSelect.options[i];
+        
+        if (option.value === '') {
+            // Always show the placeholder option
+            option.style.display = '';
+        } else {
+            const optionClientId = option.getAttribute('data-client');
+            
+            if (!clientId || optionClientId === clientId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    }
+    
+    // Reset the assignment selection
+    assignmentSelect.value = '';
+}
+
+function loadAssignmentsForEdit(clientId, entryId) {
+    const assignmentSelect = document.getElementById('opdracht_id' + entryId);
+    
+    // First, hide all options
+    for (let i = 0; i < assignmentSelect.options.length; i++) {
+        const option = assignmentSelect.options[i];
+        
+        if (option.value === '') {
+            // Always show the placeholder option
+            option.style.display = '';
+        } else {
+            const optionClientId = option.getAttribute('data-client');
+            
+            if (!clientId || optionClientId === clientId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    }
+    
+    // Reset the assignment selection
+    assignmentSelect.value = '';
+}
+
+// Store active modals to properly dispose them
+let activeModals = {};
+
+// Function to open add entry modal with proper cleanup
+function openAddModal() {
+    // Clean up any existing modal with the same ID
+    if (activeModals['add']) {
+        try {
+            activeModals['add'].dispose();
+        } catch (e) {
+            console.log("Error disposing add modal:", e);
+        }
+        delete activeModals['add'];
+    }
+
+    // Clean up modal backdrop artifacts
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Remove modal-open class from body
+    if (document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+    }
+    
+    // Reset body styles
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Now create a fresh modal instance
+    const modalElement = document.getElementById('addEntryModal');
+    if (modalElement) {
+        const modalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // Store the instance for later cleanup
+        activeModals['add'] = modalInstance;
+        
+        // Add event listeners for proper cleanup
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            if (activeModals['add']) {
+                delete activeModals['add'];
+            }
+            
+            // Additional cleanup after modal is hidden
+            setTimeout(function() {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.remove();
+                });
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                }
+                
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }, { once: true });
+        
+        // Show the modal
+        modalInstance.show();
+    }
+}
+
+// Function to open edit modal with proper cleanup
+function openEditModal(entryId) {
+    // First clean up any existing modal
+    if (activeModals[entryId]) {
+        try {
+            activeModals[entryId].dispose();
+        } catch (e) {
+            console.log("Error disposing modal:", e);
+        }
+        delete activeModals[entryId];
+    }
+
+    // Clean up modal backdrop artifacts
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Remove modal-open class from body
+    if (document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+    }
+    
+    // Reset body styles
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Now create a fresh modal instance
+    const modalElement = document.getElementById('editEntryModal' + entryId);
+    if (modalElement) {
+        const modalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // Store the instance for later cleanup
+        activeModals[entryId] = modalInstance;
+        
+        // Add event listeners for proper cleanup
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            if (activeModals[entryId]) {
+                delete activeModals[entryId];
+            }
+            
+            // Additional cleanup after modal is hidden
+            setTimeout(function() {
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.remove();
+                });
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                }
+                
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }, { once: true });
+        
+        // Show the modal
+        modalInstance.show();
+    }
+}
+
+// Add event listeners after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach click handlers to all edit buttons
+    document.querySelectorAll('.edit-entry-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const entryId = this.getAttribute('data-entry-id');
+            if (entryId) {
+                openEditModal(entryId);
+            }
+        });
+    });
+    
+    // Add click handler for add button
+    document.querySelector('.add-entry-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        openAddModal();
+    });
+});
 </script>
 {% endblock %} 
