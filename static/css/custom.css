@@ -150,6 +150,10 @@ main {
     border-bottom: 2px solid var(--dark-border-color);
 }
 
+.bg-search {
+    background-color: #555;
+}
+
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
