@@ -151,6 +151,7 @@ const translations = {
         
         // Other common elements
         "alle rechten voorbehouden.": "all rights reserved.",
+        "Omzet per maand": "Payout per month",
         
         // No entries message
         "No recent time entries": "No recent time entries",
@@ -224,7 +225,8 @@ const translations = {
         "Benodigde Kennis": "Required Knowledge",
         
         // Action buttons
-        "Wijzigingen Opslaan": "Save Changes"
+        "Wijzigingen Opslaan": "Save Changes",
+        "Filters wissen": "Clear filters"
     },
     nl: {
         // Navigation
@@ -452,7 +454,8 @@ const translations = {
         "Benodigde Kennis": "Benodigde Kennis",
         
         // Action buttons
-        "Wijzigingen Opslaan": "Wijzigingen Opslaan"
+        "Wijzigingen Opslaan": "Wijzigingen Opslaan",
+        "Filters wissen": "Filters wissen"
     }
 };
 
