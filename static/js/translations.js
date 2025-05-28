@@ -151,6 +151,7 @@ const translations = {
         
         // Other common elements
         "alle rechten voorbehouden.": "all rights reserved.",
+        "Omzet per maand": "Payout per month",
         
         // No entries message
         "No recent time entries": "No recent time entries",
@@ -195,6 +196,7 @@ const translations = {
         "Urenregistratie voor medewerkers": "Time Registration for Employees",
         "Uren Registreren": "Register Hours",
         "Alle medewerkers": "All employees",
+        "Alle opdrachten": "All assignments",
         "Geen uren gevonden": "No hours found",
         "Uren registreren voor medewerker": "Register hours for employee",
         "Selecteer medewerker": "Select employee",
@@ -218,13 +220,15 @@ const translations = {
         "Werkmail": "Work Email",
         "Kantoorruimte": "Office Space",
         "Klant": "Client",
+        "Opdracht": "Assignment",
         "Titel": "Title",
         "Omschrijving": "Description",
         "Aanvraagdatum": "Request Date",
         "Benodigde Kennis": "Required Knowledge",
         
         // Action buttons
-        "Wijzigingen Opslaan": "Save Changes"
+        "Wijzigingen Opslaan": "Save Changes",
+        "Filters wissen": "Clear filters"
     },
     nl: {
         // Navigation
@@ -423,6 +427,7 @@ const translations = {
         "Urenregistratie voor medewerkers": "Urenregistratie voor medewerkers",
         "Uren Registreren": "Uren Registreren",
         "Alle medewerkers": "Alle medewerkers",
+        "Alle opdrachten": "Alle opdrachten",
         "Geen uren gevonden": "Geen uren gevonden",
         "Uren registreren voor medewerker": "Uren registreren voor medewerker",
         "Selecteer medewerker": "Selecteer medewerker",
@@ -446,13 +451,15 @@ const translations = {
         "Werkmail": "Werkmail",
         "Kantoorruimte": "Kantoorruimte",
         "Klant": "Klant",
+        "Opdracht": "Opdracht",
         "Titel": "Titel",
         "Omschrijving": "Omschrijving",
         "Aanvraagdatum": "Aanvraagdatum",
         "Benodigde Kennis": "Benodigde Kennis",
         
         // Action buttons
-        "Wijzigingen Opslaan": "Wijzigingen Opslaan"
+        "Wijzigingen Opslaan": "Wijzigingen Opslaan",
+        "Filters wissen": "Filters wissen"
     }
 };
 

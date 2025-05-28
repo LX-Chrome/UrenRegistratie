@@ -50,7 +50,7 @@
                         </div>
                         <div class="col-md-5">
                             <div class="input-group">
-                                <label class="input-group-text" for="assignment_id" data-translate="Assignment">Opdracht</label>
+                                <label class="input-group-text" for="assignment_id" data-translate="Opdracht">Opdracht</label>
                                 <select class="form-select" name="assignment_id" id="assignment_id" onchange="this.form.submit()">
                                     <option value="" data-translate="Alle opdrachten">Alle opdrachten</option>
                                     {% for opdracht in opdrachten %}
@@ -65,7 +65,7 @@
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()" data-translate="Clear Filters">Filters wissen</button>
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()" data-translate="Filters wissen">Filters wissen</button>
                         </div>
                     </div>
 
@@ -130,6 +130,20 @@
                                                 title="Delete">
                                             <i data-feather="trash-2"></i> <span class="d-none d-md-inline" data-translate="Verwijderen">Verwijderen</span>
                                         </button>
+                                        <button class="btn btn-outline-secondary w-100" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i data-feather="download"></i> <span data-translate="Exporteren">Exporteren</span> <!-- change functionality to export the singular option! -->
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='pdf') }}">
+                                                <i data-feather="file-text"></i> PDF
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='excel') }}">
+                                                <i data-feather="file-text"></i> Excel
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="{{ url_for('export_data', entity='employee-time-entries', format='csv') }}">
+                                                <i data-feather="file-text"></i> CSV
+                                            </a></li>
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>
