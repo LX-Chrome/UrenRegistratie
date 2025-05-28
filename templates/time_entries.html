@@ -397,26 +397,13 @@ function openEditModal(entryId) {
         }
         delete activeModals[entryId];
     }
-
-    // Clean up modal backdrop artifacts
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.remove();
-    });
-    
-    // Remove modal-open class from body
-    if (document.body.classList.contains('modal-open')) {
-        document.body.classList.remove('modal-open');
-    }
-    
-    // Reset body styles
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
     
     // Now create a fresh modal instance
     const modalElement = document.getElementById('editEntryModal' + entryId);
     if (modalElement) {
+        // Create modal with backdrop (keeping shadows)
         const modalInstance = new bootstrap.Modal(modalElement, {
-            backdrop: true,
+            backdrop: 'static',
             keyboard: true,
             focus: true
         });
@@ -429,20 +416,6 @@ function openEditModal(entryId) {
             if (activeModals[entryId]) {
                 delete activeModals[entryId];
             }
-            
-            // Additional cleanup after modal is hidden
-            setTimeout(function() {
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-                    backdrop.remove();
-                });
-                
-                if (document.body.classList.contains('modal-open')) {
-                    document.body.classList.remove('modal-open');
-                }
-                
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-            }, 100);
         }, { once: true });
         
         // Show the modal
@@ -452,49 +425,38 @@ function openEditModal(entryId) {
 
 // Function to open import modal with proper cleanup
 function openImportModal() {
-    // Clean up modal backdrop artifacts
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.remove();
-    });
-    
-    // Remove modal-open class from body
-    if (document.body.classList.contains('modal-open')) {
-        document.body.classList.remove('modal-open');
-    }
-    
-    // Reset body styles
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-    
     // Now create a fresh modal instance
     const modalElement = document.getElementById('importEntriesModal');
     if (modalElement) {
+        // Create modal with backdrop (keeping shadows)
         const modalInstance = new bootstrap.Modal(modalElement, {
-            backdrop: true,
+            backdrop: 'static',
             keyboard: true,
             focus: true
         });
         
-        // Add event listeners for proper cleanup
-        modalElement.addEventListener('hidden.bs.modal', function () {
-            // Additional cleanup after modal is hidden
-            setTimeout(function() {
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-                    backdrop.remove();
-                });
-                
-                if (document.body.classList.contains('modal-open')) {
-                    document.body.classList.remove('modal-open');
-                }
-                
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-            }, 100);
-        }, { once: true });
-        
         // Show the modal
         modalInstance.show();
     }
+}
+
+// Additional fix for modal shadows and stacking issues
+function fixModalIssues() {
+    // Make sure all modals have proper z-index
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.zIndex = '1050';
+    });
+    
+    // Fix modal backdrop
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.style.opacity = '0.5';
+        backdrop.style.zIndex = '1040';
+    });
+    
+    // Fix modal dialog shadow
+    document.querySelectorAll('.modal-dialog').forEach(dialog => {
+        dialog.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.5)';
+    });
 }
 
 // Add event listeners after DOM is ready
@@ -516,17 +478,31 @@ document.addEventListener('DOMContentLoaded', function() {
         openImportModal();
     });
     
+    // Fix modal display when Bootstrap modals are shown
+    document.addEventListener('shown.bs.modal', function(e) {
+        setTimeout(fixModalIssues, 10);
+    });
+    
     {% if from_dashboard %}
     document.getElementById('redirect_to_dashboard').value = 'true';
     {% if new %}
-    var addEntryModal = new bootstrap.Modal(document.getElementById('addEntryModal'));
-    addEntryModal.show();
+    setTimeout(function() {
+        var addEntryModal = new bootstrap.Modal(document.getElementById('addEntryModal'), {
+            backdrop: 'static',
+            keyboard: true
+        });
+        addEntryModal.show();
+        setTimeout(fixModalIssues, 50);
+    }, 100);
     {% endif %}
     {% endif %}
     
     {% if edit %}
     // Use the improved modal opening function
-    openEditModal('{{ edit }}');
+    setTimeout(function() {
+        openEditModal('{{ edit }}');
+        setTimeout(fixModalIssues, 50);
+    }, 100);
     {% endif %}
 });
 </script>
