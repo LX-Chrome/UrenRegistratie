@@ -1,5 +1,5 @@
 @echo off
-REM Ultra-fast direct start for Time Registrator (skips ALL checks)
-
-REM Start the application directly using the virtual environment
-venv\Scripts\python main.py 
+REM Wrapper batch file that redirects to scripts/direct_start.bat
+echo Redirecting to scripts/direct_start.bat...
+cd %~dp0
+scripts\direct_start.bat %* 

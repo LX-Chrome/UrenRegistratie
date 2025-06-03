@@ -1,9 +1,8 @@
-from app import app
-import routes  # noqa: F401
-import routes_invoices  # noqa: F401
-import routes_reports  # noqa: F401
+from app import create_app
 import argparse
 import os
+
+app = create_app()
 
 if __name__ == "__main__":
     # Set up command line arguments for flexible hosting

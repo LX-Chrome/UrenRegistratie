@@ -1,32 +1,34 @@
 #!/usr/bin/env python
-
 """
-Ultra-fast direct start script for Time Registrator.
-This script skips ALL checks and simply starts the application.
-
-Use only after verifying that everything works correctly.
+Wrapper script for direct start.
+This redirects to scripts/direct_start.py for backwards compatibility.
 """
 
-import os
 import sys
-import platform
+import os
 import subprocess
 
 def main():
-    """Run the application with no checks."""
-    # Determine path to Python in virtual environment
-    venv_dir = "venv"
-    if platform.system() == "Windows":
-        python_cmd = os.path.join(venv_dir, "Scripts", "python")
-    else:
-        python_cmd = os.path.join(venv_dir, "bin", "python")
+    """Run the direct start script in the scripts directory"""
+    script_path = os.path.join('scripts', 'direct_start.py')
     
-    # Start the application directly
+    # Check if the script exists
+    if not os.path.exists(script_path):
+        print(f"Error: Script not found at {script_path}")
+        print("Make sure you're running this from the project root directory.")
+        sys.exit(1)
+    
+    # Pass all command line arguments to the actual script
+    cmd = [sys.executable, script_path] + sys.argv[1:]
+    
     try:
-        subprocess.run([python_cmd, "main.py"])
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user")
+        sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}")
-        print("If you have dependency issues, run fix_dependencies.py")
+        print(f"Error executing {script_path}: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

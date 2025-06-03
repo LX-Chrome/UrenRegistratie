@@ -223,32 +223,29 @@ class Werkzaamheid(db.Model):
     )
     
     def get_effective_tarief(self):
-        """Get the effective hourly rate (either override or from the assignment)"""
-        if self.uurtarief_override is not None:
+        """Get the effective hourly rate for this activity"""
+        # Use override if available
+        if self.uurtarief_override:
             return self.uurtarief_override
-        
-        # Get rate from the linked assignment
-        opdracht = Opdracht.query.get(self.opdracht_id)
-        if opdracht and opdracht.uurtarief:
-            return opdracht.uurtarief
-        
-        # Fallback to a default rate if nothing else is available
-        return 0.0
+        # Otherwise use the rate from the assignment
+        elif self.opdracht and self.opdracht.uurtarief:
+            return self.opdracht.uurtarief
+        # Default fallback rate
+        return 85.00  # Standard default hourly rate
     
     @classmethod
     def get_uren_per_medewerker(cls, year=None):
-        """Get sum of hours per employee, optionally for a specific year"""
+        """Get hours worked per employee, optionally for a specific year"""
         query = db.session.query(
             Medewerker.voornaam,
-            Medewerker.tussenvoegsel,
             Medewerker.achternaam,
-            func.sum(cls.aantal_uren).label('aantal_uren')
+            func.sum(cls.aantal_uren).label('totaal_uren')
         ).join(Medewerker)
         
         if year:
             query = query.filter(func.extract('year', cls.datum) == year)
             
-        return query.group_by(Medewerker.voornaam, Medewerker.tussenvoegsel, Medewerker.achternaam).all()
+        return query.group_by(Medewerker.voornaam, Medewerker.achternaam).all()
 
 class Factuur(db.Model):
     __tablename__ = 'factuur'
@@ -276,23 +273,25 @@ class Factuur(db.Model):
     time_entries = db.relationship('TimeEntry', backref='factuur', lazy=True)  # Time entries included in invoice
     
     __table_args__ = (
-        Index('idx_factuur_nummer', 'factuur_nummer'),
         Index('idx_factuur_klant', 'klant_id'),
         Index('idx_factuur_datum', 'datum'),
+        Index('idx_factuur_nummer', 'factuur_nummer'),
         Index('idx_factuur_betaald', 'betaald'),
     )
     
     @classmethod
     def get_jaaropbrengst(cls, year=None):
-        """Get total revenue for a specific year"""
-        query = db.session.query(func.sum(cls.totaal))
+        """Get total revenue per year"""
+        query = db.session.query(
+            func.extract('year', cls.datum).label('jaar'),
+            func.sum(cls.subtotaal).label('omzet_ex_btw'),
+            func.sum(cls.totaal).label('omzet_inc_btw')
+        )
         
         if year:
             query = query.filter(func.extract('year', cls.datum) == year)
             
-        query = query.filter(cls.betaald == True)
-        return query.scalar() or 0.0
-
+        return query.group_by(func.extract('year', cls.datum)).all()
 
 class TimeEntry(db.Model):
     __tablename__ = 'time_entry'
@@ -310,7 +309,8 @@ class TimeEntry(db.Model):
     opdracht_id = db.Column(db.Integer, db.ForeignKey('opdracht.id'), nullable=True)  # Link to assignment/task
 
     __table_args__ = (
-        Index('idx_time_entry_user_date', 'user_id', 'date'),
+        Index('idx_time_entry_user', 'user_id'),
+        Index('idx_time_entry_date', 'date'),
         Index('idx_time_entry_project', 'project'),
         Index('idx_time_entry_invoice', 'invoice_id'),
         Index('idx_time_entry_opdracht', 'opdracht_id'),
@@ -318,38 +318,41 @@ class TimeEntry(db.Model):
     
     @classmethod
     def get_hours_per_year(cls, year=None):
-        """Get total hours for a specific year"""
-        query = db.session.query(func.sum(cls.hours))
+        """Get total hours per year"""
+        query = db.session.query(
+            func.extract('year', cls.date).label('year'),
+            func.sum(cls.hours).label('total_hours')
+        )
         
         if year:
             query = query.filter(func.extract('year', cls.date) == year)
             
-        return query.scalar() or 0.0
+        return query.group_by(func.extract('year', cls.date)).all()
     
     @classmethod
     def get_billable_hours_per_project(cls, project_name=None):
         """Get billable hours per project"""
         query = db.session.query(
             cls.project,
-            func.sum(cls.hours).label('total_hours')
-        ).filter(cls.is_billable == True)
+            func.sum(cls.hours).label('billable_hours')
+        ).filter_by(is_billable=True)
         
         if project_name:
-            query = query.filter(cls.project == project_name)
+            query = query.filter_by(project=project_name)
             
         return query.group_by(cls.project).all()
     
     @classmethod
     def get_billable_hours_per_client(cls, client_id=None):
-        """Get billable hours per client through assignments"""
+        """Get billable hours per client"""
         query = db.session.query(
-            Klant.bedrijfsnaam.label('client_name'),
-            func.sum(cls.hours).label('total_hours')
-        ).join(Opdracht, cls.opdracht_id == Opdracht.id) \
-         .join(Klant, Opdracht.klant_id == Klant.id) \
-         .filter(cls.is_billable == True)
+            Klant.bedrijfsnaam,
+            func.sum(cls.hours).label('billable_hours')
+        ).join(Opdracht, cls.opdracht_id == Opdracht.id)\
+         .join(Klant, Opdracht.klant_id == Klant.id)\
+         .filter_by(is_billable=True)
         
         if client_id:
             query = query.filter(Klant.id == client_id)
             
-        return query.group_by(Klant.bedrijfsnaam).all()
+        return query.group_by(Klant.bedrijfsnaam).all() 

@@ -4,7 +4,7 @@ Authentication and authorization helper functions for the UrenRegistratie system
 from functools import wraps
 from flask import flash, redirect, url_for
 from flask_login import current_user
-from models import RoleEnum
+from app.models.models import RoleEnum
 
 def role_required(*roles):
     """
@@ -86,4 +86,4 @@ def invoice_creation_required(f):
             return redirect(url_for('dashboard'))
             
         return f(*args, **kwargs)
-    return decorated_function
+    return decorated_function 

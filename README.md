@@ -1,4 +1,40 @@
+# UrenRegistratie
 
+A time registration system for managing work hours, client assignments, and invoicing.
+
+## Project Structure
+
+```
+UrenRegistratie/
+├── app/                    # Main application package
+│   ├── __init__.py         # Application factory
+│   ├── models/             # Database models
+│   │   ├── __init__.py
+│   │   └── models.py
+│   ├── routes/             # Route handlers
+│   │   ├── __init__.py
+│   │   ├── routes.py       # Main routes
+│   │   ├── routes_invoices.py  # Invoice-related routes
+│   │   └── routes_reports.py   # Report-related routes
+│   └── utils/              # Utility functions
+│       ├── __init__.py
+│       └── auth_helpers.py # Authentication utilities
+├── migrations/             # Database migrations
+├── scripts/                # Utility scripts and batch files
+│   ├── run.py              # Setup and run script
+│   ├── quick_start.py      # Fast startup script
+│   ├── direct_start.py     # Ultra-fast startup
+│   ├── start.bat           # Windows startup script
+│   ├── quick_start.bat     # Windows fast startup
+│   └── ...                 # Other utility scripts
+├── static/                 # Static files (CSS, JS, images)
+├── templates/              # HTML templates
+├── instance/               # Instance-specific data (e.g., database)
+├── main.py                 # Application entry point
+├── requirements.txt        # Dependencies
+├── README.md               # This file
+└── .env                    # Environment variables (not in repo)
+```
 
 A comprehensive web-based time tracking and project management application built with Flask. This application allows users to track their working hours, manage clients, projects, and employees, and generate detailed reports.
 
@@ -30,21 +66,21 @@ git clone https://github.com/LX-Chrome/UrenRegistratie.git
 cd UrenRegistratie
 
 # Run the application (handles environment setup automatically)
-python run.py
+python scripts/run.py
 ```
 
 #### For Windows users:
 
-Simply double-click on `start.bat` in the project folder.
+Simply double-click on `scripts/start.bat` in the project folder.
 
 #### For Unix/Linux/macOS users:
 
 ```bash
 # Make the script executable (first time only)
-chmod +x start.sh
+chmod +x scripts/start.sh
 
 # Run the application
-./start.sh
+./scripts/start.sh
 ```
 
 ### Fast Startup (After First Setup):
@@ -54,18 +90,18 @@ For faster startup after you've already set up the environment:
 #### For all platforms using Python directly:
 
 ```bash
-python quick_start.py
+python scripts/quick_start.py
 ```
 
 #### For Windows users:
 
-Double-click on `quick_start.bat` in the project folder.
+Double-click on `scripts/quick_start.bat` in the project folder.
 
 #### For Unix/Linux/macOS users:
 
 ```bash
-chmod +x quick_start.sh  # First time only
-./quick_start.sh
+chmod +x scripts/quick_start.sh  # First time only
+./scripts/quick_start.sh
 ```
 
 These quick start options skip environment checks and dependency installation, making startup much faster.
@@ -77,18 +113,18 @@ For the fastest possible startup with NO checks (use only after confirming every
 #### For all platforms using Python directly:
 
 ```bash
-python direct_start.py
+python scripts/direct_start.py
 ```
 
 #### For Windows users:
 
-Double-click on `direct_start.bat` in the project folder.
+Double-click on `scripts/direct_start.bat` in the project folder.
 
 #### For Unix/Linux/macOS users:
 
 ```bash
-chmod +x direct_start.sh  # First time only
-./direct_start.sh
+chmod +x scripts/direct_start.sh  # First time only
+./scripts/direct_start.sh
 ```
 
 Warning: The ultra-fast options skip ALL checks and will fail if dependencies are missing.
@@ -246,3 +282,44 @@ MIT License
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Deployment
+
+### Ubuntu Linux Deployment
+
+For deploying on an Ubuntu server (16.04 or newer), you can use the included deployment script:
+
+```bash
+# Make the script executable
+chmod +x deploy_ubuntu.sh
+
+# Run the deployment script (with sudo privileges)
+sudo ./deploy_ubuntu.sh
+```
+
+The deployment script will:
+
+1. Install required system dependencies
+2. Create a dedicated system user for the application
+3. Set up a Python virtual environment
+4. Install Python dependencies
+5. Create a systemd service for automatic startup
+6. Optionally configure nginx as a reverse proxy
+
+Additional options:
+
+```bash
+# Deploy with nginx as a reverse proxy
+sudo ./deploy_ubuntu.sh --nginx
+
+# Use a custom port
+sudo ./deploy_ubuntu.sh --port 8080
+
+# Specify custom installation path
+sudo ./deploy_ubuntu.sh --path /var/www/urenregistratie
+
+# Show all options
+./deploy_ubuntu.sh --help
+```
+
+After deployment, the application will be running as a systemd service and will automatically start on system boot.
