@@ -88,7 +88,7 @@ User=$USER
 Group=www-data
 WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/venv/bin"
-ExecStart=$APP_DIR/venv/bin/gunicorn --workers 3 --bind unix:$APP_DIR/urenregistratie.sock -m 007 main:app
+ExecStart=$APP_DIR/venv/bin/gunicorn --workers 1 --bind unix:$APP_DIR/urenregistratie.sock -m 007 wsgi:app
 
 [Install]
 WantedBy=multi-user.target

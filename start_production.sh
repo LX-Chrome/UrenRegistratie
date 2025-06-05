@@ -38,7 +38,7 @@ else
         pip install gunicorn
     fi
     
-    # Start the application using gunicorn
+    # Start the application using gunicorn with wsgi.py
     echo "Starting application with gunicorn..."
-    gunicorn --workers 3 --bind 0.0.0.0:5000 main:app
+    gunicorn --workers 1 --log-level debug wsgi:app
 fi 
