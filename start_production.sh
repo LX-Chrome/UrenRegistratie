@@ -30,6 +30,31 @@ fi
 echo "Activating virtual environment..."
 source venv/bin/activate || { echo "Failed to activate venv. Check permissions."; exit 1; }
 
+# Check for required packages
+REQUIRED_PACKAGES=("xhtml2pdf" "reportlab")
+MISSING_PACKAGES=()
+
+for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    if ! pip show $pkg > /dev/null 2>&1; then
+        MISSING_PACKAGES+=($pkg)
+    fi
+done
+
+# Install missing packages
+if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    echo "Missing required packages: ${MISSING_PACKAGES[*]}"
+    echo "Installing dependencies..."
+    
+    # Ensure reportlab is downgraded to compatible version
+    pip install reportlab==3.6.12 || { echo "Failed to install reportlab"; exit 1; }
+    
+    # Install xhtml2pdf with specific version
+    pip install xhtml2pdf==0.2.11 || { echo "Failed to install xhtml2pdf"; exit 1; }
+    
+    # Install other required packages
+    pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
+fi
+
 # Check if gunicorn is installed
 if ! pip show gunicorn > /dev/null; then
     echo "Installing gunicorn..."
