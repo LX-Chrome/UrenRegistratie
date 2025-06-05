@@ -9,7 +9,6 @@ SQLAlchemy==2.0.15
 
 # PDF generation
 reportlab==4.4.0
-xhtml2pdf==0.2.11
 pdfkit==1.0.0
 
 # Excel and CSV handling
