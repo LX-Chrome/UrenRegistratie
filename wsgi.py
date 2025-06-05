@@ -24,6 +24,50 @@ try:
 except Exception as e:
     logger.error(f"Failed to create instance directory: {e}")
 
+# Apply Werkzeug fix first
+try:
+    logger.debug("Applying Werkzeug compatibility fix...")
+    
+    # Define a simple url_decode function compatible with what Flask-Login needs
+    def url_decode(s, charset='utf-8', decode_keys=False, include_empty=True, errors='replace'):
+        """Simple replacement for werkzeug.urls.url_decode"""
+        logger.debug(f"Custom url_decode called with: {type(s)}")
+        result = {}
+        if not s:
+            return result
+        
+        if isinstance(s, bytes):
+            s = s.decode(charset, errors)
+        
+        pairs = s.split('&')
+        for pair in pairs:
+            if '=' not in pair:
+                if include_empty:
+                    result[pair] = ''
+                continue
+            k, v = pair.split('=', 1)
+            
+            # URL unescape
+            try:
+                from urllib.parse import unquote_plus
+                k = unquote_plus(k, encoding=charset)
+                v = unquote_plus(v, encoding=charset)
+            except Exception as e:
+                logger.debug(f"Error unquoting: {e}")
+            
+            result[k] = v
+        
+        return result
+    
+    # Patch the module before it's imported by Flask-Login
+    import werkzeug.urls
+    werkzeug.urls.url_decode = url_decode
+    sys.modules['werkzeug.urls'].url_decode = url_decode
+    logger.debug("Successfully patched werkzeug.urls with custom url_decode")
+except Exception as e:
+    logger.error(f"Error applying Werkzeug fix: {e}")
+    logger.error(traceback.format_exc())
+
 # Try importing app with error handling
 try:
     logger.debug("Importing app...")

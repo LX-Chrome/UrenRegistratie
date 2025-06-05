@@ -26,6 +26,13 @@ if [ -f "startup_error.log" ]; then
     rm startup_error.log
 fi
 
+# Make fix_werkzeug.py executable
+chmod +x fix_werkzeug.py
+
+# Run the Werkzeug fix script first
+echo "Applying Werkzeug compatibility fix..."
+python fix_werkzeug.py
+
 # Start directly with detailed error reporting and only one worker
 echo "Starting with basic Gunicorn configuration for debugging..."
 export PYTHONUNBUFFERED=1

@@ -7,6 +7,33 @@ from flask_login import LoginManager, current_user
 from dotenv import load_dotenv  # Load environment variables from .env
 from functools import wraps
 
+# Fix for Werkzeug compatibility issue - add custom url_decode function
+import sys
+if 'werkzeug.urls' in sys.modules:
+    try:
+        from werkzeug.urls import url_decode
+    except ImportError:
+        # Provide a simple implementation of url_decode if not available
+        # This mimics the basic functionality needed by Flask-Login
+        def url_decode(s, charset='utf-8'):
+            """Simple replacement for werkzeug.urls.url_decode"""
+            result = {}
+            if not s:
+                return result
+            
+            pairs = s.split('&')
+            for pair in pairs:
+                if '=' not in pair:
+                    continue
+                k, v = pair.split('=', 1)
+                result[k] = v
+            return result
+            
+        # Monkey patch werkzeug.urls module to add url_decode
+        import werkzeug.urls
+        werkzeug.urls.url_decode = url_decode
+        sys.modules['werkzeug.urls'].url_decode = url_decode
+
 # Load environment variables
 load_dotenv()
 
