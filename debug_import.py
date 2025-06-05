@@ -16,7 +16,11 @@ logger.info("=== Starting Debug Import Test ===")
 try:
     logger.info("Testing werkzeug import...")
     import werkzeug
-    logger.info(f"Werkzeug version: {werkzeug.__version__}")
+    try:
+        version = getattr(werkzeug, '__version__', 'Unknown')
+        logger.info(f"Werkzeug version: {version}")
+    except Exception as e:
+        logger.warning(f"Could not get Werkzeug version: {e}")
     
     # Test werkzeug.urls
     logger.info("Testing werkzeug.urls...")
@@ -34,7 +38,11 @@ try:
     # Test flask import
     logger.info("Testing Flask import...")
     import flask
-    logger.info(f"Flask version: {flask.__version__}")
+    try:
+        version = getattr(flask, '__version__', 'Unknown')
+        logger.info(f"Flask version: {version}")
+    except Exception as e:
+        logger.warning(f"Could not get Flask version: {e}")
     
     # Test flask_login import
     logger.info("Testing flask_login import...")
@@ -44,7 +52,11 @@ try:
     # Test SQLAlchemy import
     logger.info("Testing SQLAlchemy import...")
     import sqlalchemy
-    logger.info(f"SQLAlchemy version: {sqlalchemy.__version__}")
+    try:
+        version = getattr(sqlalchemy, '__version__', 'Unknown')
+        logger.info(f"SQLAlchemy version: {version}")
+    except Exception as e:
+        logger.warning(f"Could not get SQLAlchemy version: {e}")
     
     # Test app module import
     logger.info("Testing app import (without initializing routes)...")
