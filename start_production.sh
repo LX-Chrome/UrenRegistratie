@@ -5,40 +5,34 @@
 
 echo "Starting UrenRegistratie in production mode..."
 
-# Check if the service is already running
-if systemctl is-active --quiet urenregistratie; then
-    echo "UrenRegistratie service is already running"
-    echo "To restart: sudo systemctl restart urenregistratie"
-    echo "To check status: sudo systemctl status urenregistratie"
-    exit 0
+# Create virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
 fi
 
-# Try to start the service if it exists
-if systemctl list-unit-files | grep -q urenregistratie.service; then
-    echo "Starting urenregistratie service..."
-    sudo systemctl start urenregistratie
-    echo "Service started. To check status: sudo systemctl status urenregistratie"
-else
-    # If service doesn't exist, run using gunicorn directly
-    echo "Service not found, starting application directly..."
-    
-    # Create virtual environment if it doesn't exist
-    if [ ! -d "venv" ]; then
-        echo "Creating virtual environment..."
-        python3 -m venv venv
-    fi
-    
-    # Activate virtual environment
-    echo "Activating virtual environment..."
-    source venv/bin/activate
-    
-    # Check if gunicorn is installed
-    if ! pip show gunicorn > /dev/null; then
-        echo "Installing gunicorn..."
-        pip install gunicorn
-    fi
-    
-    # Start the application using gunicorn with wsgi.py
-    echo "Starting application with gunicorn..."
-    gunicorn --workers 1 --log-level debug wsgi:app
+# Activate virtual environment
+echo "Activating virtual environment..."
+source venv/bin/activate
+
+# Check if gunicorn is installed
+if ! pip show gunicorn > /dev/null; then
+    echo "Installing gunicorn..."
+    pip install gunicorn
+fi
+
+# Clean up any previous error log
+if [ -f "startup_error.log" ]; then
+    rm startup_error.log
+fi
+
+# Start directly with detailed error reporting and only one worker
+echo "Starting with basic Gunicorn configuration for debugging..."
+export PYTHONUNBUFFERED=1
+gunicorn --capture-output --log-level debug --workers 1 --timeout 120 --bind 0.0.0.0:8000 wsgi:app
+
+# Check if the error log was created
+if [ -f "startup_error.log" ]; then
+    echo "Error log found. Displaying contents:"
+    cat startup_error.log
 fi 
