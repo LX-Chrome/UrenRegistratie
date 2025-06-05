@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Fix for Werkzeug compatibility issues with Flask-Login
-This script provides and installs a workaround for the missing url_decode function
+This script provides and installs a workaround for the missing url functions
 """
 
 import sys
@@ -14,14 +14,14 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def fix_werkzeug_urls():
-    """Add url_decode to werkzeug.urls if it's missing"""
+    """Add url_decode and url_encode to werkzeug.urls if missing"""
     try:
         import werkzeug.urls
-        # Try to import url_decode
+        
+        # Check and add url_decode if missing
         try:
             from werkzeug.urls import url_decode
             logger.debug("url_decode exists in werkzeug.urls")
-            return True
         except ImportError:
             logger.warning("url_decode missing from werkzeug.urls, adding a custom implementation")
             
@@ -49,8 +49,8 @@ def fix_werkzeug_urls():
                         from urllib.parse import unquote_plus
                         k = unquote_plus(k, encoding=charset)
                         v = unquote_plus(v, encoding=charset)
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Error in unquote_plus: {e}")
                     
                     result[k] = v
                 
@@ -59,13 +59,63 @@ def fix_werkzeug_urls():
             
             # Patch the module
             werkzeug.urls.url_decode = url_decode
-            if hasattr(sys.modules, 'werkzeug.urls'):
+            if 'werkzeug.urls' in sys.modules:
                 sys.modules['werkzeug.urls'].url_decode = url_decode
             logger.info("Successfully patched werkzeug.urls with custom url_decode")
-            return True
+
+        # Check and add url_encode if missing
+        try:
+            from werkzeug.urls import url_encode
+            logger.debug("url_encode exists in werkzeug.urls")
+        except ImportError:
+            logger.warning("url_encode missing from werkzeug.urls, adding a custom implementation")
+            
+            # Define a simple url_encode function compatible with what Flask-Login needs
+            def url_encode(obj, charset='utf-8', sort=False, key=None, separator='&'):
+                """Simple replacement for werkzeug.urls.url_encode"""
+                logger.debug(f"Custom url_encode called with: {obj}")
+                if not obj:
+                    return ''
+                
+                # Ensure we have something iterable
+                if not hasattr(obj, 'items'):
+                    obj = dict(obj)
+                
+                # Process the items for encoding
+                items = list(obj.items())
+                if sort:
+                    items = sorted(items, key=key)
+                
+                # URL escape the values
+                try:
+                    from urllib.parse import quote_plus
+                    encoded_items = []
+                    for k, v in items:
+                        if v is None:
+                            v = ''
+                        elif not isinstance(v, str):
+                            v = str(v)
+                        encoded_items.append(f"{quote_plus(k)}={quote_plus(v)}")
+                    result = separator.join(encoded_items)
+                except Exception as e:
+                    logger.debug(f"Error in quote_plus: {e}")
+                    # Fallback to simple encoding
+                    result = separator.join([f"{k}={v}" for k, v in items])
+                
+                logger.debug(f"Custom url_encode result: {result}")
+                return result
+            
+            # Patch the module
+            werkzeug.urls.url_encode = url_encode
+            if 'werkzeug.urls' in sys.modules:
+                sys.modules['werkzeug.urls'].url_encode = url_encode
+            logger.info("Successfully patched werkzeug.urls with custom url_encode")
+        
+        return True
             
     except Exception as e:
         logger.error(f"Error fixing werkzeug.urls: {str(e)}")
+        logger.error(f"Traceback: {__import__('traceback').format_exc()}")
         return False
 
 def patch_flask_login():
@@ -87,7 +137,8 @@ def patch_flask_login():
                 def safe_create_identifier(*args, **kwargs):
                     try:
                         return original_func(*args, **kwargs)
-                    except ImportError:
+                    except ImportError as e:
+                        logger.warning(f"Using fallback identifier due to import error: {e}")
                         # Create a simpler identifier that doesn't rely on werkzeug.urls
                         from hashlib import sha512
                         from flask import request
@@ -102,6 +153,7 @@ def patch_flask_login():
             return True
         except Exception as e:
             logger.error(f"Error patching Flask-Login: {str(e)}")
+            logger.error(f"Traceback: {__import__('traceback').format_exc()}")
             return False
             
     except ImportError:

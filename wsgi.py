@@ -59,11 +59,48 @@ try:
         
         return result
     
+    # Define a simple url_encode function compatible with what Flask-Login needs
+    def url_encode(obj, charset='utf-8', sort=False, key=None, separator='&'):
+        """Simple replacement for werkzeug.urls.url_encode"""
+        logger.debug(f"Custom url_encode called with: {obj}")
+        if not obj:
+            return ''
+        
+        # Ensure we have something iterable
+        if not hasattr(obj, 'items'):
+            obj = dict(obj)
+        
+        # Process the items for encoding
+        items = list(obj.items())
+        if sort:
+            items = sorted(items, key=key)
+        
+        # URL escape the values
+        try:
+            from urllib.parse import quote_plus
+            encoded_items = []
+            for k, v in items:
+                if v is None:
+                    v = ''
+                elif not isinstance(v, str):
+                    v = str(v)
+                encoded_items.append(f"{quote_plus(str(k))}={quote_plus(str(v))}")
+            result = separator.join(encoded_items)
+        except Exception as e:
+            logger.debug(f"Error in quote_plus: {e}")
+            # Fallback to simple encoding
+            result = separator.join([f"{k}={v}" for k, v in items])
+        
+        logger.debug(f"Custom url_encode result: {result}")
+        return result
+    
     # Patch the module before it's imported by Flask-Login
     import werkzeug.urls
     werkzeug.urls.url_decode = url_decode
+    werkzeug.urls.url_encode = url_encode
     sys.modules['werkzeug.urls'].url_decode = url_decode
-    logger.debug("Successfully patched werkzeug.urls with custom url_decode")
+    sys.modules['werkzeug.urls'].url_encode = url_encode
+    logger.debug("Successfully patched werkzeug.urls with custom url_decode and url_encode")
 except Exception as e:
     logger.error(f"Error applying Werkzeug fix: {e}")
     logger.error(traceback.format_exc())
