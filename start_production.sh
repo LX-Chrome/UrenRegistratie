@@ -14,7 +14,7 @@ fi
 mkdir -p instance logs
 
 # Fix permissions for script files if needed
-if [ ! -x "fix_werkzeug.py" ] || [ ! -x "wsgi.py" ]; then
+if [ ! -x "wsgi.py" ]; then
     echo "Fixing script permissions..."
     chmod +x *.py
     chmod +x *.sh
@@ -41,27 +41,35 @@ if [ -f "startup_error.log" ]; then
     rm startup_error.log
 fi
 
-# Run the Werkzeug fix script first
-echo "Applying Werkzeug compatibility fix..."
-python fix_werkzeug.py || { echo "Failed to run fix_werkzeug.py. Check permissions."; exit 1; }
+# First test if wsgi.py works directly
+echo "Testing WSGI module directly..."
+python wsgi.py &
+WSGI_PID=$!
 
-# Start directly with detailed error reporting and only one worker
-echo "Starting with basic Gunicorn configuration for debugging..."
-export PYTHONUNBUFFERED=1
+# Give it a moment to start
+sleep 3
 
-# Create logs directory for Gunicorn
-mkdir -p logs
-
-# Try running with Gunicorn
-echo "Starting Gunicorn..."
-gunicorn --capture-output --log-level debug --workers 1 --timeout 120 \
-         --bind 0.0.0.0:8000 --error-logfile logs/error.log \
-         --access-logfile logs/access.log wsgi:app
-
-# Check if the error log was created
-if [ -f "startup_error.log" ]; then
-    echo "Error log found. Displaying contents:"
-    cat startup_error.log
+# Check if it's still running
+if kill -0 $WSGI_PID 2>/dev/null; then
+    echo "WSGI module works! Stopping test process..."
+    kill $WSGI_PID
+    
+    # Start with Gunicorn
+    echo "Starting with Gunicorn..."
+    mkdir -p logs
+    
+    # Try running with Gunicorn
+    echo "Starting Gunicorn server..."
+    gunicorn --capture-output --log-level debug --workers 1 --timeout 120 \
+             --bind 0.0.0.0:8000 --error-logfile logs/error.log \
+             --access-logfile logs/access.log wsgi:app
+else
+    echo "WSGI module failed to start. Check logs for errors."
+    # Check if the error log was created
+    if [ -f "startup_error.log" ]; then
+        echo "Error log found. Displaying contents:"
+        cat startup_error.log
+    fi
 fi
 
 # Check Gunicorn logs as well
