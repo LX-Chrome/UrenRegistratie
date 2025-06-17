@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intro Guide</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="static/css/universal-intro-guide.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Test Intro Guide System</h1>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Check-in Form</h5>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select">
+                                    <option>Working</option>
+                                    <option>Break</option>
+                                    <option>Done</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Note</label>
+                                <input type="text" class="form-control" placeholder="What are you working on?">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Check-in</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <h6>Recent Check-in</h6>
+                        <p>Working - 10:30 AM</p>
+                    </div>
+                    <div class="list-group-item">
+                        <h6>Previous Check-in</h6>
+                        <p>Break - 10:00 AM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Project</th>
+                                <th>Hours</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-01-01</td>
+                                <td>Test Project</td>
+                                <td>8.0</td>
+                                <td>Working on intro guide</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <a href="#" class="btn btn-primary">Add New Entry</a>
+        </div>
+    </div>
+
+    <script src="static/js/universal-intro-guide.js"></script>
+    <script>
+        // Simulate dashboard page
+        window.location.pathname = '/dashboard';
+    </script>
+</body>
+</html>
