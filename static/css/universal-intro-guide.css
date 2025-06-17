@@ -1,0 +1,575 @@
+/**
+ * Universal Intro Guide Styles
+ * Consistent, user-friendly styling for the guided tour system
+ */
+
+/* Tour Button Styles */
+.universal-tour-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 60px;
+    backdrop-filter: blur(10px);
+    user-select: none;
+    outline: none;
+}
+
+.universal-tour-button:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+}
+
+.universal-tour-button:active {
+    transform: translateY(0);
+}
+
+.universal-tour-button:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.universal-tour-button .tour-btn-text {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.universal-tour-button svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* Mobile responsiveness for tour button */
+@media (max-width: 768px) {
+    .universal-tour-button {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 14px;
+        min-width: 50px;
+    }
+    
+    .universal-tour-button .tour-btn-text {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .universal-tour-button {
+        bottom: 12px;
+        right: 12px;
+        padding: 8px 12px;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        justify-content: center;
+    }
+}
+
+/* Welcome Modal Styles */
+.welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: welcomeModalFadeIn 0.3s ease;
+}
+
+.welcome-modal-overlay.welcome-modal-closing {
+    animation: welcomeModalFadeOut 0.3s ease;
+}
+
+@keyframes welcomeModalFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(5px);
+    }
+}
+
+@keyframes welcomeModalFadeOut {
+    from {
+        opacity: 1;
+        backdrop-filter: blur(5px);
+    }
+    to {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+}
+
+.welcome-modal {
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: welcomeModalSlideIn 0.3s ease;
+}
+
+@keyframes welcomeModalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.welcome-modal-header {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.welcome-modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.welcome-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.welcome-modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.welcome-modal-body {
+    padding: 24px;
+}
+
+.welcome-modal-body p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: var(--bs-body-color, #495057);
+}
+
+.welcome-features {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bs-light, #f8f9fa);
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+}
+
+.feature-icon {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+
+.welcome-modal-footer {
+    padding: 20px 24px;
+    background: var(--bs-light, #f8f9fa);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.welcome-modal-footer .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.welcome-modal-footer .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.welcome-modal-footer .btn-secondary:hover {
+    background: #5a6268;
+}
+
+.welcome-modal-footer .btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+}
+
+.welcome-modal-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-1px);
+}
+
+/* Tour Message Styles */
+.tour-message, .tour-completion-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 12px;
+    padding: 0;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+    from {
+        transform: translate(-50%, -60%) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.tour-message-content, .tour-completion-content {
+    padding: 24px;
+    text-align: center;
+}
+
+.tour-message-content h4, .tour-completion-content h4 {
+    margin: 0 0 16px 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.tour-message-content p, .tour-completion-content p {
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+    color: var(--bs-secondary, #6c757d);
+}
+
+.tour-message-close, .tour-completion-close {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tour-message-close:hover, .tour-completion-close:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Intro.js Styles */
+.universal-intro-tooltip {
+    background: var(--bs-body-bg, #fff) !important;
+    color: var(--bs-body-color, #212529) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid var(--bs-border-color, #dee2e6) !important;
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+    max-width: 380px !important;
+    min-width: 280px !important;
+    padding: 0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.universal-intro-tooltip .introjs-tooltip-header {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+    color: white !important;
+    padding: 18px 24px !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin: 0 !important;
+    position: relative !important;
+}
+
+.universal-intro-tooltip .introjs-tooltip-header::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 1px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.universal-intro-tooltip .introjs-tooltip-title {
+    color: white !important;
+    font-size: 19px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.universal-intro-tooltip .introjs-tooltiptext {
+    padding: 24px !important;
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+    color: var(--bs-body-color, #495057) !important;
+}
+
+.universal-intro-tooltip .introjs-arrow {
+    border-top-color: var(--bs-body-bg, #fff) !important;
+    border-bottom-color: var(--bs-body-bg, #fff) !important;
+    border-left-color: var(--bs-body-bg, #fff) !important;
+    border-right-color: var(--bs-body-bg, #fff) !important;
+}
+
+.universal-intro-tooltip .introjs-tooltip-footer {
+    padding: 20px 24px !important;
+    background: var(--bs-light, #f8f9fa) !important;
+    border-radius: 0 0 16px 16px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-top: 1px solid var(--bs-border-color, #dee2e6) !important;
+}
+
+.universal-intro-tooltip .introjs-skipbutton {
+    background: transparent !important;
+    color: var(--bs-secondary, #6c757d) !important;
+    border: 1px solid transparent !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.universal-intro-tooltip .introjs-skipbutton:hover {
+    background: var(--bs-secondary, #6c757d) !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+}
+
+.universal-intro-tooltip .introjs-button {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-left: 12px !important;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2) !important;
+}
+
+.universal-intro-tooltip .introjs-button:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3) !important;
+}
+
+.universal-intro-tooltip .introjs-prevbutton {
+    background: var(--bs-secondary, #6c757d) !important;
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2) !important;
+}
+
+.universal-intro-tooltip .introjs-prevbutton:hover {
+    background: #5a6268 !important;
+    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3) !important;
+}
+
+.universal-intro-tooltip .introjs-progressbar {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+    box-shadow: 0 1px 2px rgba(13, 110, 253, 0.2) !important;
+}
+
+.universal-intro-tooltip .introjs-progress {
+    background: var(--bs-light, #f8f9fa) !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+    overflow: hidden !important;
+    margin: 0 24px 20px 24px !important;
+    border: 1px solid var(--bs-border-color, #dee2e6) !important;
+}
+
+/* Highlight styles */
+.universal-intro-highlight {
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.3) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Dark theme adjustments */
+[data-bs-theme="dark"] .universal-intro-tooltip {
+    background: #2b3035 !important;
+    color: #fff !important;
+    border-color: #495057 !important;
+}
+
+[data-bs-theme="dark"] .universal-intro-tooltip .introjs-tooltip-footer {
+    background: #343a40 !important;
+}
+
+[data-bs-theme="dark"] .feature {
+    background: #343a40 !important;
+    color: #fff !important;
+}
+
+[data-bs-theme="dark"] .welcome-modal-footer {
+    background: #343a40 !important;
+}
+
+[data-bs-theme="dark"] .tour-message,
+[data-bs-theme="dark"] .tour-completion-message {
+    background: #2b3035 !important;
+    color: #fff !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .universal-intro-tooltip {
+        max-width: 280px !important;
+        font-size: 14px !important;
+    }
+    
+    .universal-intro-tooltip .introjs-tooltip-title {
+        font-size: 16px !important;
+    }
+    
+    .universal-intro-tooltip .introjs-tooltiptext {
+        padding: 16px !important;
+        font-size: 14px !important;
+    }
+    
+    .universal-intro-tooltip .introjs-tooltip-header {
+        padding: 12px 16px !important;
+    }
+    
+    .universal-intro-tooltip .introjs-tooltip-footer {
+        padding: 12px 16px !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .universal-intro-tooltip .introjs-button {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+    
+    .welcome-modal {
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+    
+    .welcome-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .welcome-modal-header h2 {
+        font-size: 20px;
+    }
+    
+    .welcome-modal-body {
+        padding: 20px;
+    }
+    
+    .welcome-modal-footer {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .welcome-modal-footer .btn {
+        width: 100%;
+    }
+}
+
+/* Accessibility improvements */
+.universal-tour-button:focus,
+.welcome-modal-close:focus,
+.tour-message-close:focus,
+.tour-completion-close:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .universal-tour-button,
+    .welcome-modal,
+    .tour-message,
+    .tour-completion-message,
+    .universal-intro-tooltip .introjs-button {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .universal-intro-highlight {
+        transition: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .universal-tour-button {
+        border: 2px solid #fff;
+    }
+    
+    .universal-intro-tooltip {
+        border: 2px solid #000 !important;
+    }
+    
+    .universal-intro-highlight {
+        box-shadow: 0 0 0 4px #000 !important;
+    }
+}

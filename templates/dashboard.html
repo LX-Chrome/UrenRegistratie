@@ -13,15 +13,15 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-6 col-md-12 mb-4 mb-lg-0">
-                        <form method="POST" action="{{ url_for('check_in') }}" class="mb-3">
+                        <form method="POST" action="{{ url_for('check_in') }}" class="mb-3" data-intro="Hier kun je je status bijwerken: check-in, pauze of klaar voor vandaag. Voeg eventueel een notitie toe." data-title="Check-in formulier">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="mb-0" data-translate="Check-in">Check-in</h5>
+                                    <h5 class="mb-0" data-intro="Dit is het check-in blok. Hiermee registreer je je status voor vandaag." data-title="Check-in blok">Check-in</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
                                         <div class="col-md-4">
-                                            <label for="status" class="form-label" data-translate="Status">Status</label>
+                                            <label for="status" class="form-label" data-intro="Kies je status: aan het werk, pauze of klaar voor vandaag." data-title="Status kiezen">Status</label>
                                             <select class="form-select" id="status" name="status" required>
                                                 <option value="working" data-translate="Aan het werk">Aan het werk</option>
                                                 <option value="break" data-translate="Pauze">Pauze</option>
@@ -29,11 +29,11 @@
                                             </select>
                                         </div>
                                         <div class="col-md-8">
-                                            <label for="note" class="form-label" data-translate="Notitie">Notitie</label>
+                                            <label for="note" class="form-label" data-intro="Voeg een korte notitie toe over je werkzaamheden." data-title="Notitie">Notitie</label>
                                             <input type="text" class="form-control" id="note" name="note" placeholder="Waar ben je mee bezig?">
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="dashboard-client-select" class="form-label" data-translate="Client">Client</label>
+                                            <label for="dashboard-client-select" class="form-label" data-intro="Selecteer de klant waarvoor je werkt." data-title="Klant selecteren">Client</label>
                                             <select class="form-select" id="dashboard-client-select" onchange="filterDashboardAssignments()">
                                                 <option value="" data-translate="Select Client">Select Client</option>
                                                 {% for client in clients %}
@@ -42,7 +42,7 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="opdracht_id" class="form-label" data-translate="Assignment">Assignment</label>
+                                            <label for="opdracht_id" class="form-label" data-intro="Kies de opdracht waaraan je werkt." data-title="Opdracht selecteren">Assignment</label>
                                             <select class="form-select" id="opdracht_id" name="opdracht_id">
                                                 <option value="" data-translate="Select Assignment">Select Assignment</option>
                                                 {% for opdracht in opdrachten %}
@@ -53,7 +53,7 @@
                                     </div>
                                 </div>
                                 <div class="card-footer text-end">
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" data-intro="Klik hier om je check-in te registreren." data-title="Check-in opslaan">
                                         <i data-feather="check-circle"></i> <span data-translate="Check-in">Check-in</span>
                                     </button>
                                 </div>
@@ -61,8 +61,8 @@
                         </form>
                     </div>
                     <div class="col-lg-6 col-md-12">
-                        <h6 data-translate="Recente Check-ins">Recente Check-ins</h6>
-                        <div class="list-group">
+                        <h6 data-translate="Recente Check-ins" data-intro="Hier zie je je meest recente check-ins.">Recente Check-ins</h6>
+                        <div class="list-group" data-intro="Dit is een lijst van je laatste check-ins. Je kunt ze bewerken of verwijderen.">
                             {% for check_in in check_ins %}
                             <div class="list-group-item">
                                 <div class="d-flex w-100 justify-content-between flex-wrap">
@@ -97,18 +97,18 @@
     </div>
 
     <div class="col-12">
-        <div class="card">
+        <div class="card" data-intro="Hier zie je je meest recente urenregistraties. Je kunt ze bewerken of verwijderen, of een nieuwe toevoegen." data-title="Recente urenregistraties">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
-                    <h5 class="mb-0 mb-2 mb-md-0" data-translate="Recente Urenregistraties">Recente Urenregistraties</h5>
-                    <a href="{{ url_for('time_entries') }}?from_dashboard=true" class="btn btn-primary">
+                    <h5 class="mb-0 mb-2 mb-md-0" data-translate="Recente Urenregistraties" data-intro="Dit is de titel van het urenoverzicht.">Recente Urenregistraties</h5>
+                    <a href="{{ url_for('time_entries') }}?from_dashboard=true" class="btn btn-primary" data-intro="Klik hier om een nieuwe urenregistratie toe te voegen." data-title="Nieuwe urenregistratie">
                         <i data-feather="plus"></i> <span data-translate="Nieuwe Registratie">Nieuwe Registratie</span>
                     </a>
                 </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table" data-intro="Dit is een overzicht van je laatste urenregistraties. Je kunt ze bewerken of verwijderen.">
                         <thead>
                             <tr>
                                 <th data-translate="Datum">Datum</th>
@@ -128,10 +128,10 @@
                                 <td class="d-none d-md-table-cell text-truncate" style="max-width: 200px;">{{ entry.description }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ url_for('time_entries') }}?edit={{ entry.id }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <a href="{{ url_for('time_entries') }}?edit={{ entry.id }}" class="btn btn-sm btn-outline-primary" title="Edit" data-intro="Klik hier om deze urenregistratie te bewerken.">
                                             <i data-feather="edit-2"></i> <span class="d-none d-lg-inline" data-translate="Bewerken">Bewerken</span>
                                         </a>
-                                        <a href="#" class="btn btn-sm btn-outline-danger delete-entry" data-url="{{ url_for('delete_time_entry', entry_id=entry.id) }}" title="Delete">
+                                        <a href="#" class="btn btn-sm btn-outline-danger delete-entry" data-url="{{ url_for('delete_time_entry', entry_id=entry.id) }}" title="Delete" data-intro="Klik hier om deze urenregistratie te verwijderen.">
                                             <i data-feather="trash-2"></i> <span class="d-none d-lg-inline" data-translate="Verwijderen">Verwijderen</span>
                                         </a>
                                     </div>
@@ -142,7 +142,7 @@
                             <tr>
                                 <td colspan="5" class="text-center">
                                     <p data-translate="No recent time entries">Geen recente urenregistraties</p>
-                                    <a href="{{ url_for('time_entries') }}?from_dashboard=true&new=true" class="btn btn-sm btn-primary">
+                                    <a href="{{ url_for('time_entries') }}?from_dashboard=true&new=true" class="btn btn-sm btn-primary" data-intro="Klik hier om je eerste urenregistratie toe te voegen.">
                                         <i data-feather="plus-circle"></i> <span data-translate="Add your first entry">Voeg je eerste registratie toe</span>
                                     </a>
                                 </td>
@@ -158,6 +158,104 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+/* Fix Intro.js popup for dark theme */
+.introjs-tooltip, .introjs-tooltipReferenceLayer {
+    background: #23272b !important;
+    color: #fff !important;
+}
+.introjs-tooltip-title {
+    color: #fff !important;
+}
+.introjs-skipbutton, .introjs-nextbutton, .introjs-prevbutton {
+    color: #23272b !important;
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+}
+.introjs-progressbar {
+    background-color: #0d6efd !important;
+}
+/* Intro.js popup netjes en subtiel */
+.introjs-tooltip, .introjs-tooltipReferenceLayer {
+    background: #23272b !important;
+    color: #fff !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18) !important;
+    font-size: 1rem !important;
+    padding: 1.5rem 1.5rem 1rem 1.5rem !important;
+}
+.introjs-tooltip-title {
+    color: #fff !important;
+    font-size: 1.15rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.5rem !important;
+}
+.introjs-skipbutton {
+    position: absolute !important;
+    top: 10px !important;
+    right: 18px !important;
+    z-index: 99999 !important;
+    background: transparent !important;
+    color: #6c757d !important;
+    border: none !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    padding: 4px 10px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    transition: color 0.2s;
+}
+.introjs-skipbutton:hover {
+    color: #0d6efd !important;
+    background: transparent !important;
+}
+.introjs-nextbutton, .introjs-prevbutton, .introjs-donebutton {
+    background: #0d6efd !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    padding: 6px 18px !important;
+    margin: 0 2px !important;
+    box-shadow: none !important;
+}
+.introjs-nextbutton:hover, .introjs-prevbutton:hover, .introjs-donebutton:hover {
+    background: #084298 !important;
+}
+.introjs-progress, .introjs-bullets {
+    display: none !important;
+}
+/* Zwevende Start rondleiding knop */
+#start-tour-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 11000;
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+#start-tour-btn:hover {
+    background: #084298;
+}
+@media (max-width: 600px) {
+    #start-tour-btn {
+        right: 8px;
+        bottom: 8px;
+        padding: 10px 16px;
+        font-size: 0.95rem;
+    }
+}
+</style>
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
     <div class="modal-dialog">
@@ -237,6 +335,17 @@ function convertUTCTimesToLocal() {
 
 // Store check-in data globally to avoid template syntax issues
 var checkInsData = [];
+var clientData = [];
+var assignmentData = [];
+
+// Load data from JSON script tags
+try {
+    checkInsData = JSON.parse(document.getElementById('checkins-data-json').textContent);
+    clientData = JSON.parse(document.getElementById('clients-data-json').textContent);
+    assignmentData = JSON.parse(document.getElementById('assignments-data-json').textContent);
+} catch (e) {
+    console.error('Error parsing dashboard data JSON:', e);
+}
 
 // Initialize everything when the document is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -255,18 +364,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Prepare check-ins data
-    {% for check_in in check_ins %}
-    checkInsData.push({
-        id: "{{ check_in.id }}",
-        status: "{{ check_in.status }}",
-        time: "{{ check_in.check_in_time.strftime('%H:%M') }}",
-        note: "{{ check_in.note or '' }}",
-        formAction: "{{ url_for('edit_check_in', checkin_id=check_in.id) }}",
-        opdrachtId: "{% if check_in.opdracht_id %}{{ check_in.opdracht_id }}{% endif %}"
-    });
-    {% endfor %}
-    
     // Attach event listeners to edit buttons using cleaner approach
     document.querySelectorAll('.edit-checkin-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -285,25 +382,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         });
     });
-    
-    // Store clients and assignments data
-    var clientData = [];
-    var assignmentData = [];
-    
-    {% for client in clients %}
-    clientData.push({
-        id: "{{ client.id }}",
-        name: "{{ client.bedrijfsnaam }}"
-    });
-    {% endfor %}
-    
-    {% for opdracht in opdrachten %}
-    assignmentData.push({
-        id: "{{ opdracht.id }}",
-        titel: "{{ opdracht.titel }}",
-        klant_id: "{{ opdracht.klant_id }}"
-    });
-    {% endfor %}
     
     // Pass client and assignment data to modal system if available
     if (typeof window.setupClientAndAssignmentData === 'function') {
@@ -375,8 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create modal content
         const modalContent = document.createElement('div');
         modalContent.className = 'direct-modal-content';
-        modalContent.style.backgroundColor = '#2C3E50';
-        modalContent.style.color = '#fff';
+        modalContent.classList.add('bg-body', 'text-body');
         modalContent.style.borderRadius = '5px';
         modalContent.style.maxWidth = '500px';
         modalContent.style.width = '90%';
@@ -407,44 +484,44 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Form HTML with updated color scheme
+        // Form HTML with Bootstrap/system color classes
         modalContent.innerHTML = `
-            <div style="padding: 15px; background-color: #1B3B6F; color: white; border-top-left-radius: 5px; border-top-right-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0;">Edit Check-in</h5>
-                <button type="button" class="direct-modal-close" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            <div class="p-3 bg-primary text-white rounded-top d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Edit Check-in</h5>
+                <button type="button" class="direct-modal-close btn btn-sm btn-light" style="font-size: 20px; line-height: 1;">&times;</button>
             </div>
-            <form action="${formAction}" method="POST" style="padding: 15px; background-color: #2C3E50; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-status" style="display: block; margin-bottom: 5px; color: white;">Status</label>
-                    <select id="direct-status" name="status" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
+            <form action="${formAction}" method="POST" class="p-3 bg-body text-body rounded-bottom">
+                <div class="mb-3">
+                    <label for="direct-status" class="form-label">Status</label>
+                    <select id="direct-status" name="status" class="form-select">
                         <option value="working" ${status === 'working' ? 'selected' : ''}>Aan het werk</option>
                         <option value="break" ${status === 'break' ? 'selected' : ''}>Pauze</option>
                         <option value="done" ${status === 'done' ? 'selected' : ''}>Klaar voor vandaag</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-time" style="display: block; margin-bottom: 5px; color: white;">Tijd</label>
-                    <input type="time" id="direct-time" name="check_in_time" value="${timeValue}" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
+                <div class="mb-3">
+                    <label for="direct-time" class="form-label">Tijd</label>
+                    <input type="time" id="direct-time" name="check_in_time" value="${timeValue}" class="form-control">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-note" style="display: block; margin-bottom: 5px; color: white;">Notitie</label>
-                    <input type="text" id="direct-note" name="note" value="${noteValue || ''}" placeholder="Waar ben je mee bezig?" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
+                <div class="mb-3">
+                    <label for="direct-note" class="form-label">Notitie</label>
+                    <input type="text" id="direct-note" name="note" value="${noteValue || ''}" placeholder="Waar ben je mee bezig?" class="form-control">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-client" style="display: block; margin-bottom: 5px; color: white;">Client</label>
-                    <select id="direct-client" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;" onchange="filterModalAssignments()">
+                <div class="mb-3">
+                    <label for="direct-client" class="form-label">Client</label>
+                    <select id="direct-client" class="form-select" onchange="filterModalAssignments()">
                         ${clientsHtml}
                     </select>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label for="direct-opdracht" style="display: block; margin-bottom: 5px; color: white;">Opdracht</label>
-                    <select id="direct-opdracht" name="opdracht_id" class="form-select" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background-color: #34495E; color: white;">
+                <div class="mb-3">
+                    <label for="direct-opdracht" class="form-label">Opdracht</label>
+                    <select id="direct-opdracht" name="opdracht_id" class="form-select">
                         ${assignmentsHtml}
                     </select>
                 </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="direct-modal-cancel" style="margin-right: 10px; padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                    <button type="submit" style="padding: 8px 15px; background-color: #E6007E; color: white; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
+                <div class="text-end mt-4">
+                    <button type="button" class="direct-modal-cancel btn btn-secondary me-2">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         `;
@@ -531,4 +608,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- JSON data for dashboard -->
+<script id="checkins-data-json" type="application/json">
+{{ check_ins | tojson }}
 {% endblock %}
+
+<!-- Zwevende Start rondleiding knop -->
+<button id="start-tour-btn" type="button">Start rondleiding</button>
+
+<script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+<script>
+function startDashboardTour() {
+    introJs().setOptions({
+        steps: [
+            {
+                element: document.querySelector('[data-intro][data-title="Dashboard overzicht"]'),
+                title: 'Dashboard',
+                intro: 'Overzicht van je dag en snelle acties.'
+            },
+            {
+                element: document.querySelector('form[action$="check_in"]'),
+                title: 'Check-in',
+                intro: 'Registreer je status en notitie.'
+            },
+            {
+                element: document.querySelector('.list-group'),
+                title: 'Check-ins',
+                intro: 'Bekijk en beheer je check-ins.'
+            },
+            {
+                element: document.querySelector('.table-responsive'),
+                title: 'Urenregistraties',
+                intro: 'Overzicht en beheer van je uren.'
+            },
+            {
+                element: document.querySelector('a.btn.btn-primary[href*="time_entries"]'),
+                title: 'Nieuwe registratie',
+                intro: 'Voeg een nieuwe urenregistratie toe.'
+            }
+        ],
+        showProgress: false,
+        showBullets: false,
+        skipLabel: 'Overslaan',
+        nextLabel: 'Volgende',
+        prevLabel: 'Vorige',
+        doneLabel: 'Afronden',
+        scrollToElement: true
+    }).start();
+}
+window.addEventListener('DOMContentLoaded', function() {
+    var tourBtn = document.getElementById('start-tour-btn');
+    if (tourBtn) {
+        tourBtn.onclick = startDashboardTour;
+    }
+});
+</script>

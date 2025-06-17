@@ -9,8 +9,10 @@
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/modal-fix.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/universal-intro-guide.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='logo-small.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ url_for('static', filename='logo.webp') }}" type="image/webp">
+    <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
     <style>
         /* Verbeterde navigatie styling */
         .navbar {
@@ -171,6 +173,8 @@
                 padding-top: 65px;
             }
         }
+        
+        /* Old tour button styles removed - now handled by universal-intro-guide.css */
     </style>
     <script>
         // Prevent wheel events when modals are open
@@ -296,8 +300,11 @@
         </div>
     </main>
 
+    <!-- Universal intro guide button will be created by JavaScript -->
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
     <script>
     // Global modal fix to prevent UI glitches
     document.addEventListener('DOMContentLoaded', function() {
@@ -368,12 +375,20 @@
         const observer = new MutationObserver(fixModals);
         observer.observe(document.body, { childList: true, subtree: true });
     });
+
+    // Legacy tour function for backward compatibility - now handled by universal intro guide
+    function startTour() {
+        if (window.universalIntroGuide) {
+            window.universalIntroGuide.startTour();
+        }
+    }
     </script>
     <script src="{{ url_for('static', filename='js/translations.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/timezone-handler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/custom-modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/fix-modal-glitches.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/universal-intro-guide.js') }}"></script>
 
     <footer class="mt-5 py-3 text-center text-muted">
         <div class="container">
