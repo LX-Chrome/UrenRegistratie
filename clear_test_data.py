@@ -30,18 +30,16 @@ def clear_all_test_data():
         print("Deleting all employees...")
         Medewerker.query.delete()
         
-        print("Deleting all users except admin if it exists...")
-        # Optionally keep admin or some system users
-        # If you want to keep the admin user, uncomment the line below and comment the User.query.delete() line
-        # User.query.filter(User.username != 'admin').delete()
-        User.query.delete()
+        # Gebruikers NIET verwijderen!
+        print("Gebruikersaccounts blijven behouden.")
+        # User.query.delete()  # Niet uitvoeren
         
         # Roles will be preserved - they are system settings
         
         # Commit the changes
         db.session.commit()
         print("All test data has been cleared from the database!")
-        print("Note: Database structure and roles have been preserved.")
+        print("Note: Database structure, roles en gebruikersaccounts zijn behouden.")
 
 if __name__ == "__main__":
     clear_all_test_data()

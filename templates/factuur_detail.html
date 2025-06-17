@@ -250,6 +250,39 @@
             </div>
         </div>
     </div>
+
+    <h3>Gespecificeerde uren op deze factuur</h3>
+    {% if time_entries and time_entries|length > 0 %}
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Project</th>
+                <th>Omschrijving</th>
+                <th>Uren</th>
+                <th>Tarief</th>
+                <th>Totaal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in time_entries %}
+            <tr>
+                <td>{{ entry.date.strftime('%d-%m-%Y') }}</td>
+                <td>{{ entry.project }}</td>
+                <td>{{ entry.description }}</td>
+                <td>{{ entry.hours }}</td>
+                <td>{{ entry.hourly_rate or (entry.opdracht.uurtarief if entry.opdracht and entry.opdracht.uurtarief else '-') }}</td>
+                <td>
+                    {% set tarief = entry.hourly_rate or (entry.opdracht.uurtarief if entry.opdracht and entry.opdracht.uurtarief else 0) %}
+                    {{ (entry.hours * tarief)|round(2) if tarief else '-' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Er zijn geen urenregistraties gekoppeld aan deze factuur.</p>
+    {% endif %}
 </div>
 {% endblock %}
 

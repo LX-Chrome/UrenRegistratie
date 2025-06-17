@@ -182,6 +182,8 @@ def bekijk_factuur(factuur_id):
     factuur = Factuur.query.get_or_404(factuur_id)
     # Add today's date for template comparison (to show overdue invoices)
     today = datetime.now().date()
+    # Haal gekoppelde urenregistraties op
+    time_entries = factuur.time_entries if hasattr(factuur, 'time_entries') else []
     return render_template('factuur_detail.html', factuur=factuur, today=today)
 
 @app.route('/factuur/<int:factuur_id>/bewerk', methods=['GET', 'POST'])

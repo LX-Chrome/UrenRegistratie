@@ -4,8 +4,9 @@ Script om testgegevens toe te voegen aan de database
 from app import app, db
 from models import User, Role, RoleEnum, Klant, Medewerker, Opdracht, Werkzaamheid, TimeEntry, Factuur
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import random
+import calendar
 
 def add_test_data():
     with app.app_context():
@@ -195,9 +196,9 @@ def add_test_data():
                 klant_id=klant.id,
                 titel=f"Opdracht {i+1} voor {klant.bedrijfsnaam}",
                 omschrijving=f"Dit is een voorbeeld opdracht voor {klant.bedrijfsnaam}. Het bevat diverse werkzaamheden.",
-                aanvraagdatum=start_date.date(),
+                aanvraagdatum=start_date,
                 benodigde_kennis="Python, Flask, JavaScript, HTML, CSS",
-                deadline=(start_date + timedelta(days=random.randint(30, 90))).date(),
+                deadline=min((start_date + timedelta(days=random.randint(30, 90))).date(), datetime.now().date()),
                 status=random.choice(statussen),
                 uurtarief=random.choice([85.0, 95.0, 110.0, 125.0])
             )
@@ -234,100 +235,166 @@ def add_test_data():
         # 5. Tijdsregistraties toevoegen voor bestaande gebruikers
         print("Tijdsregistraties toevoegen...")
         users = User.query.all()
-        
+        db_time_entries = []
+        projects = ["Website Development", "App Development", "Server Maintenance", "UI Design", "Database Optimization"]
+        opdracht_per_klant = {}
+        for opdracht in db_opdrachten:
+            opdracht_per_klant.setdefault(opdracht.klant_id, []).append(opdracht)
+        # Maak per klant/opdracht alvast een lijst van tijdsregistraties
+        time_entries_per_opdracht = {opdracht.id: [] for opdracht in db_opdrachten}
         if not users:
             print("Geen gebruikers gevonden. Tijdsregistraties kunnen niet worden toegevoegd.")
         else:
-            db_time_entries = []
-            projects = ["Website Development", "App Development", "Server Maintenance", "UI Design", "Database Optimization"]
-            
-            for user in users:
-                # Voeg 10-20 tijdsregistraties toe per gebruiker
-                for i in range(random.randint(10, 20)):
-                    entry_date = now - timedelta(days=random.randint(0, 90))
-                    
+            for opdracht in db_opdrachten:
+                for _ in range(random.randint(3, 6)):
+                    user = random.choice(users)
+                    entry_date = opdracht.aanvraagdatum + timedelta(days=random.randint(0, 60))
+                    if entry_date > datetime.now().date():
+                        entry_date = datetime.now().date()
+                    hours = random.randint(2, 8)
                     time_entry = TimeEntry(
-                        date=entry_date.date(),
-                        hours=random.randint(1, 8),
-                        description=f"Gewerkt aan {random.choice(projects)}",
+                        date=entry_date,
+                        hours=hours,
+                        description=f"Gewerkte uren aan {opdracht.titel}",
                         project=random.choice(projects),
                         user_id=user.id,
-                        is_billable=random.choice([True, True, False])  # 66% billable
+                        opdracht_id=opdracht.id,
+                        is_billable=True
                     )
                     db.session.add(time_entry)
                     db_time_entries.append(time_entry)
-            
-            db.session.commit()
-            print(f"{len(db_time_entries)} tijdsregistraties toegevoegd")
+                    time_entries_per_opdracht[opdracht.id].append(time_entry)
+            # Voeg ook wat niet-gefactureerde uren toe
+            for _ in range(10):
+                opdracht = random.choice(db_opdrachten)
+                user = random.choice(users)
+                entry_date = opdracht.aanvraagdatum + timedelta(days=random.randint(0, 60))
+                if entry_date > datetime.now().date():
+                    entry_date = datetime.now().date()
+                hours = random.randint(2, 8)
+                time_entry = TimeEntry(
+                    date=entry_date,
+                    hours=hours,
+                    description=f"Nog niet gefactureerde uren voor {opdracht.titel}",
+                    project=random.choice(projects),
+                    user_id=user.id,
+                    opdracht_id=opdracht.id,
+                    is_billable=True
+                )
+                db.session.add(time_entry)
+                db_time_entries.append(time_entry)
+        db.session.commit()
+        print(f"{len(db_time_entries)} tijdsregistraties toegevoegd")
         
         # 6. Facturen toevoegen
         print("Facturen toevoegen...")
-        # Zoek een geschikte gebruiker voor het aanmaken van facturen
-        admin_user = User.query.filter(User.role_id.in_([3, 4])).first()  # Zoek een admin of afdelingshoofd
+        admin_user = User.query.filter(User.role_id.in_([3, 4])).first()
         if not admin_user:
-            admin_user = User.query.first()  # Als geen admin, pak dan de eerste gebruiker
-        
+            admin_user = User.query.first()
         if not admin_user:
             print("Geen gebruikers gevonden. Facturen kunnen niet worden toegevoegd.")
         else:
-            # Maak facturen aan
             db_facturen = []
-            
-            for i in range(10):
-                # Kies een klant en eventueel een bijbehorende opdracht
-                klant = random.choice(db_klanten)
-                opdracht = random.choice([None] + [o for o in db_opdrachten if o.klant_id == klant.id])
-                
-                factuur_date = now - timedelta(days=random.randint(0, 180))
-                due_date = factuur_date + timedelta(days=30)
-                
-                # Genereer factuurnummer (format: YYYYMM0001)
-                factuur_nummer = f"{factuur_date.year}{factuur_date.month:02d}{i+1:04d}"
-                
-                # Bereken factuurbedragen
-                subtotaal = random.randint(500, 5000)
-                btw_percentage = 21.0
-                btw_bedrag = subtotaal * (btw_percentage / 100)
-                totaal = subtotaal + btw_bedrag
-                
-                factuur = Factuur(
-                    factuur_nummer=factuur_nummer,
-                    klant_id=klant.id,
-                    opdracht_id=opdracht.id if opdracht else None,
-                    datum=factuur_date.date(),
-                    vervaldatum=due_date.date(),
-                    btw_percentage=btw_percentage,
-                    subtotaal=subtotaal,
-                    btw_bedrag=btw_bedrag,
-                    totaal=totaal,
-                    betaald=random.choice([True, False]),
-                    betaaldatum=(factuur_date + timedelta(days=random.randint(5, 25))).date() if random.random() > 0.3 else None,
-                    betalingsvoorwaarden="Betaling binnen 30 dagen na factuurdatum",
-                    notities="Bedankt voor uw vertrouwen in gildeDevOps Solutions.",
-                    creator_id=admin_user.id
-                )
-                db.session.add(factuur)
-                db_facturen.append(factuur)
-            
+            facturen_data = []
+            facturen_per_jaar = {now.year: 0, now.year-1: 0}
+            for jaar in [now.year, now.year-1]:
+                for klant in db_klanten:
+                    if klant.id not in opdracht_per_klant or not opdracht_per_klant[klant.id]:
+                        continue
+                    opdrachten = opdracht_per_klant[klant.id]
+                    n_facturen = random.randint(1, 2)
+                    for i in range(n_facturen):
+                        opdracht = random.choice(opdrachten)
+                        maand = random.randint(1, 12)
+                        dag = random.randint(1, 28)
+                        factuur_date = datetime(jaar, maand, dag).date()
+                        if factuur_date > datetime.now().date():
+                            factuur_date = datetime.now().date()
+                        due_date = min(factuur_date + timedelta(days=30), datetime.now().date())
+                        factuur_nummer = f"{jaar}{maand:02d}{klant.id:02d}{i+1:02d}"
+                        # Realistisch aantal uren en entries
+                        totaal_uren = random.choice([12, 16, 24, 32, 40])
+                        n_entries = random.randint(2, 6)
+                        uren_per_entry = [totaal_uren // n_entries] * n_entries
+                        for j in range(totaal_uren % n_entries):
+                            uren_per_entry[j] += 1
+                        tarief = opdracht.uurtarief or random.choice([85, 95, 110, 125])
+                        omschrijvingen = [
+                            "Ontwikkeling module X", "Overleg klant", "Bugfixing sprint", "Code review", "Documentatie", "Testen release"
+                        ]
+                        first_day = date(jaar, maand, 1)
+                        last_day = date(jaar, maand, calendar.monthrange(jaar, maand)[1])
+                        werkdagen = [first_day + timedelta(days=x) for x in range((last_day - first_day).days + 1)
+                                     if (first_day + timedelta(days=x)).weekday() < 5 and (first_day + timedelta(days=x)) <= datetime.now().date()]
+                        if len(werkdagen) < n_entries:
+                            werkdagen = [first_day] * n_entries
+                        else:
+                            werkdagen = random.sample(werkdagen, n_entries)
+                        gekoppelde_uren = []
+                        for j in range(n_entries):
+                            te = None
+                            beschikbare_uren = [te for te in time_entries_per_opdracht[opdracht.id] if te.invoice_id is None]
+                            if beschikbare_uren:
+                                te = beschikbare_uren.pop()
+                                te.hours = uren_per_entry[j]
+                                te.hourly_rate = tarief
+                                te.date = werkdagen[j]
+                                te.description = random.choice(omschrijvingen)
+                            else:
+                                te = TimeEntry(
+                                    date=werkdagen[j],
+                                    hours=uren_per_entry[j],
+                                    description=random.choice(omschrijvingen),
+                                    project=opdracht.titel,
+                                    user_id=random.choice(users).id,
+                                    opdracht_id=opdracht.id,
+                                    is_billable=True,
+                                    hourly_rate=tarief
+                                )
+                                db.session.add(te)
+                                db_time_entries.append(te)
+                                time_entries_per_opdracht[opdracht.id].append(te)
+                            gekoppelde_uren.append(te)
+                        subtotaal = sum([te.hours * tarief for te in gekoppelde_uren])
+                        btw_percentage = 21.0
+                        btw_bedrag = subtotaal * (btw_percentage / 100)
+                        totaal = subtotaal + btw_bedrag
+                        # Minstens 1 factuur per klant per jaar betaald
+                        betaald = (i == 0)
+                        betaaldatum = factuur_date + timedelta(days=random.randint(5, 25)) if betaald else None
+                        factuur = Factuur(
+                            factuur_nummer=factuur_nummer,
+                            klant_id=klant.id,
+                            opdracht_id=opdracht.id,
+                            datum=factuur_date,
+                            vervaldatum=due_date,
+                            btw_percentage=btw_percentage,
+                            subtotaal=subtotaal,
+                            btw_bedrag=btw_bedrag,
+                            totaal=totaal,
+                            betaald=betaald,
+                            betaaldatum=betaaldatum,
+                            betalingsvoorwaarden="Betaling binnen 30 dagen na factuurdatum",
+                            notities="Testfactuur voor sprint review.",
+                            creator_id=admin_user.id
+                        )
+                        db.session.add(factuur)
+                        db_facturen.append((factuur, gekoppelde_uren))
+            db.session.commit()  # Commit zodat factuur.id beschikbaar is
+            # Koppel uren aan facturen
+            for factuur, gekoppelde_uren in db_facturen:
+                for te in gekoppelde_uren:
+                    te.invoice_id = factuur.id
             db.session.commit()
-            print(f"{len(db_facturen)} facturen toegevoegd")
-            
-            # Koppel enkele werkzaamheden aan facturen
-            declarabele_items = [w for w in db_werkzaamheden if w.is_declarabel and w.factuur_id is None]
-            if declarabele_items:
-                for factuur in db_facturen:
-                    # Koppel 1-5 werkzaamheden aan elke factuur
-                    for _ in range(min(random.randint(1, 5), len(declarabele_items))):
-                        item = random.choice(declarabele_items)
-                        item.factuur_id = factuur.id
-                        declarabele_items.remove(item)
-                        
-                        if not declarabele_items:
-                            break
-                
-                db.session.commit()
-                print("Werkzaamheden gekoppeld aan facturen")
-        
+            # Herbereken subtotaal, btw en totaal op basis van daadwerkelijk gekoppelde uren
+            for factuur, _ in db_facturen:
+                gekoppelde_uren = TimeEntry.query.filter_by(invoice_id=factuur.id).all()
+                subtotaal = sum([te.hours * (te.hourly_rate or 0) for te in gekoppelde_uren])
+                factuur.subtotaal = subtotaal
+                factuur.btw_bedrag = subtotaal * (factuur.btw_percentage / 100)
+                factuur.totaal = factuur.subtotaal + factuur.btw_bedrag
+            db.session.commit()
+            print(f"{len(db_facturen)} facturen toegevoegd (5 per jaar, 2 jaar)")
         print("Alle testgegevens succesvol toegevoegd!")
 
 if __name__ == "__main__":
