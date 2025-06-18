@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# UrenRegistratie Production Starter
-# =================================
-# This script starts the application after VM restart
+# UrenRegistratie Restart Script
+# =============================
 
 # Set working directory to script location
 cd "$(dirname "$0")"
@@ -13,7 +12,7 @@ mkdir -p logs
 mkdir -p instance
 
 # Kill any existing gunicorn processes
-echo "Checking for existing gunicorn processes..."
+echo "Stopping any existing gunicorn processes..."
 pkill gunicorn 2>/dev/null
 sleep 1
 
@@ -37,8 +36,8 @@ fi
 # Start Gunicorn with full path if possible
 if [ -f "venv/bin/gunicorn" ]; then
     echo "Starting Gunicorn using venv binary..."
-    venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8000 wsgi:app
+    ./venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8000 wsgi:app
 else
     echo "Starting Gunicorn using PATH..."
     gunicorn --workers 1 --bind 0.0.0.0:8000 wsgi:app
-fi
+fi 
