@@ -90,6 +90,12 @@ except Exception as e:
 try:
     logger.debug("Importing app...")
     from app import app
+    
+    # Enable more detailed error messages
+    app.config['DEBUG'] = True
+    app.config['TESTING'] = True
+    app.config['PROPAGATE_EXCEPTIONS'] = True
+    
     logger.debug("App imported successfully")
     
     logger.debug("Importing routes...")
