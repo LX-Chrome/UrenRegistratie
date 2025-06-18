@@ -1120,40 +1120,46 @@ def add_opdracht():
 @login_required
 def check_in():
     """Record a check-in for the current user"""
-    if request.method == 'POST':
-        status = request.form.get('status')
-        note = request.form.get('note', '')
-        opdracht_id = request.form.get('opdracht_id') 
-        
-        if not status:
-            flash('Status is required!', 'error')
+    try:
+        if request.method == 'POST':
+            status = request.form.get('status')
+            note = request.form.get('note', '')
+            opdracht_id = request.form.get('opdracht_id') 
+            
+            if not status:
+                flash('Status is required!', 'error')
+                return redirect(url_for('dashboard'))
+            
+            # Use local time
+            local_now = datetime.now()
+            
+            # Create the check-in
+            check_in = CheckIn(
+                user_id=current_user.id,
+                status=status,
+                note=note,
+                check_in_time=local_now  # Explicitly setting local time
+            )
+            
+            # Link to assignment if provided
+            if opdracht_id:
+                try:
+                    check_in.opdracht_id = int(opdracht_id)
+                except ValueError:
+                    # Invalid assignment ID, just ignore it
+                    app.logger.warning(f"Invalid assignment ID provided for check-in: {opdracht_id}")
+                    pass
+                    
+            db.session.add(check_in)
+            db.session.commit()
+            app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
+            
+            flash('Check-in recorded!', 'success')
             return redirect(url_for('dashboard'))
-        
-        # Use local time
-        local_now = datetime.now()
-        
-        # Create the check-in
-        check_in = CheckIn(
-            user_id=current_user.id,
-            status=status,
-            note=note,
-            check_in_time=local_now  # Explicitly setting local time
-        )
-        
-        # Link to assignment if provided
-        if opdracht_id:
-            try:
-                check_in.opdracht_id = int(opdracht_id)
-            except ValueError:
-                # Invalid assignment ID, just ignore it
-                pass
-                
-        db.session.add(check_in)
-        db.session.commit()
-        app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
-        
-        flash('Check-in recorded!', 'success')
-        return redirect(url_for('dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error in check-in route: {str(e)}", exc_info=True)
+        flash("An error occurred while checking in. Please try again or contact support if the issue persists.", "error")
         
     return redirect(url_for('dashboard'))
 
