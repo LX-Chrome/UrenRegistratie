@@ -33,11 +33,26 @@ if ! command -v gunicorn >/dev/null 2>&1; then
     pip install gunicorn
 fi
 
-# Start Gunicorn with full path if possible
+# Check if database exists
+if [ ! -f "instance/database.db" ]; then
+    echo "Database not found, attempting to create..."
+    python -c "from app import app, db; with app.app_context(): db.create_all()" || echo "Warning: Failed to create database"
+fi
+
+# Check permissions
+echo "Setting permissions for instance directory..."
+chmod -R 755 instance
+chmod -R 755 static
+
+# Start Gunicorn with full path if possible, with more logging
 if [ -f "venv/bin/gunicorn" ]; then
-    echo "Starting Gunicorn using venv binary..."
-    ./venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8000 wsgi:app
+    echo "Starting Gunicorn using venv binary with debug logging..."
+    ./venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8000 --log-level debug \
+        --error-logfile logs/error.log --access-logfile logs/access.log \
+        --capture-output --timeout 120 wsgi:app
 else
-    echo "Starting Gunicorn using PATH..."
-    gunicorn --workers 1 --bind 0.0.0.0:8000 wsgi:app
+    echo "Starting Gunicorn using PATH with debug logging..."
+    gunicorn --workers 1 --bind 0.0.0.0:8000 --log-level debug \
+        --error-logfile logs/error.log --access-logfile logs/access.log \
+        --capture-output --timeout 120 wsgi:app
 fi 
