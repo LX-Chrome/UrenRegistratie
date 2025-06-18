@@ -1,31 +1,30 @@
 #!/bin/bash
 
-# UrenRegistratie Permission Fix Script
-# ===================================
+# Fix permissions script for UrenRegistratie
+# =========================================
 
-echo "=== Fixing permissions for UrenRegistratie ==="
+echo "Fixing permissions for UrenRegistratie..."
 
-# Get current user
-CURRENT_USER=$(whoami)
-echo "Current user: $CURRENT_USER"
+# Make all scripts executable
+chmod +x *.sh
 
-# Create necessary directories
-echo "Creating directories..."
-sudo mkdir -p logs
-sudo mkdir -p instance
-sudo mkdir -p static
+# Instead of changing permissions of directories, create them if they don't exist
+mkdir -p instance
+mkdir -p static
+mkdir -p static/js
+mkdir -p static/css
+mkdir -p logs
 
-# Set ownership
-echo "Setting ownership..."
-sudo chown -R $CURRENT_USER:$CURRENT_USER logs
-sudo chown -R $CURRENT_USER:$CURRENT_USER instance
-sudo chown -R $CURRENT_USER:$CURRENT_USER static
+# Create log files with correct permissions
+touch logs/error.log
+touch logs/access.log
+chmod 666 logs/error.log logs/access.log
 
-# Set full permissions
-echo "Setting permissions..."
-sudo chmod -R 777 logs
-sudo chmod -R 777 instance
-sudo chmod -R 755 static
+# Create an empty database file if it doesn't exist
+if [ ! -f "instance/database.db" ]; then
+    echo "Creating empty database file..."
+    touch instance/database.db
+    chmod 666 instance/database.db
+fi
 
-echo "Permissions fixed successfully"
-echo "Now you can run: ./restart.sh" 
+echo "Permissions fixed. Now run: ./restart.sh" 
