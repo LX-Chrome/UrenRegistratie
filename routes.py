@@ -57,40 +57,45 @@ def register():
 @login_required
 def dashboard():
     """Show dashboard with user's time entries and check-ins"""
-    # Get 5 most recent time entries
-    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
-    
-    # Get today's check-ins for the current user
-    # Using local date (not UTC)
-    today = datetime.now().date()
-    check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
-        func.date(CheckIn.check_in_time) == today
-    ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
-    
-    # Debug log check-ins
-    app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
-    for check_in in check_ins:
-        app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
-    
-    # Get active clients and open assignments for dropdown selectors
-    clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
-    
-    # If current user has admin or management role, show all assignments
-    if current_user.can_view_all():
-        opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
-    else:
-        # Otherwise, only show assignments from clients this user has worked with
-        user_client_ids = db.session.query(Opdracht.klant_id)\
-            .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
-            .filter(TimeEntry.user_id == current_user.id)\
-            .distinct().all()
-        user_client_ids = [c[0] for c in user_client_ids]
-        opdrachten = Opdracht.query.filter(
-            Opdracht.status.in_(['open', 'in-progress']),
-            Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
-        ).order_by(Opdracht.titel).all()
-    
-    return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
+    try:
+        # Get 5 most recent time entries
+        entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
+        
+        # Get today's check-ins for the current user
+        # Using local date (not UTC)
+        today = datetime.now().date()
+        check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
+            func.date(CheckIn.check_in_time) == today
+        ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
+        
+        # Debug log check-ins
+        app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
+        for check_in in check_ins:
+            app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
+        
+        # Get active clients and open assignments for dropdown selectors
+        clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
+        
+        # If current user has admin or management role, show all assignments
+        if current_user.can_view_all():
+            opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
+        else:
+            # Otherwise, only show assignments from clients this user has worked with
+            user_client_ids = db.session.query(Opdracht.klant_id)\
+                .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
+                .filter(TimeEntry.user_id == current_user.id)\
+                .distinct().all()
+            user_client_ids = [c[0] for c in user_client_ids]
+            opdrachten = Opdracht.query.filter(
+                Opdracht.status.in_(['open', 'in-progress']),
+                Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
+            ).order_by(Opdracht.titel).all()
+        
+        return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
+    except Exception as e:
+        app.logger.error(f"Error in dashboard route: {str(e)}")
+        flash("An error occurred while loading the dashboard. Please try again or contact support if the issue persists.", "error")
+        return render_template('error.html', error_message="Dashboard Error", error_details=str(e))
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
