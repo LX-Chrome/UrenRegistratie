@@ -63,13 +63,9 @@ def dashboard():
     # Get today's check-ins for the current user
     # Using local date (not UTC)
     today = datetime.now().date()
-    check_ins_raw = CheckIn.query.filter_by(user_id=current_user.id).filter(
+    check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
         func.date(CheckIn.check_in_time) == today
     ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
-    
-    # Convert check-ins to JSON-serializable format
-    check_ins = check_ins_raw  # Keep original objects for template rendering
-    check_ins_json = [check_in.to_dict() for check_in in check_ins_raw]  # JSON-serializable version
     
     # Debug log check-ins
     app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
@@ -94,7 +90,7 @@ def dashboard():
             Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
         ).order_by(Opdracht.titel).all()
     
-    return render_template('dashboard.html', entries=entries, check_ins=check_ins, check_ins_json=check_ins_json, clients=clients, opdrachten=opdrachten)
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
@@ -1589,3 +1585,40 @@ def admin_delete_employee_time_entry(entry_id):
         app.logger.error(f"Error deleting time entry: {str(e)}")
     
     return redirect(url_for('admin_employee_time_entries'))
+
+@app.route('/export-single-entry/<int:entry_id>/<format>')
+@login_required
+def export_single_entry(entry_id, format):
+    export_service = ExportService()
+    
+    # Get the specific time entry
+    entry = TimeEntry.query.get_or_404(entry_id)
+    
+    # Check if the entry belongs to the current user
+    if entry.user_id != current_user.id and not current_user.can_view_all():
+        flash('Je hebt geen toegang tot deze tijdsregistratie.', 'danger')
+        return redirect(url_for('time_entries'))
+    
+    # Create a list with just this entry
+    entries = [entry]
+    
+    if format == 'pdf':
+        data = {'entries': entries, 'single_entry': True}
+        # Use direct PDF generation with xhtml2pdf
+        content, filename, mimetype = generate_pdf_from_template('pdf_time_entries.html', data, f'time_entry_{entry_id}')
+        # Check if PDF generation failed
+        if not content:
+            flash('Fout bij genereren PDF.', 'danger')
+            return redirect(url_for('time_entries'))
+    else:
+        headers = ['Datum', 'Project', 'Uren', 'Omschrijving']
+        rows = [[e.date.strftime('%Y-%m-%d'), e.project, e.hours, e.description] for e in entries]
+        if format == 'excel':
+            content, filename, mimetype = export_service.to_excel(rows, headers, f'time_entry_{entry_id}')
+        else:  # csv
+            content, filename, mimetype = export_service.to_csv(rows, headers, f'time_entry_{entry_id}')
+    
+    response = make_response(content)
+    response.headers['Content-Type'] = mimetype
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    return response
