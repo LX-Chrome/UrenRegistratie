@@ -93,6 +93,17 @@ class CheckIn(db.Model):
         Index('idx_check_in_user_date', 'user_id', 'check_in_time'),
         Index('idx_check_in_opdracht', 'opdracht_id'),
     )
+    
+    def to_dict(self):
+        """Convert CheckIn object to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'check_in_time': self.check_in_time.isoformat() if self.check_in_time else None,
+            'status': self.status,
+            'note': self.note,
+            'opdracht_id': self.opdracht_id
+        }
 
 class Klant(db.Model):
     __tablename__ = 'klant'

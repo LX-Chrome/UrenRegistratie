@@ -63,9 +63,13 @@ def dashboard():
     # Get today's check-ins for the current user
     # Using local date (not UTC)
     today = datetime.now().date()
-    check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
+    check_ins_raw = CheckIn.query.filter_by(user_id=current_user.id).filter(
         func.date(CheckIn.check_in_time) == today
     ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
+    
+    # Convert check-ins to JSON-serializable format
+    check_ins = check_ins_raw  # Keep original objects for template rendering
+    check_ins_json = [check_in.to_dict() for check_in in check_ins_raw]  # JSON-serializable version
     
     # Debug log check-ins
     app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
@@ -90,7 +94,7 @@ def dashboard():
             Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
         ).order_by(Opdracht.titel).all()
     
-    return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins, check_ins_json=check_ins_json, clients=clients, opdrachten=opdrachten)
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
