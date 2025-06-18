@@ -20,12 +20,14 @@ echo "Setting ownership..."
 sudo chown -R $CURRENT_USER:$CURRENT_USER logs
 sudo chown -R $CURRENT_USER:$CURRENT_USER instance
 sudo chown -R $CURRENT_USER:$CURRENT_USER static
+sudo chown -R $CURRENT_USER:$CURRENT_USER .git
 
 # Set full permissions
 echo "Setting permissions..."
 sudo chmod -R 777 logs
 sudo chmod -R 777 instance
 sudo chmod -R 755 static
+sudo chmod -R 775 .git
 
-echo "Permissions fixed successfully"
+echo "=== Permissions fixed successfully ==="
 echo "Now you can run: ./restart.sh" 

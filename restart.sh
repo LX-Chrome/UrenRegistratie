@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # UrenRegistratie Restart Script
-# =============================
+# ============================
+
+echo "=== Starting UrenRegistratie server ==="
 
 # Set working directory to script location
 cd "$(dirname "$0")"
 echo "Working directory: $(pwd)"
 
-# Create logs directory if needed
+# Create necessary directories
 mkdir -p logs
 mkdir -p instance
 
@@ -46,12 +48,12 @@ chmod -R 755 static
 
 # Start Gunicorn with full path if possible, with more logging
 if [ -f "venv/bin/gunicorn" ]; then
-    echo "Starting Gunicorn using venv binary with debug logging..."
+    echo "Starting Gunicorn using venv binary..."
     ./venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8000 --log-level debug \
         --error-logfile logs/error.log --access-logfile logs/access.log \
         --capture-output --timeout 120 wsgi:app
 else
-    echo "Starting Gunicorn using PATH with debug logging..."
+    echo "Starting Gunicorn using PATH..."
     gunicorn --workers 1 --bind 0.0.0.0:8000 --log-level debug \
         --error-logfile logs/error.log --access-logfile logs/access.log \
         --capture-output --timeout 120 wsgi:app
