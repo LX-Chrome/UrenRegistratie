@@ -57,45 +57,40 @@ def register():
 @login_required
 def dashboard():
     """Show dashboard with user's time entries and check-ins"""
-    try:
-        # Get 5 most recent time entries
-        entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
-        
-        # Get today's check-ins for the current user
-        # Using local date (not UTC)
-        today = datetime.now().date()
-        check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
-            func.date(CheckIn.check_in_time) == today
-        ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
-        
-        # Debug log check-ins
-        app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
-        for check_in in check_ins:
-            app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
-        
-        # Get active clients and open assignments for dropdown selectors
-        clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
-        
-        # If current user has admin or management role, show all assignments
-        if current_user.can_view_all():
-            opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
-        else:
-            # Otherwise, only show assignments from clients this user has worked with
-            user_client_ids = db.session.query(Opdracht.klant_id)\
-                .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
-                .filter(TimeEntry.user_id == current_user.id)\
-                .distinct().all()
-            user_client_ids = [c[0] for c in user_client_ids]
-            opdrachten = Opdracht.query.filter(
-                Opdracht.status.in_(['open', 'in-progress']),
-                Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
-            ).order_by(Opdracht.titel).all()
-        
-        return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
-    except Exception as e:
-        app.logger.error(f"Error in dashboard route: {str(e)}")
-        flash("An error occurred while loading the dashboard. Please try again or contact support if the issue persists.", "error")
-        return render_template('error.html', error_message="Dashboard Error", error_details=str(e))
+    # Get 5 most recent time entries
+    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.date.desc()).limit(5).all()
+    
+    # Get today's check-ins for the current user
+    # Using local date (not UTC)
+    today = datetime.now().date()
+    check_ins = CheckIn.query.filter_by(user_id=current_user.id).filter(
+        func.date(CheckIn.check_in_time) == today
+    ).order_by(CheckIn.check_in_time.desc()).limit(5).all()
+    
+    # Debug log check-ins
+    app.logger.debug(f"Retrieved {len(check_ins)} check-ins for user {current_user.id}")
+    for check_in in check_ins:
+        app.logger.debug(f"Check-in ID: {check_in.id}, Time: {check_in.check_in_time}, Status: {check_in.status}")
+    
+    # Get active clients and open assignments for dropdown selectors
+    clients = Klant.query.filter_by(status='actief').order_by(Klant.bedrijfsnaam).all()
+    
+    # If current user has admin or management role, show all assignments
+    if current_user.can_view_all():
+        opdrachten = Opdracht.query.filter(Opdracht.status.in_(['open', 'in-progress'])).order_by(Opdracht.titel).all()
+    else:
+        # Otherwise, only show assignments from clients this user has worked with
+        user_client_ids = db.session.query(Opdracht.klant_id)\
+            .join(TimeEntry, TimeEntry.opdracht_id == Opdracht.id)\
+            .filter(TimeEntry.user_id == current_user.id)\
+            .distinct().all()
+        user_client_ids = [c[0] for c in user_client_ids]
+        opdrachten = Opdracht.query.filter(
+            Opdracht.status.in_(['open', 'in-progress']),
+            Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
+        ).order_by(Opdracht.titel).all()
+    
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
@@ -1120,46 +1115,40 @@ def add_opdracht():
 @login_required
 def check_in():
     """Record a check-in for the current user"""
-    try:
-        if request.method == 'POST':
-            status = request.form.get('status')
-            note = request.form.get('note', '')
-            opdracht_id = request.form.get('opdracht_id') 
-            
-            if not status:
-                flash('Status is required!', 'error')
-                return redirect(url_for('dashboard'))
-            
-            # Use local time
-            local_now = datetime.now()
-            
-            # Create the check-in
-            check_in = CheckIn(
-                user_id=current_user.id,
-                status=status,
-                note=note,
-                check_in_time=local_now  # Explicitly setting local time
-            )
-            
-            # Link to assignment if provided
-            if opdracht_id:
-                try:
-                    check_in.opdracht_id = int(opdracht_id)
-                except ValueError:
-                    # Invalid assignment ID, just ignore it
-                    app.logger.warning(f"Invalid assignment ID provided for check-in: {opdracht_id}")
-                    pass
-                    
-            db.session.add(check_in)
-            db.session.commit()
-            app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
-            
-            flash('Check-in recorded!', 'success')
+    if request.method == 'POST':
+        status = request.form.get('status')
+        note = request.form.get('note', '')
+        opdracht_id = request.form.get('opdracht_id') 
+        
+        if not status:
+            flash('Status is required!', 'error')
             return redirect(url_for('dashboard'))
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error in check-in route: {str(e)}", exc_info=True)
-        flash("An error occurred while checking in. Please try again or contact support if the issue persists.", "error")
+        
+        # Use local time
+        local_now = datetime.now()
+        
+        # Create the check-in
+        check_in = CheckIn(
+            user_id=current_user.id,
+            status=status,
+            note=note,
+            check_in_time=local_now  # Explicitly setting local time
+        )
+        
+        # Link to assignment if provided
+        if opdracht_id:
+            try:
+                check_in.opdracht_id = int(opdracht_id)
+            except ValueError:
+                # Invalid assignment ID, just ignore it
+                pass
+                
+        db.session.add(check_in)
+        db.session.commit()
+        app.logger.info(f"Check-in created for user {current_user.id} at {check_in.check_in_time} with status {check_in.status}")
+        
+        flash('Check-in recorded!', 'success')
+        return redirect(url_for('dashboard'))
         
     return redirect(url_for('dashboard'))
 
@@ -1596,40 +1585,3 @@ def admin_delete_employee_time_entry(entry_id):
         app.logger.error(f"Error deleting time entry: {str(e)}")
     
     return redirect(url_for('admin_employee_time_entries'))
-
-@app.route('/export-single-entry/<int:entry_id>/<format>')
-@login_required
-def export_single_entry(entry_id, format):
-    export_service = ExportService()
-    
-    # Get the specific time entry
-    entry = TimeEntry.query.get_or_404(entry_id)
-    
-    # Check if the entry belongs to the current user
-    if entry.user_id != current_user.id and not current_user.can_view_all():
-        flash('Je hebt geen toegang tot deze tijdsregistratie.', 'danger')
-        return redirect(url_for('time_entries'))
-    
-    # Create a list with just this entry
-    entries = [entry]
-    
-    if format == 'pdf':
-        data = {'entries': entries, 'single_entry': True}
-        # Use direct PDF generation with xhtml2pdf
-        content, filename, mimetype = generate_pdf_from_template('pdf_time_entries.html', data, f'time_entry_{entry_id}')
-        # Check if PDF generation failed
-        if not content:
-            flash('Fout bij genereren PDF.', 'danger')
-            return redirect(url_for('time_entries'))
-    else:
-        headers = ['Datum', 'Project', 'Uren', 'Omschrijving']
-        rows = [[e.date.strftime('%Y-%m-%d'), e.project, e.hours, e.description] for e in entries]
-        if format == 'excel':
-            content, filename, mimetype = export_service.to_excel(rows, headers, f'time_entry_{entry_id}')
-        else:  # csv
-            content, filename, mimetype = export_service.to_csv(rows, headers, f'time_entry_{entry_id}')
-    
-    response = make_response(content)
-    response.headers['Content-Type'] = mimetype
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    return response
