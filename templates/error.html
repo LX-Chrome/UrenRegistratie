@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Error{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4>{{ error_message|default("An error occurred") }}</h4>
+                </div>
+                <div class="card-body">
+                    <p>Something went wrong with the application. Please try again or contact support if the issue persists.</p>
+                    
+                    {% if error_details and current_user.is_authenticated and current_user.role == 'admin' %}
+                    <div class="alert alert-secondary mt-3">
+                        <h5>Technical Details (Admin Only):</h5>
+                        <pre>{{ error_details }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Home</a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
