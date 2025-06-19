@@ -90,7 +90,25 @@ def dashboard():
             Opdracht.klant_id.in_(user_client_ids) if user_client_ids else False
         ).order_by(Opdracht.titel).all()
     
+<<<<<<< HEAD
     return render_template('dashboard.html', entries=entries, check_ins=check_ins, clients=clients, opdrachten=opdrachten)
+=======
+    # Prepare check-ins data for JSON serialization
+    check_ins_json = []
+    for check_in in check_ins:
+        check_in_dict = {
+            'id': check_in.id,
+            'status': check_in.status,
+            'check_in_time': check_in.check_in_time.strftime('%H:%M') if check_in.check_in_time else None,
+            'note': check_in.note,
+            'opdracht_id': check_in.opdracht_id
+        }
+        check_ins_json.append(check_in_dict)
+    
+    return render_template('dashboard.html', entries=entries, check_ins=check_ins, 
+                          clients=clients, opdrachten=opdrachten, 
+                          check_ins_json=check_ins_json)
+>>>>>>> d067c1de0aa545f98a34b8b16ae0e1629cfa91c8
 
 @app.route('/time-entries', methods=['GET', 'POST'])
 @login_required
